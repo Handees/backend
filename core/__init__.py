@@ -1,9 +1,23 @@
 from flask import Flask
+from config import config_options
+from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
 
+# instantiate extensions
+db, ma = SQLAlchemy(), Marshmallow()
+
+#  app factory
 def create_app(config_name):
     app = Flask(__name__)
 
-    # register blueprint
+    # configure application
+    app.config.from_object(config_options[config_name])
+
+    # link extensions to app instance
+    db.init_app(app)
+    ma.init_app(app)
+
+    # register blueprints
     from .bookings import bookings
     from .payments import payments
     from .ratings import ratings
