@@ -1,7 +1,7 @@
 from core import db
 from flask import current_app
 from datetime import datetime
-from base import BaseModel
+from .base import BaseModel, BaseModelPR
 from uuid import uuid4
 
 
@@ -13,7 +13,7 @@ class Permission:
     admin = 12
 
 
-class Role(BaseModel, db.Model):
+class Role(BaseModelPR, db.Model):
     name = db.Column(db.String)
     default = db.Column(db.Boolean, default=False, index=True)
     permissions = db.Column(db.Integer)
@@ -35,7 +35,7 @@ class Role(BaseModel, db.Model):
         if self.has_permission(perm):
             self.permissions -= perm
 
-    def reset_permission(self):
+    def reset_permissions(self):
         self.permissions = 0
 
     @staticmethod
@@ -69,10 +69,11 @@ class User(BaseModel, db.Model):
     telephone = db.Column(db.String(100))
     password = db.Column(db.String(200))
     is_artisan = db.Column(db.Boolean, default=False)
-    addresses = db.Column(db.relationship('Address'), backref='user')
+    is_email_verified = db.Column(db.Boolean, default=False)
+    addresses = db.relationship('Address', backref='user')
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     artisan_profile = db.relationship('Artisan', backref='user_profile', uselist=False)
-    role = db.relationship('Role', backref='user', uselist=False)
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
 
     def __init__(self, **kwargs):
         super().__init__(kwargs)
@@ -87,6 +88,9 @@ class User(BaseModel, db.Model):
 
     def is_admin(self):
         return self.can(Permission.admin)
+
+    def is_verified(self):
+        pass
 
 
 class Artisan(BaseModel, db.Model):

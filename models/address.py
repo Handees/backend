@@ -1,10 +1,11 @@
 from core import db
 from datetime import datetime
-from base import BaseModel
+from .base import BaseModel
 from uuid import uuid4
 
 
-class AddressTypes(BaseModel, db.Model):
+class Addresstypes(BaseModel, db.Model):
+    # __tablename__ = "addresstypes"
     type_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
     name = db.Column(db.String(15))
     description = db.Column(db.String(50))
