@@ -1,25 +1,8 @@
 from core import db
+from flask import current_app
 from datetime import datetime
 from base import BaseModel
 from uuid import uuid4
-
-
-class User(BaseModel, db.Model):
-    user_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
-    name = db.Column(db.String(100))
-    email = db.Column(db.String(250))
-    telephone = db.Column(db.String(100))
-    password = db.Column(db.String(200))
-    is_artisan = db.Column(db.Boolean, default=False)
-    addresses = db.Column(db.relationship('Address'), backref='user')
-    sign_up_date = db.Column(db.Date, default=datetime.utcnow())
-
-
-class Artisan(BaseModel, db.Model):
-    artisan_id = db.Column(db.String(200), default=str(uuid4()), primary_key=True)
-    job_title = db.Column(db.String(100))
-    job_description = db.Column(db.Text)
-    hourly_rate = db.Column(db.Float)
 
 
 class Permission:
@@ -77,3 +60,43 @@ class Role(BaseModel, db.Model):
             role.default = role.name == default
             db.session.add(role)
         db.session.commit()
+
+
+class User(BaseModel, db.Model):
+    user_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
+    name = db.Column(db.String(100))
+    email = db.Column(db.String(250))
+    telephone = db.Column(db.String(100))
+    password = db.Column(db.String(200))
+    is_artisan = db.Column(db.Boolean, default=False)
+    addresses = db.Column(db.relationship('Address'), backref='user')
+    sign_up_date = db.Column(db.Date, default=datetime.utcnow())
+    artisan_profile = db.relationship('Artisan', backref='user_profile', uselist=False)
+    role = db.relationship('Role', backref='user', uselist=False)
+
+    def __init__(self, **kwargs):
+        super().__init__(kwargs)
+        if self.role is None:
+            if self.email == current_app.config['ADMIN_EMAIL']:
+                self.role = Role.query.filter_by(name='Admin').first()
+            else:
+                self.role = Role.query.filter_by(default=True).first()
+
+    def can(self, perm):
+        return self.role and self.role.has_permission(perm)
+
+    def is_admin(self):
+        return self.can(Permission.admin)
+
+
+class Artisan(BaseModel, db.Model):
+    artisan_id = db.Column(db.String(200), default=str(uuid4()), primary_key=True)
+    job_title = db.Column(db.String(100))
+    job_description = db.Column(db.Text)
+    hourly_rate = db.Column(db.Float)
+    sign_up_date = db.Column(db.Date, default=datetime.utcnow())
+    user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.user_profile = kwargs['user']
