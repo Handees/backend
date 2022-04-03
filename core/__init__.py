@@ -2,9 +2,12 @@ from flask import Flask
 from config import config_options
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from flask_migrate import Migrate
 
 # instantiate extensions
 db, ma = SQLAlchemy(), Marshmallow()
+migrate = Migrate()
+
 
 #  app factory
 def create_app(config_name):
@@ -16,6 +19,7 @@ def create_app(config_name):
     # link extensions to app instance
     db.init_app(app)
     ma.init_app(app)
+    migrate.init_app(app, db)
 
     # register blueprints
     from .bookings import bookings
