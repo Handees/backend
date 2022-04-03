@@ -1,5 +1,4 @@
 from core import db
-from address import AddressTypes, Address
 from datetime import datetime
 from base import BaseModel
 from uuid import uuid4

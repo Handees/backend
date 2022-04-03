@@ -14,7 +14,7 @@ class AddressTypes(BaseModel, db.Model):
 
 
 class Address(BaseModel, db.Model):
-    address_id = db.Column(db.String, default=str(uuid.uuid4(), primary_key=True))
+    address_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
     address_line_1 = db.Column(db.String(50), nullable=False)
     address_line_2 = db.Column(db.String(50))
     state_or_province = db.Column(db.String(50))
