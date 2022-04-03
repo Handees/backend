@@ -22,5 +22,3 @@ class Address(BaseModel, db.Model):
     last_update_time = db.Column(db.Date, default=datetime.utcnow())
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     address_type_id = db.Column(db.String, db.ForeignKey('addresstypes.type_id'))
-
-
