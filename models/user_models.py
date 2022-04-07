@@ -46,7 +46,12 @@ class Role(BaseModelPR, db.Model):
                 Permission.cancel_request,
                 Permission.rating
             ],
-            'artisan': [Permission.service_hail],
+            'artisan': [
+                Permission.service_request,
+                Permission.cancel_request,
+                Permission.rating,
+                Permission.service_hail
+            ],
             'admin': [Permission.admin]
         }
         default = 'customer'
@@ -73,6 +78,7 @@ class User(BaseModel, db.Model):
     addresses = db.relationship('Address', backref='user')
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     artisan_profile = db.relationship('Artisan', backref='user_profile', uselist=False)
+    ratings = db.relationship('Rating', backref='user')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
 
     def __init__(self, **kwargs):
@@ -82,6 +88,7 @@ class User(BaseModel, db.Model):
                 self.role = Role.query.filter_by(name='Admin').first()
             else:
                 self.role = Role.query.filter_by(default=True).first()
+        db.session.commit()
 
     def can(self, perm):
         return self.role and self.role.has_permission(perm)
@@ -98,9 +105,11 @@ class Artisan(BaseModel, db.Model):
     job_title = db.Column(db.String(100))
     job_description = db.Column(db.Text)
     hourly_rate = db.Column(db.Float)
+    ratings = db.relationship('Rating', backref='artisan')
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.user_profile = kwargs['user']
+        self.user_profile.role = Role.query.filter_by(name='artisan').first()
