@@ -15,7 +15,7 @@ class DevConfig(BaseConfig):
     DB_USERNAME = os.getenv('DB_USERNAME')
     DB_PASSPHRASE = os.getenv('DB_PASSPHRASE')
     DB_NAME = os.getenv('DB_NAME')
-    URI = f"{DB_PASSPHRASE}:{DB_PASSPHRASE}@localhost/{DB_NAME}"
+    URI = f"{DB_USERNAME}:{DB_PASSPHRASE}@localhost/{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
     DEBUG = True
 
