@@ -7,6 +7,11 @@ from models.user_models import *
 from models.base import *
 from models.documents import *
 from models.address import *
+from models.orders import *
+from models.ratings import *
+from models.location import *
+from models.payments import *
+
 import os
 
 load_dotenv()

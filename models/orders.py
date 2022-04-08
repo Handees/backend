@@ -12,12 +12,12 @@ class OrderStat:
 
 
 class Order(BaseModel, db.Model):
-    order_id = db.Column(db.String, default=str(uuid4))
+    order_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
     customer_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     artisan_id = db.Column(db.String, db.ForeignKey('artisan.artisan_id'))
     start_time = db.Column(db.Date, default=datetime.utcnow())
     end_time = db.Column(db.Date)
-    job_location = db.Column(Geometry(geometry_type='POINT', management=True, srid='4326'))
+    job_location = db.Column(Geometry(geometry_type='POINT', srid='4326'))
     status = db.Column(db.Integer)
     payment_id = db.Column(db.String, db.ForeignKey('payment.payment_id'))
     artisan_rating = db.Column(db.Integer)

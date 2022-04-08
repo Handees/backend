@@ -5,12 +5,12 @@ from geoalchemy2 import Geometry
 
 
 class Landmark(BaseModel, db.Model):
-    landmark_id = db.Column(db.String, default=uuid4(), primary_key=True)
+    landmark_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
     name = db.Column(db.String(150))
     lon = db.Column(db.Float)
     lat = db.Column(db.Float)
     city_id = db.Column(db.Integer, db.ForeignKey('city.id'))
-    geo_cat = db.Column(Geometry(geometry_type='POINT', management=True, srid='4326'))
+    geo_cat = db.Column(Geometry(geometry_type='POINT', srid='4326'))
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
