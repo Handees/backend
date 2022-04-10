@@ -3,7 +3,6 @@ version: '3.8'
 services:
   backend:
     build: .
-    command: flask run
     volumes:
       - .:/usr/src/backend
     ports:

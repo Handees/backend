@@ -32,6 +32,6 @@ def create_app(config_name):
     app.register_blueprint(payments)
     app.register_blueprint(ratings)
     app.register_blueprint(security)
-    app.register_blueprint(user)
+    app.register_blueprint(user, url_prefix='/user')
 
     return app

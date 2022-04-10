@@ -4,4 +4,7 @@ from flask import request
 
 @customer.route('/')
 def sign_up():
-    pass
+    return {
+        'msg': "hello"
+    }, 200
+
