@@ -5,3 +5,4 @@ migrations/
 *.vscode/
 .flaskenv
 *.sqlite
+postgres_data/

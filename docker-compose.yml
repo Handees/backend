@@ -14,9 +14,12 @@ services:
       - db
   
   db:
-    image: postgres:14.2
+    build:
+      context: .
+      dockerfile: Dockerfile-db
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - ./postgres_data:/var/lib/postgresql/data/
+      - ./db:/docker-entrypoint-initdb.d/
     env_file:
       - ./.env
   
