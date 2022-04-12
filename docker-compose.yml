@@ -3,8 +3,10 @@ version: '3.8'
 services:
   backend:
     build: .
+    entrypoint: ./entrypoint.sh
     volumes:
       - .:/usr/src/backend
+      - ./migrations:/usr/src/backen/migrations
     ports:
       - 5001:5000
     env_file:
@@ -19,6 +21,8 @@ services:
     volumes:
       - ./postgres_data:/var/lib/postgresql/data/
       - ./db:/docker-entrypoint-initdb.d/
+    ports:
+      - 5432:5432
     env_file:
       - ./.env
   

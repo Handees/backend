@@ -17,6 +17,7 @@ class DevConfig(BaseConfig):
     DB_NAME = os.getenv('POSTGRES_DB')
     URI = f"{DB_USERNAME}:{DB_PASSPHRASE}@db/{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
+    # SQLALCHEMY_DATABASE_URI = "sqlite:///base.db"
     DEBUG = True
 
 
