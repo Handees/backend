@@ -70,15 +70,14 @@ class Role(BaseModelPR, db.Model):
 class User(BaseModel, db.Model):
     user_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
     name = db.Column(db.String(100))
-    email = db.Column(db.String(250))
     telephone = db.Column(db.String(100))
-    password = db.Column(db.String(200))
     is_artisan = db.Column(db.Boolean, default=False)
     is_email_verified = db.Column(db.Boolean, default=False)
     addresses = db.relationship('Address', backref='user')
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     artisan_profile = db.relationship('Artisan', backref='user_profile', uselist=False)
     ratings = db.relationship('Rating', backref='user')
+    bookings = db.relationship('Booking', backref='user')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
 
     def __init__(self, **kwargs):

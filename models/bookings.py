@@ -11,8 +11,8 @@ class OrderStat:
     CANCELLED = 0
 
 
-class Order(BaseModel, db.Model):
-    order_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
+class Booking(BaseModel, db.Model):
+    booking_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
     customer_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     artisan_id = db.Column(db.String, db.ForeignKey('artisan.artisan_id'))
     start_time = db.Column(db.Date, default=datetime.utcnow())

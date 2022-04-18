@@ -3,9 +3,11 @@ from config import config_options
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
+from flask_socketio import SocketIO
 
 # instantiate extensions
 db, ma = SQLAlchemy(), Marshmallow()
+socket = SocketIO()
 migrate = Migrate(include_schemas=True)
 
 
@@ -19,6 +21,7 @@ def create_app(config_name):
     # link extensions to app instance
     db.init_app(app)
     ma.init_app(app)
+    socket.init_app(app)
     migrate.init_app(app, db)
 
     # register blueprints
