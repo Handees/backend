@@ -2,22 +2,27 @@ version: '3.8'
 
 services:
   backend:
-    build: .
-    entrypoint: ./entrypoint.sh
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ./entrypoints/entrypoint.sh
     volumes:
       - .:/usr/src/backend
-      - ./migrations:/usr/src/backen/migrations
+      - ./migrations:/usr/src/backend/migrations
     ports:
       - 5001:5000
-    env_file:
+    env_file: 
       - ./.env
     depends_on:
       - db
+      - rabbit
   
   db:
     build:
       context: .
       dockerfile: Dockerfile-db
+    hostname: db
+    container_name: db
     volumes:
       - ./postgres_data:/var/lib/postgresql/data/
       - ./db:/docker-entrypoint-initdb.d/
@@ -26,5 +31,38 @@ services:
     env_file:
       - ./.env
   
+  rabbit:
+    image: rabbitmq:3-management
+    container_name: rabbit
+    hostname: rabbit
+    env_file:
+      - ./.env 
+    ports:
+      - "5682:5672"
+      - "15682:15672"
+  
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: celery-worker
+    container_name: celery-worker
+    entrypoint: ./entrypoints/celery_point.sh
+    depends_on:
+      - rabbit
+      - db
+      - backend
+  
+  redis:
+    image: redis:6.2.6
+    hostname: redis
+    container_name: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - ./data:/data
+
+  
+
 volumes:
   postgres_data:

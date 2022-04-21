@@ -4,11 +4,16 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
+import redis
 
 # instantiate extensions
 db, ma = SQLAlchemy(), Marshmallow()
 socket = SocketIO()
 migrate = Migrate(include_schemas=True)
+redis = redis.StrictRedis(
+    'redis', 6379, charset='utf-8',
+    decode_responses=True
+)
 
 
 #  app factory
