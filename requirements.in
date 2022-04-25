@@ -11,3 +11,4 @@ psycopg2==2.9.3
 flask-socketio==5.1.1
 eventlet==0.33.0
 celery==5.2.6
+pygeohash==1.2.0

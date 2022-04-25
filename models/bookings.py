@@ -3,6 +3,7 @@ from datetime import datetime
 from core import db
 from uuid import uuid4
 from geoalchemy2 import Geometry
+from typing import Optional
 
 
 class OrderStat:
@@ -17,13 +18,17 @@ class Booking(BaseModel, db.Model):
     artisan_id = db.Column(db.String, db.ForeignKey('artisan.artisan_id'))
     start_time = db.Column(db.Date, default=datetime.utcnow())
     end_time = db.Column(db.Date)
-    job_location = db.Column(Geometry(geometry_type='POINT', srid='4326'))
+    location = db.Column(Geometry(geometry_type='POINT', srid='4326'))
     status = db.Column(db.Integer)
     payment_id = db.Column(db.String, db.ForeignKey('payment.payment_id'))
     artisan_rating = db.Column(db.Integer)
     customer_rating = db.Column(db.Integer)
 
-    def __init__(self, **kwargs):
+    def __init__(self, params: Optional[dict] = None, **kwargs):
         super().__init__(**kwargs)
+        if len(kwargs.items()) <= 0:
+            self.location = f"SRID=4326;POINT({params['lat']}, {params['lon']})"
+        else:
+            self.location = f"SRID=4326;POINT({kwargs['lat']}, {kwargs['lon']})"
         # TODO: set artisan_rating
         # TODO: set customer_rating
