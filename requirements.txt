@@ -8,6 +8,8 @@ alembic==1.7.7
     # via flask-migrate
 amqp==5.1.1
     # via kombu
+async-timeout==4.0.2
+    # via redis
 bidict==0.22.0
     # via python-socketio
 billiard==3.6.4.0
@@ -37,6 +39,8 @@ click-repl==0.2.0
     # via celery
 colorama==0.4.4
     # via click
+deprecated==1.2.13
+    # via redis
 dnspython==2.2.1
     # via eventlet
 eventlet==0.33.0
@@ -48,10 +52,13 @@ flake8==4.0.1
 flask==2.1.1
     # via
     #   -r requirements.in
+    #   flask-cors
     #   flask-marshmallow
     #   flask-migrate
     #   flask-socketio
     #   flask-sqlalchemy
+flask-cors==3.0.10
+    # via -r requirements.in
 flask-marshmallow==0.14.0
     # via -r requirements.in
 flask-migrate==3.1.0
@@ -146,6 +153,7 @@ packaging==21.3
     # via
     #   geoalchemy2
     #   marshmallow
+    #   redis
 prompt-toolkit==3.0.29
     # via click-repl
 proto-plus==1.20.3
@@ -183,6 +191,8 @@ python-socketio==5.5.2
     # via flask-socketio
 pytz==2022.1
     # via celery
+redis==4.2.2
+    # via -r requirements.in
 requests==2.27.1
     # via
     #   cachecontrol
@@ -194,6 +204,7 @@ six==1.16.0
     # via
     #   click-repl
     #   eventlet
+    #   flask-cors
     #   flask-marshmallow
     #   google-auth
     #   google-auth-httplib2
@@ -217,6 +228,8 @@ wcwidth==0.2.5
     # via prompt-toolkit
 werkzeug==2.1.1
     # via flask
+wrapt==1.14.0
+    # via deprecated
 zipp==3.8.0
     # via
     #   importlib-metadata

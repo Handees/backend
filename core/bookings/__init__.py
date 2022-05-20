@@ -2,6 +2,8 @@
 
 from flask import Blueprint
 
-bookings = Blueprint("bookings", __name__, url_prefix="/bookings")
+bookings = Blueprint(
+    "bookings", __name__
+)
 
-from . import views
+from . import views, events

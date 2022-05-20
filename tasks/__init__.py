@@ -1,3 +1,4 @@
 # flake8: noqa
 
-from .push_booking_to_queue import *
+from . import push_booking_to_queue
+from . import second_task

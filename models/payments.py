@@ -14,5 +14,5 @@ class Payment(BaseModel, db.Model):
     tip_amount = db.Column(db.Float)
     status = db.Column(db.Boolean, default=False)
     transaction_id = db.Column(db.String)
-    order = db.relationship('Order', backref='payment')
+    order = db.relationship('Booking', backref='payment')
     # TODO: Add date dim

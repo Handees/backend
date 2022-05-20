@@ -1,3 +1,3 @@
 #!/bin/bash
 
-celery -A tasks worker -l INFO
+celery -A celery_worker.celery worker -l DEBUG

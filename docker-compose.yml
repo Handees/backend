@@ -10,12 +10,14 @@ services:
       - .:/usr/src/backend
       - ./migrations:/usr/src/backend/migrations
     ports:
-      - 5001:5000
+      - 5020:5000
     env_file: 
       - ./.env
     depends_on:
       - db
       - rabbit
+    container_name: hbackend
+    restart: always
   
   db:
     build:
@@ -38,7 +40,7 @@ services:
     env_file:
       - ./.env 
     ports:
-      - "5682:5672"
+      - "5672:5672"
       - "15682:15672"
   
   celery-worker:
@@ -52,6 +54,9 @@ services:
       - rabbit
       - db
       - backend
+    volumes:
+      - .:/usr/src/backend
+    restart: always
   
   redis:
     image: redis:6.2.6

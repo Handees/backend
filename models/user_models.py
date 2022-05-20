@@ -3,6 +3,7 @@ from flask import current_app
 from datetime import datetime
 from .base import BaseModel, BaseModelPR
 from uuid import uuid4
+from typing import Optional, Dict
 
 
 class Permission:
@@ -68,9 +69,10 @@ class Role(BaseModelPR, db.Model):
 
 
 class User(BaseModel, db.Model):
-    user_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
+    user_id = db.Column(db.String, primary_key=True)
     name = db.Column(db.String(100))
     telephone = db.Column(db.String(100))
+    email = db.Column(db.String(100))
     is_artisan = db.Column(db.Boolean, default=False)
     is_email_verified = db.Column(db.Boolean, default=False)
     addresses = db.relationship('Address', backref='user')
@@ -80,8 +82,10 @@ class User(BaseModel, db.Model):
     bookings = db.relationship('Booking', backref='user')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
 
-    def __init__(self, **kwargs):
-        super().__init__(kwargs)
+    def __init__(self, params: Optional[Dict], **kwargs):
+        super().__init__(**kwargs)
+        for key, val in params.items():
+            setattr(self, key, val)
         if self.role is None:
             if self.email == current_app.config['ADMIN_EMAIL']:
                 self.role = Role.query.filter_by(name='Admin').first()

@@ -27,8 +27,8 @@ class Booking(BaseModel, db.Model):
     def __init__(self, params: Optional[dict] = None, **kwargs):
         super().__init__(**kwargs)
         if len(kwargs.items()) <= 0:
-            self.location = f"SRID=4326;POINT({params['lat']}, {params['lon']})"
+            self.location = f"SRID=4326;POINT({params['lat']} {params['lon']})"
         else:
-            self.location = f"SRID=4326;POINT({kwargs['lat']}, {kwargs['lon']})"
+            self.location = f"SRID=4326;POINT({kwargs['lat']} {kwargs['lon']})"
         # TODO: set artisan_rating
         # TODO: set customer_rating

@@ -14,7 +14,7 @@ class Landmark(BaseModel, db.Model):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.geo_cat = f'SRID=4326;POINT({self.lat}, {self.lon})'
+        self.geo_cat = f'SRID=4326;POINT({self.lat} {self.lon})'
         db.session.commit()
 
 
