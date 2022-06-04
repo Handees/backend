@@ -13,7 +13,8 @@ class OrderStat:
 
 
 class Booking(BaseModel, db.Model):
-    booking_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
+    booking_id = db.Column(db.String, primary_key=True, unique=True)
+
     customer_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     artisan_id = db.Column(db.String, db.ForeignKey('artisan.artisan_id'))
     start_time = db.Column(db.Date, default=datetime.utcnow())
@@ -27,8 +28,11 @@ class Booking(BaseModel, db.Model):
     def __init__(self, params: Optional[dict] = None, **kwargs):
         super().__init__(**kwargs)
         if len(kwargs.items()) <= 0:
+        
             self.location = f"SRID=4326;POINT({params['lat']} {params['lon']})"
         else:
             self.location = f"SRID=4326;POINT({kwargs['lat']} {kwargs['lon']})"
+        for key, val in params.items():
+            setattr(self, key, val)
         # TODO: set artisan_rating
         # TODO: set customer_rating

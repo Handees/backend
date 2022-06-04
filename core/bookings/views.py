@@ -5,6 +5,7 @@ from . import bookings
 from ..auth.auth_helper import permission_required, login_required
 from .. import db
 from tasks.push_booking_to_queue import pbq
+import uuid
 
 
 @bookings.route('/', methods=['POST'])
@@ -12,8 +13,10 @@ from tasks.push_booking_to_queue import pbq
 # @permission_required(Permission.service_request)
 def create_booking():
     data = request.get_json(force=True)
+    data['booking_id'] = str(uuid.uuid4())
+    print(data)
     new_order = Booking(params=data)
-    # new_order.user = current_user
+    print(new_order)
     db.session.add(new_order)
     db.session.commit()
     data['booking_id'] = new_order.booking_id

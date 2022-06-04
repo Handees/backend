@@ -8,25 +8,27 @@ base_dir = os.path.abspath(os.getcwd())
 
 class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = os.getenv("app-secret")
+    SECRET_KEY = os.getenv("app_secret")
 
 
 class DevConfig(BaseConfig):
+    EXPLAIN_TEMPLATE_LOADINGc = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///base.db"
+    DEBUG = True
+    ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
+    CELERY_BROKER_URL = f"amqp://{os.getenv('RABBITMQ_DEFAULT_USER')}:{os.getenv('RABBITMQ_DEFAULT_PASS')}@rabbit"
+
+
+class TestConfig(BaseConfig):
+    ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
+    TESTING = True
     DB_USERNAME = os.getenv('POSTGRES_USER')
     DB_PASSPHRASE = os.getenv('POSTGRES_PASSWORD')
-    EXPLAIN_TEMPLATE_LOADINGc = True
     DB_NAME = os.getenv('POSTGRES_DB')
     URI = f"{DB_USERNAME}:{DB_PASSPHRASE}@db/{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
     CELERY_BACKEND = "db+" + SQLALCHEMY_DATABASE_URI
     CELERY_BROKER_URL = f"amqp://{os.getenv('RABBITMQ_DEFAULT_USER')}:{os.getenv('RABBITMQ_DEFAULT_PASS')}@rabbit"
-    # SQLALCHEMY_DATABASE_URI = "sqlite:///base.db"
-    DEBUG = True
-    ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
-
-
-class TestConfig(BaseConfig):
-    pass
 
 
 class Production(BaseConfig):
@@ -34,7 +36,7 @@ class Production(BaseConfig):
 
 
 config_options = {
-    "default": DevConfig,
+    "default": TestConfig,
     "development": DevConfig,
     "testing": TestConfig,
     "production": Production

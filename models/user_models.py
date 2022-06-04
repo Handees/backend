@@ -69,7 +69,7 @@ class Role(BaseModelPR, db.Model):
 
 
 class User(BaseModel, db.Model):
-    user_id = db.Column(db.String, primary_key=True)
+    user_id = db.Column(db.String, primary_key=True, unique=True)
     name = db.Column(db.String(100))
     telephone = db.Column(db.String(100))
     email = db.Column(db.String(100))
