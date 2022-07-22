@@ -15,12 +15,6 @@ def connect():
 @socketio.on('location_update', namespace='/artisan')
 def update_location(data):
     # update artisan location on redis
-    data = data.replace('\\n', '')
-    data = eval(data)
-
-    data = eval(data)
-    print(data, type(data))
-
     room = data['artisan_id']
     join_room(room)
 
