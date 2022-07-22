@@ -1,17 +1,15 @@
 from flask import Flask
-from config import config_options, DevConfig
+from config import config_options
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
-from celery import Celery
 from flask_cors import CORS
 
 # instantiate extensions
 db, ma = SQLAlchemy(), Marshmallow()
-socketio = SocketIO()
+socketio = SocketIO(cors_allowed_origins=['http://127.0.0.1:5020', 'http://127.0.0.1:5500'])
 migrate = Migrate(include_schemas=True)
-celery = Celery(__name__, broker=DevConfig.CELERY_BROKER_URL)
 cors = CORS()
 
 
@@ -36,11 +34,9 @@ def create_app(config_name):
     app.register_blueprint(user)
 
     # link extensions to app instance
-    socketio.init_app(app, logger=True, engineio_logger=True)
+    socketio.init_app(app, logger=True, engineio_logger=True, async_mode='threading')
     db.init_app(app)
     ma.init_app(app)
     migrate.init_app(app, db)
-    celery.conf.update(app.config)
-    celery.autodiscover_tasks()
-    cors.init_app(app)
+    cors.init_app(app, resources={r"/*": {"origins": "*"}})
     return app

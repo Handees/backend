@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import redis
 
 load_dotenv()   # initialize dotenv
 
@@ -9,6 +10,12 @@ base_dir = os.path.abspath(os.getcwd())
 class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.getenv("app_secret")
+    HUEY_CONFIG = config = dict(
+        connection_pool=redis.ConnectionPool(
+            host=os.getenv('REDIS_HOST') or 'redis', port=6378,
+            password=os.getenv('REDIS_PASS'), db=0
+        )
+    )
 
 
 class DevConfig(BaseConfig):

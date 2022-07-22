@@ -20,12 +20,13 @@ def create_booking():
     db.session.add(new_order)
     db.session.commit()
     data['booking_id'] = new_order.booking_id
-    init_task = pbq.apply_async([data])
+    init_task = pbq(data)
     return {
         'status': 'success',
         'msg': 'booking created successfully',
         'data': {
-            'task_id': init_task.id
+            'task_id': init_task.id,
+            'booking_id': new_order.booking_id
         }
     }
 

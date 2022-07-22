@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SocketIO Test Client</title>
+</head>
+<style>
+  * {
+    padding: 0;
+    margin: 0;
+    text-decoration: none;
+  }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #fff;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 5%;
+    width: 100vw;
+    max-height: 100vh;
+    box-sizing: border-box;
+    gap: 20px;
+  }
+  textarea {
+    width: 100%;
+    height: 300px;
+    max-height: 300px;
+    padding: 5px;
+  }
+  .left .right {
+    height: 100%;
+  }
+  .left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  input {
+    padding: 5px;
+  }
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;;
+  }
+  button {
+    padding: 10px;
+    cursor: pointer;
+  }
+  .logs {
+    max-height: 250px;
+    overflow-y: scroll;
+    white-space: pre-line;
+    font-size: .8rem;
+  }
+
+</style>
+<body>
+    <div class="left">
+      <input type="text" placeholder="socketio url (default: localhost:3000)" id="url" >
+      <input type="text" placeholder="room name/id" id="room_id" >
+      <textarea id="message" placeholder="message" ></textarea>
+      <div class="actions">
+        <button type="button" id="connect" >Try Connect</button>
+      <button type="button" id="send_message" >Send Message</button>
+      <button type="button" id="clear_log" >Clear Log</button>
+      </div>
+    </div>
+    <div class="right">
+      <textarea name="" id="response" placeholder="response" ></textarea>
+      <div class="logs">
+
+      </div>
+    </div>
+</body>
+<script src="https://cdn.socket.io/4.5.0/socket.io.min.js" integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k" crossorigin="anonymous" ></script>
+<script>
+  const url = document.getElementById('url');
+  const room_id = document.getElementById('room_id');
+  const message = document.getElementById('message');
+  const response = document.getElementById('response'); 
+  const textareas = document.querySelectorAll('textarea');
+  const logs = document.querySelector('.logs');
+  const connect = document.getElementById('connect');
+  const send_message = document.getElementById('send_message');
+  const clear_log = document.getElementById('clear_log');
+  let _socket = null;
+
+  textareas.forEach(textarea => {
+    textarea.addEventListener('keydown', e => {
+      if (e.keyCode === 9) {
+        e.preventDefault();
+        const end = textarea.selectionEnd;
+        textarea.value = textarea.value.substring(0, textarea.selectionEnd) + "\t" + textarea.value.substring(textarea.selectionEnd);
+        textarea.selectionEnd = end + 1;
+      }
+    });
+  });
+
+  connect.addEventListener('click', () => {
+    if (!_socket) {
+     try {
+       if (!room_id || room_id === "") {
+         logs.textContent = logs.textContent + "Error!!! => A room id is requred!\n\n";
+       }
+      const socket = io(!url.value || url.value == "" ? 'http://localhost:3000' : url.value);
+      socket.on('connect', () => {
+        connect.textContent = 'Disconnect';
+        logs.textContent = logs.textContent + "Socket connected!\n\n";
+        _socket = socket;
+        socket.emit('join', room_id.value);
+        logs.textContent = logs.textContent + "Joined room " + room_id.value + "\n\n";
+      });
+      socket.on('message', data => {
+        response.value = data;
+        logs.textContent = logs.textContent + "Data received!" + "\n\n";
+      });
+      socket.on('disconnect', () => {
+        connected = false;
+        connect.textContent = 'Connect';
+        logs.textContent = logs.textContent + "Socket disconnected!" + "\n\n";
+      });
+      socket.on('connect_error', err => {
+        logs.textContent = logs.textContent + "Error!!! => " + err + "Check console for more info!" + "\n\n";
+        console.log(err);
+      });
+    } catch(err) {
+       logs.textContent = logs.textContent + "An error occurred! check console for more info.\n\n";
+       console.log(err);
+      }
+    } else {
+      socket.disconnect();
+      _socket = null;
+      logs.textContent = logs.textContent + "Socket disconnected!\n\n";
+    }
+  });
+  
+  send_message.addEventListener('click', () => {
+    if (connected && socket && message.value && message.value !== "") {
+      socket.emit('message', message.value);
+    }else {
+      logs.textContent = logs.textContent + "Error!!! => A message is requred!\n\n";
+    }
+  });
+  
+  clear_log.addEventListener('click', () => {
+    logs.textContent = "";
+  });
+
+</script>
+</html>
