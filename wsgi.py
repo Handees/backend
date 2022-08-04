@@ -13,6 +13,9 @@ from models.location import *
 from models.payments import *
 from models.utils import *
 import os
+import eventlet
+
+eventlet.monkey_patch()
 
 
 load_dotenv()

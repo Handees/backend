@@ -8,7 +8,7 @@ from flask_cors import CORS
 
 # instantiate extensions
 db, ma = SQLAlchemy(), Marshmallow()
-socketio = SocketIO(cors_allowed_origins=['http://127.0.0.1:5020', 'http://127.0.0.1:5500'])
+socketio = SocketIO(cors_allowed_origins=['http://127.0.0.1:5020', 'http://127.0.0.1:5500', 'https://www.piesocket.com'])
 migrate = Migrate(include_schemas=True)
 cors = CORS()
 
@@ -34,7 +34,7 @@ def create_app(config_name):
     app.register_blueprint(user)
 
     # link extensions to app instance
-    socketio.init_app(app, logger=True, engineio_logger=True, async_mode='threading')
+    socketio.init_app(app, logger=True, engineio_logger=True, async_mode='eventlet')
     db.init_app(app)
     ma.init_app(app)
     migrate.init_app(app, db)
