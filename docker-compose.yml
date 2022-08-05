@@ -15,7 +15,6 @@ services:
       - ./.env
     depends_on:
       - db
-      - rabbit
     container_name: hbackend
     restart: always
   

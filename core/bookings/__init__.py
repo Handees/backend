@@ -6,4 +6,6 @@ bookings = Blueprint(
     "bookings", __name__, template_folder='templates'
 )
 
-from . import views, events
+from . import views
+from .events import artisan
+from .events import customer
