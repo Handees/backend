@@ -34,7 +34,7 @@ def create_app(config_name):
     app.register_blueprint(user)
 
     # link extensions to app instance
-    socketio.init_app(app, logger=True, engineio_logger=True, async_mode='threading')
+    socketio.init_app(app, logger=True, engineio_logger=True, async_mode='eventlet')
     db.init_app(app)
     ma.init_app(app)
     migrate.init_app(app, db)

@@ -18,6 +18,8 @@ def pbq(booking_details):
     )
     print(g_hash)
     print(g_hash[0][:7])
+
+    redis_.set(booking_details['booking_id'], str(booking_details))
     # broadcast message to artisans using a redis pub/sub channel
     # the channel is unique to each artisan and its id is synonymous
     # to the artisan's geohash
