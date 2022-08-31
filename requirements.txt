@@ -39,6 +39,8 @@ click-repl==0.2.0
     # via celery
 colorama==0.4.4
     # via click
+coverage==6.4.3
+    # via -r requirements.in
 deprecated==1.2.13
     # via redis
 dnspython==2.2.1

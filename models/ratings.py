@@ -1,8 +1,8 @@
 from core import db
-from .base import BaseModelPR
+from .base import BaseModelPR, TimestampMixin
 
 
-class Rating(BaseModelPR, db.Model):
+class Rating(TimestampMixin, BaseModelPR, db.Model):
     weight = db.Column(db.Integer, default=0)
     comment = db.Column(db.Text)
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))

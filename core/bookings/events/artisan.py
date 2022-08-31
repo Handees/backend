@@ -1,4 +1,4 @@
-from ... import socketio
+from core import socketio
 from flask_socketio import emit, join_room
 from extensions import redis_
 
@@ -12,6 +12,7 @@ def connect():
 
 @socketio.on('location_update', namespace='/artisan')
 def update_location(data):
+    # TODO: add data validation
     # update artisan location on redis
     room = data['artisan_id']
     join_room(room)
@@ -20,11 +21,11 @@ def update_location(data):
     psub.unsubscribe('*')
 
     redis_.geoadd(
-        name="artisan_pos",
+        name=data['job_category'],
         values=(data['lon'], data['lat'], data['artisan_id'])
     )
     g_hash = redis_.geohash(
-        'artisan_pos',
+        data['job_category'],
         data['artisan_id']
     )
     print(g_hash)
@@ -43,14 +44,19 @@ def update_location(data):
 
 @socketio.on('accept_offer', namespace='/artisan')
 def get_updates(data):
-    data = data.replace('\\n', '')
-    data = eval(data)
-
-    data = eval(data)
-    print(data, type(data))
+    """ triggered when artisan accepts offer """
+    from tasks.booking_tasks import assign_artisan_to_booking
 
     room = data['booking_id']
+    print(redis_.exists(room))
     if redis_.exists(room):
+
+        # assign artisan to booking
+        res = assign_artisan_to_booking(data)
+
+        print(res())
+
+        # send updates to user
         socketio.emit('msg', data, to=room)
     else:
         emit('offer_close', "The offer is no longer available", namespace='/artisan')
@@ -58,11 +64,7 @@ def get_updates(data):
 
 @socketio.on('cancel_offer', namespace='/artisan')
 def cancel_offer_artisan(data):
-    data = data.replace('\\n', '')
-    data = eval(data)
-
-    data = eval(data)
-    print(data, type(data))
+    """ triggered when artisan cancels offer """
 
     room = data['booking_id']
 

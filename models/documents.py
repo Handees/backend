@@ -1,10 +1,10 @@
 from core import db
 from uuid import uuid4
 from datetime import datetime
-from .base import BaseModel, BaseModelPR
+from .base import TimestampMixin, BaseModelPR
 
 
-class Document(BaseModel, db.Model):
+class Document(TimestampMixin, db.Model):
     doc_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
     name = db.Column(db.String(20))
     doc_type = db.Column(db.String(50))
@@ -18,7 +18,7 @@ class Document(BaseModel, db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('document_category.id'))
 
 
-class Document_category(BaseModelPR, db.Model):
+class Document_category(TimestampMixin, BaseModelPR, db.Model):
     name = db.Column(db.String(50))
     documents = db.relationship('Document', backref='category')
 

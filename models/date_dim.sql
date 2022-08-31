@@ -84,3 +84,10 @@ FROM (SELECT '2022-01-01'::DATE + SEQUENCE.DAY AS datum
 ORDER BY 1;
 
 COMMIT;
+
+
+-- SELECT * 
+-- FROM table
+-- WHERE id IN (SELECT id FROM table WHERE datetime = (SELECT MAX(datetime) FROM table))
+-- ORDER BY id DESC
+-- LIMIT 1

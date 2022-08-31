@@ -1,9 +1,9 @@
-from .base import BaseModel
+from .base import TimestampMixin
 from core import db
 from uuid import uuid4
 
 
-class Payment(BaseModel, db.Model):
+class Payment(TimestampMixin, db.Model):
     payment_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
     customer_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     method = db.Column(db.String(50))

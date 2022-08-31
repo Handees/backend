@@ -1,16 +1,10 @@
+# flake8: noqa F403
+
 from flask import Flask
 from config import config_options
-from flask_sqlalchemy import SQLAlchemy
-from flask_marshmallow import Marshmallow
-from flask_migrate import Migrate
-from flask_socketio import SocketIO
-from flask_cors import CORS
-
-# instantiate extensions
-db, ma = SQLAlchemy(), Marshmallow()
-socketio = SocketIO(cors_allowed_origins=['http://127.0.0.1:5020', 'http://127.0.0.1:5500', 'https://www.piesocket.com'])
-migrate = Migrate(include_schemas=True)
-cors = CORS()
+from .extensions import (
+    db, ma, socketio, migrate, cors
+)
 
 
 #  app factory
@@ -28,10 +22,10 @@ def create_app(config_name):
     from .user import user
 
     app.register_blueprint(bookings, url_prefix='/bookings')
-    app.register_blueprint(payments)
-    app.register_blueprint(ratings)
-    app.register_blueprint(security)
-    app.register_blueprint(user)
+    app.register_blueprint(payments, url_prefix='/payments')
+    app.register_blueprint(ratings, url_prefix='/ratings')
+    app.register_blueprint(security, url_prefix='/security')
+    app.register_blueprint(user, url_prefix='/user')
 
     # link extensions to app instance
     socketio.init_app(app, logger=True, engineio_logger=True, async_mode='eventlet')

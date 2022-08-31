@@ -1,9 +1,10 @@
 from core import db
 from flask import current_app
 from datetime import datetime
-from .base import BaseModel, BaseModelPR
+from .base import TimestampMixin, BaseModelPR
 from uuid import uuid4
 from typing import Optional, Dict
+from core.utils import gen_response, error_response
 
 
 class Permission:
@@ -68,11 +69,11 @@ class Role(BaseModelPR, db.Model):
         db.session.commit()
 
 
-class User(BaseModel, db.Model):
+class User(TimestampMixin, db.Model):
     user_id = db.Column(db.String, primary_key=True, unique=True)
     name = db.Column(db.String(100))
     telephone = db.Column(db.String(100))
-    email = db.Column(db.String(100))
+    email = db.Column(db.String(100), unique=True)
     is_artisan = db.Column(db.Boolean, default=False)
     is_email_verified = db.Column(db.Boolean, default=False)
     addresses = db.relationship('Address', backref='user')
@@ -82,16 +83,13 @@ class User(BaseModel, db.Model):
     bookings = db.relationship('Booking', backref='user')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
 
-    def __init__(self, params: Optional[Dict], **kwargs):
-        super().__init__(**kwargs)
-        for key, val in params.items():
-            setattr(self, key, val)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         if self.role is None:
             if self.email == current_app.config['ADMIN_EMAIL']:
                 self.role = Role.query.filter_by(name='Admin').first()
             else:
                 self.role = Role.query.filter_by(default=True).first()
-        db.session.commit()
 
     def can(self, perm):
         return self.role and self.role.has_permission(perm)
@@ -102,17 +100,39 @@ class User(BaseModel, db.Model):
     def is_verified(self):
         pass
 
+    def update_profile(self, params: Optional[Dict], **kwargs):
+        if self.load_from_param_or_kwargs(params, kwargs):
+            from schemas.user_schemas import UserSchema
+            db.session.commit()
+            return gen_response(
+                200, message="updated user profile",
+                schema=UserSchema, data=self
+            )
+        else:
+            return error_response(
+                400,
+                "User object doesn't have one or more of the attributes in payload"
+            )
 
-class Artisan(BaseModel, db.Model):
+    def upgrade_to_artisan(self):
+        self.role = Role.query.filter_by(name='artisan').first()
+
+
+class Artisan(TimestampMixin, db.Model):
     artisan_id = db.Column(db.String(200), default=str(uuid4()), primary_key=True)
+    is_verified = db.Column(db.Boolean, default=False)
     job_title = db.Column(db.String(100))
-    job_description = db.Column(db.Text)
-    hourly_rate = db.Column(db.Float)
-    ratings = db.relationship('Rating', backref='artisan')
+    jobs_completed = db.Column(db.Integer, default=0)
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
-    user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
+    hourly_rate = db.Column(db.Float)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.user_profile = kwargs['user']
-        self.user_profile.role = Role.query.filter_by(name='artisan').first()
+    # relationships and f_keys
+    ratings = db.relationship('Rating', backref='artisan')
+    user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
+    job_category_id = db.Column(db.Integer, db.ForeignKey('bookingcategory.id'))
+    job_category = db.relationship('BookingCategory', foreign_keys='Artisan.job_category_id')
+    bookings = db.relationship('Booking', backref='artisan')
+
+    def update_completed_job_count(self):
+        """ increase the no of job completed by unit value """
+        self.jobs_completed += 1

@@ -16,26 +16,34 @@ class BaseConfig:
             password=os.getenv('REDIS_PASS'), db=0
         )
     )
+    ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
+    DB_USERNAME = os.getenv('POSTGRES_USER')
+    DB_PASSPHRASE = os.getenv('POSTGRES_PASSWORD')
 
 
 class DevConfig(BaseConfig):
-    EXPLAIN_TEMPLATE_LOADINGc = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///base.db"
+    DB_NAME = os.getenv('POSTGRES_DB')
+    EXPLAIN_TEMPLATE_LOADING = True
     DEBUG = True
-    ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
-    CELERY_BROKER_URL = f"amqp://{os.getenv('RABBITMQ_DEFAULT_USER')}:{os.getenv('RABBITMQ_DEFAULT_PASS')}@rabbit"
+    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@localhost:5432/{DB_NAME}"
+    SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
+    FLASK_COVERAGE = True
+
+
+class StagingConfig(BaseConfig):
+    DB_NAME = os.getenv('POSTGRES_DB')
+    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@db/{DB_NAME}"
+    SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
+    FLASK_COVERAGE = True
 
 
 class TestConfig(BaseConfig):
+    DB_NAME = os.getenv('TEST_DB', 'handeestestdb')
+    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@localhost:5434/{DB_NAME}"
+    SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
     ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
     TESTING = True
-    DB_USERNAME = os.getenv('POSTGRES_USER')
-    DB_PASSPHRASE = os.getenv('POSTGRES_PASSWORD')
-    DB_NAME = os.getenv('POSTGRES_DB')
-    URI = f"{DB_USERNAME}:{DB_PASSPHRASE}@db/{DB_NAME}"
-    SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
-    CELERY_BACKEND = "db+" + SQLALCHEMY_DATABASE_URI
-    CELERY_BROKER_URL = f"amqp://{os.getenv('RABBITMQ_DEFAULT_USER')}:{os.getenv('RABBITMQ_DEFAULT_PASS')}@rabbit"
+    FLASK_COVERAGE = True
 
 
 class Production(BaseConfig):
@@ -44,6 +52,7 @@ class Production(BaseConfig):
 
 config_options = {
     "default": TestConfig,
+    "staging": StagingConfig,
     "development": DevConfig,
     "testing": TestConfig,
     "production": Production

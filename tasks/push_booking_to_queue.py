@@ -1,5 +1,7 @@
 from extensions import HueyTemplate, redis_
 from config import BaseConfig
+import os
+
 
 huey = HueyTemplate(config=BaseConfig.HUEY_CONFIG).huey
 

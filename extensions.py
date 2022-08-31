@@ -1,5 +1,6 @@
 from redis import StrictRedis
 from typing import Optional, Dict
+from flask_sqlalchemy import SQLAlchemy
 import os
 
 
@@ -26,19 +27,21 @@ class HueyTemplate:
         else:
             self.huey = HueyTemplate._types['default'](**config)
 
-    def get_flask_app(self, config: Optional[Dict] = None):
+    @classmethod
+    def get_flask_app(cls, config: Optional[Dict] = None):
         from flask import Flask
 
         app = Flask("huey_app")
         if config:
             app.config.from_object(config)
+        huey_db = SQLAlchemy()
+        huey_db.init_app(app)
 
-        self.flask_app = app
-        return self.flask_app
+        return (app, huey_db)
 
 
 redis_ = StrictRedis(
-    'redis', 6378, charset='utf-8',
+    os.getenv('REDIS_HOST'), 6378, charset='utf-8',
     decode_responses=True,
     password=os.getenv('REDIS_PASS'),
     db=1

@@ -1,4 +1,4 @@
-from ... import socketio
+from core import socketio
 from flask_socketio import emit, join_room
 from extensions import redis_
 # import pygeohash as pgh
@@ -13,12 +13,6 @@ def connect():
 
 @socketio.on('booking_update')
 def booking_upate(data):
-    data = data.replace('\\n', '')
-    data = eval(data)
-
-    data = eval(data)
-    print(data, type(data))
-
     room = data['booking_id']
     join_room(room)
     print("added user to updates room")
@@ -26,12 +20,6 @@ def booking_upate(data):
 
 @socketio.on('close_offer')
 def close_offer(data):
-    data = data.replace('\\n', '')
-    data = eval(data)
-
-    data = eval(data)
-    print(data, type(data))
-
     room = data['booking_id']
 
     # update state of offer in cache
@@ -40,13 +28,10 @@ def close_offer(data):
 
 @socketio.on('cancel_offer')
 def cancel_offer(data):
-    data = data.replace('\\n', '')
-    data = eval(data)
-
-    data = eval(data)
-    print(data, type(data))
-
     room = data['artisan_id']
+
+    # update state of offer in cache
+    redis_.delete(data['booking_id'])
 
     socketio.emit('offer_canceled', "Client cancelled offer", namespace='/artisan', to=room)
 

@@ -1,10 +1,10 @@
-from .base import BaseModel, BaseModelPR
+from .base import TimestampMixin, BaseModelPR
 from core import db
 from uuid import uuid4
 from geoalchemy2 import Geometry
 
 
-class City(BaseModelPR, db.Model):
+class City(TimestampMixin, BaseModelPR, db.Model):
     name = db.Column(db.String(100))
     lga = db.Column(db.String(100))
     landmarks = db.relationship('Landmark', backref='city')
@@ -12,7 +12,7 @@ class City(BaseModelPR, db.Model):
     country = db.Column(db.String(80))
 
 
-class Landmark(BaseModel, db.Model):
+class Landmark(TimestampMixin, db.Model):
     landmark_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
     name = db.Column(db.String(150))
     lon = db.Column(db.Float)

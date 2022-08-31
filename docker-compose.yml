@@ -46,7 +46,22 @@ services:
       - 5432:5432
     env_file:
       - ./.env
-  
+
+  db-test:
+    build:
+        context: .
+        dockerfile: Dockerfile-db
+    hostname: db-test
+    container_name: db-test
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+    ports:
+      - 5434:5432
+    environment:
+      - POSTGRES_DB=handeestestdb
+    env_file:
+      - ./.env.test
+
   redis:
     image: redis:6.2.6
     hostname: redis
