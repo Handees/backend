@@ -117,6 +117,9 @@ class User(TimestampMixin, db.Model):
     def upgrade_to_artisan(self):
         self.role = Role.query.filter_by(name='artisan').first()
 
+    def is_artisan(self):
+        return self.can(Permission.service_hail)
+
 
 class Artisan(TimestampMixin, db.Model):
     artisan_id = db.Column(db.String(200), default=str(uuid4()), primary_key=True)

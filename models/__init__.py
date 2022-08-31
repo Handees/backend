@@ -1,7 +1,7 @@
 # flake8: noqa
 
 from .address import (
-    Address, Addresstypes
+    Address, Addresstypes, db
 )
 from .user_models import User, Role, Artisan
 from .base import BaseModelPR, TimestampMixin

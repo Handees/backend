@@ -18,7 +18,8 @@ from ..messages import (
     USER_NOT_FOUND,
     ARTISAN_CREATED,
     ARTISAN_NOT_FOUND,
-    ARTISAN_PROFILE_UPDATED
+    ARTISAN_PROFILE_UPDATED,
+    USER_HAS_ARTISAN_PROFILE
 )
 
 
@@ -50,10 +51,6 @@ def add_new_artisan():
             message=schema.error_messages
         )
 
-    # add other props
-    new_artisan.artisan_id = uuid4().hex
-    new_artisan.job_category = category
-
     # @dev_only: find user with user_id
     user = User.query.get(data['user_profile_id'])
     if not user:
@@ -63,9 +60,20 @@ def add_new_artisan():
             message=USER_NOT_FOUND
         )
 
+    if user.is_artisan():
+        db.session.rollback()
+        return error_response(
+            400,
+            message=USER_HAS_ARTISAN_PROFILE
+        )
+
     # ascend user role
     user.upgrade_to_artisan()
     new_artisan.user_profile = user
+
+    # add other props
+    new_artisan.artisan_id = uuid4().hex
+    new_artisan.job_category = category
 
     db.session.add(new_artisan)
     db.session.commit()

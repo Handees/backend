@@ -1,4 +1,5 @@
 from schemas.bookings_schema import BookingSchema
+from extensions import redis_
 from flask import jsonify
 import json
 
@@ -29,3 +30,9 @@ def gen_response(status_code, data, message=None, many=False, use_schema=False):
     resp.status_code = status_code
 
     return resp
+
+
+def exit_cache(id):
+    while redis_.get(id):
+        redis_.delete(id)
+    return redis_.get(id)

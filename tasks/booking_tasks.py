@@ -1,4 +1,4 @@
-from extensions import redis_, HueyTemplate
+from extensions import HueyTemplate, redis_
 from .push_booking_to_queue import huey
 from models.user_models import Artisan
 from models.bookings import Booking
@@ -12,11 +12,10 @@ logging.basicConfig(level=logging.DEBUG)
 @huey.task()
 def assign_artisan_to_booking(data):
     """Assign artisan to booking instance"""
-    app, db = HueyTemplate.get_flask_app(config_options['staging'])
-    print(db)
-    print(app, app.config)
+    from models import db
+    app = HueyTemplate.get_flask_app(config_options['staging'])
+
     with app.app_context():
-        db.session.begin()
         # find artisan
         artisan = Artisan.query.get(data['artisan_id'])
         booking = Booking.query.get(data['booking_id'])
@@ -25,5 +24,7 @@ def assign_artisan_to_booking(data):
         db.session.commit()
 
         resp = BookingSchema().dump(booking)
-        print(resp)
-        redis_.set(data['booking_id'], str(resp))
+        redis_.set(
+            data['booking_id'],
+            str(resp)
+        )

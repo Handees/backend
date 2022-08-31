@@ -7,3 +7,4 @@ env/
 postgres_data/
 *.db
 *tmp/
+*.dump
