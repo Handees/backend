@@ -4,7 +4,6 @@ from datetime import datetime
 from .base import TimestampMixin, BaseModelPR
 from uuid import uuid4
 from typing import Optional, Dict
-from core.utils import gen_response, error_response
 
 
 class Permission:
@@ -100,20 +99,6 @@ class User(TimestampMixin, db.Model):
     def is_verified(self):
         pass
 
-    def update_profile(self, params: Optional[Dict], **kwargs):
-        if self.load_from_param_or_kwargs(params, kwargs):
-            from schemas.user_schemas import UserSchema
-            db.session.commit()
-            return gen_response(
-                200, message="updated user profile",
-                schema=UserSchema, data=self
-            )
-        else:
-            return error_response(
-                400,
-                "User object doesn't have one or more of the attributes in payload"
-            )
-
     def upgrade_to_artisan(self):
         self.role = Role.query.filter_by(name='artisan').first()
 
@@ -133,7 +118,7 @@ class Artisan(TimestampMixin, db.Model):
     ratings = db.relationship('Rating', backref='artisan')
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     job_category_id = db.Column(db.Integer, db.ForeignKey('bookingcategory.id'))
-    job_category = db.relationship('BookingCategory', foreign_keys='Artisan.job_category_id')
+    # job_category = db.relationship('BookingCategory', foreign_keys='Artisan.job_category_id')
     bookings = db.relationship('Booking', backref='artisan')
 
     def update_completed_job_count(self):

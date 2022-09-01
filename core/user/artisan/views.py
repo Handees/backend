@@ -116,3 +116,24 @@ def edit_artisan_profile(artisan_id):
         data=schema.dump(artisan),
         message=ARTISAN_PROFILE_UPDATED
     )
+
+
+@artisan.get('/<artisan_id>')
+# will require auth decorators @TODO
+# TODO: pass current user to handler
+def get_artisan_profile(artisan_id):
+    """ fetch artisan profile """
+    artisan = Artisan.query.get(artisan_id)
+
+    if not artisan:
+        return error_response(
+            404,
+            message=ARTISAN_NOT_FOUND
+        )
+
+    schema = ArtisanSchema()
+
+    return gen_response(
+        200,
+        data=schema.dump(artisan)
+    )

@@ -2,7 +2,8 @@ from .base import TimestampMixin, BaseModelPR, SerializableEnum
 from datetime import datetime
 from core import db
 from geoalchemy2 import Geometry
-from typing import Optional
+# from typing import Optional
+
 
 categories = [
     'laundry',
@@ -20,24 +21,21 @@ categories = [
 
 
 class BookingStatusEnum(SerializableEnum):
-    IN_PROGRESS = 2
-    COMPLETED = 1
-    CANCELLED = 0
-    UNKNOWN = -1
+    IN_PROGRESS = 8
+    COMPLETED = 4
+    CANCELLED = 2
+    ARTISAN_ARRIVED = 1
 
 
 class SettlementEnum(SerializableEnum):
-    NEGOTIATION = "NEGOTIATION"
-    HOURLY_RATE = "HOURLY_RATE"
+    NEGOTIATION = 2
+    HOURLY_RATE = 1
 
 
 class BookingContract(TimestampMixin, BaseModelPR, db.Model):
     booking_id = db.Column(db.String, db.ForeignKey('booking.booking_id'))
     start_time = db.Column(db.Date)
     end_time = db.Column(db.Date)
-    settlement_type = db.Column(db.Enum(
-        SettlementEnum
-    ), nullable=False)
     agreed_start_time = db.Column(db.Date)
     agreed_end_time = db.Column(db.Date)
 
@@ -46,7 +44,7 @@ class BookingCategory(BaseModelPR, db.Model):
     __tablename__ = 'bookingcategory'
     name = db.Column(db.String(150), unique=True, nullable=False, index=True)
     bookings = db.relationship('Booking', backref='booking_category')
-    # artisan = db.relationship('Artisan', backref='booking_category')
+    artisan = db.relationship('Artisan', backref='booking_category')
 
     @classmethod
     def create_categories(cls):
@@ -87,17 +85,22 @@ class Booking(TimestampMixin, db.Model):
     _contract_type = db.Column("contract_type", db.Boolean, default=False)
     artisan_rating = db.Column(db.Integer)
     customer_rating = db.Column(db.Integer)
+    settlement_type = db.Column(db.Enum(
+        SettlementEnum
+    ), nullable=False)
     date_of_booking = db.Column(db.Date, default=datetime.utcnow())
 
     def update_start_time(self):
         self.start_time = datetime.utcnow()
-        db.session.commit()
-        # TODO: set artisan_rating
-        # TODO: set customer_rating
+
+    def update_end_time(self):
+        self.end_time = datetime.utcnow()
+
+    # TODO: set artisan_rating
+    # TODO: set customer_rating
 
     def update_status(self, status_code):
-        self.status = status_code
-        db.session.commit()
+        self.status = BookingStatusEnum(status_code)
 
     @property
     def contract_type(self):

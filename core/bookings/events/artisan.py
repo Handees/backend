@@ -2,6 +2,7 @@ from flask import request
 from flask_socketio import emit, join_room
 
 from core import socketio
+from tasks.booking_tasks import update_booking_status
 from extensions import redis_2
 
 
@@ -72,7 +73,38 @@ def cancel_offer_artisan(data):
 
     room = data['booking_id']
 
+    # update status of booking
+    update_booking_status(data)
+
     # remove from queue once canceled
     redis_2.delete(room)
 
     socketio.emit('offer_canceled', "Artisan canceled offer", to=room)
+
+
+@socketio.on('arrived_location', namespace='/artisan')
+def handle_location_arrival(data):
+    """ triggered when artisan arrives at location """
+
+    room = data['booking_id']
+
+    # update booking status
+    update_booking_status(data)
+
+    socketio.emit('artisan_arrived', "Artisan has reached client location", to=room)
+
+
+@socketio.on('job_started', namespace='/artisan')
+def handle_job_begin(data):
+    """ triggered when artisan begins a job """
+    from tasks.booking_tasks import job_start
+
+    job_start(data)
+
+
+@socketio.on('job_completed', namespace='/artisan')
+def handle_job_end(data):
+    """ triggered when artisan ends a job """
+    from tasks.booking_tasks import job_end
+
+    job_end(data)
