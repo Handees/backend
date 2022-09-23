@@ -1,5 +1,5 @@
 from .base import TimestampMixin, BaseModelPR, SerializableEnum
-from datetime import datetime
+from datetime import datetime as dt
 from core import db
 from geoalchemy2 import Geometry
 # from typing import Optional
@@ -87,20 +87,32 @@ class Booking(TimestampMixin, db.Model):
     customer_rating = db.Column(db.Integer)
     settlement_type = db.Column(db.Enum(
         SettlementEnum
-    ), nullable=False)
-    date_of_booking = db.Column(db.Date, default=datetime.utcnow())
+    ), nullable=True)
+    date_of_booking = db.Column(db.Date, default=dt.utcnow())
 
     def update_start_time(self):
-        self.start_time = datetime.utcnow()
+        self.start_time = dt.utcnow()
 
     def update_end_time(self):
-        self.end_time = datetime.utcnow()
+        self.end_time = dt.utcnow()
 
     # TODO: set artisan_rating
     # TODO: set customer_rating
 
     def update_status(self, status_code):
         self.status = BookingStatusEnum(status_code)
+
+    def fetch_hourly_pay(self):
+        res = None
+        if self.settlement_type == SettlementEnum(1):
+            time_spent = round(
+                (self.end_time - self.start_time).total_seconds(),
+                5
+            )
+            hrs_spent = time_spent / 3600
+            res = self.artisan.hourly_rate * hrs_spent
+
+        return res
 
     @property
     def contract_type(self):

@@ -1,6 +1,8 @@
 from flask import request
 from sqlalchemy.exc import IntegrityError
 from uuid import uuid4
+from loguru import logger
+import sys
 
 from . import user
 from core import db
@@ -18,7 +20,19 @@ from .messages import (
     USER_EMAIL_EXISTS
 )
 from models.bookings import Booking
+from core.utils import (
+    LOG_FORMAT,
+    _level
+)
 # from auth.auth_helper import login_required, permission_required
+
+
+logger.add(
+    sys.stderr,
+    colorize=True,
+    level=_level,
+    format=LOG_FORMAT
+)
 
 
 @user.route('/', methods=['POST'])
@@ -28,9 +42,9 @@ def create_new_user():
     schema = UserSchema()
     try:
         new_user = schema.load(data)
-        if 'user_id' not in data.keys():
-            new_user.user_id = uuid4().hex
-    except Exception:
+        # if 'uid' not in data.keys():
+        #     new_user.user_id = uuid4().hex
+    except Exception as e:
         return error_response(
             400,
             message=schema.error_messages

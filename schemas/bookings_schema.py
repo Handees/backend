@@ -1,4 +1,5 @@
 from .base import BaseSQLAlchemyAutoSchema
+from core import ma
 from models.bookings import Booking
 from marshmallow import pre_load
 from marshmallow import fields
@@ -25,7 +26,7 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
         include_relationships = True
         dump_only = (
             'booking_id',
-            'created_at'
+            'created_at', 'settlement_type'
         )
         model_converter = BookingModelConverter
         additional = (
@@ -52,3 +53,9 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
         if data:
             data['location'] = f"SRID=4326;POINT({data['lat']} {data['lon']})"
         return data
+
+
+class CancelBookingSchema(ma.Schema):
+    booking_id = fields.Str(required=True, load_only=True)
+    status_code = fields.Integer(required=True, load_only=True)
+    artisan_id = fields.Str(required=True, load_only=True)

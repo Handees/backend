@@ -20,8 +20,7 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
 
         # read only
         dump_only = (
-            'created_at',
-            'user_id'
+            'created_at'
         )
 
 

@@ -18,12 +18,12 @@ def booking_upate(data):
     print("added user to updates room")
 
 
-@socketio.on('close_offer')
-def close_offer(data):
-    room = data['booking_id']
+# @socketio.on('close_offer')
+# def close_offer(data):
+#     room = data['booking_id']
 
-    # update state of offer in cache
-    redis_.delete(room)
+#     # update state of offer in cache
+#     redis_.delete(room)
 
 
 @socketio.on('cancel_offer')

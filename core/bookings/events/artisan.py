@@ -1,9 +1,25 @@
-from flask import request
-from flask_socketio import emit, join_room
-
 from core import socketio
 from tasks.booking_tasks import update_booking_status
 from extensions import redis_2
+from core.utils import (
+    LOG_FORMAT, _level
+)
+
+from flask import request
+from flask_socketio import emit, join_room
+from loguru import logger
+import sys
+
+
+# configure local logger
+logger.remove()
+
+logger.add(
+    sys.stderr,
+    format=LOG_FORMAT,
+    colorize=True,
+    level=_level
+)
 
 
 @socketio.on('connect', namespace='/artisan')
@@ -51,27 +67,37 @@ def get_updates(data):
     from tasks.booking_tasks import assign_artisan_to_booking
 
     room = data['booking_id']
-    print(redis_2.exists(room))
     if redis_2.exists(room):
         # remove from queue
         redis_2.delete(room)
 
         # assign artisan to booking
-        res = assign_artisan_to_booking(data)
-
-        print(res())
+        assign_artisan_to_booking(data)
 
         # send updates to user
         socketio.emit('msg', data, to=room)
     else:
-        emit('offer_close', "The offer is no longer available", namespace='/artisan', to=request.sid)
+        emit(
+            'offer_close',
+            "The offer is no longer available",
+            namespace='/artisan',
+            to=request.sid
+        )
 
 
 @socketio.on('cancel_offer', namespace='/artisan')
 def cancel_offer_artisan(data):
     """ triggered when artisan cancels offer """
+    from schemas.bookings_schema import CancelBookingSchema
 
-    room = data['booking_id']
+    schema = CancelBookingSchema()
+
+    try:
+        data = schema.load(data)
+    except Exception as e:
+        raise e
+
+    room = data.booking_id
 
     # update status of booking
     update_booking_status(data)
@@ -99,7 +125,10 @@ def handle_job_begin(data):
     """ triggered when artisan begins a job """
     from tasks.booking_tasks import job_start
 
-    job_start(data)
+    try:
+        job_start(data)
+    except Exception as e:
+        logger.exception(e)
 
 
 @socketio.on('job_completed', namespace='/artisan')
@@ -107,4 +136,7 @@ def handle_job_end(data):
     """ triggered when artisan ends a job """
     from tasks.booking_tasks import job_end
 
-    job_end(data)
+    try:
+        job_end(data)
+    except Exception as e:
+        logger.exception(e)

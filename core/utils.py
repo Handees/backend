@@ -1,8 +1,10 @@
-from flask import jsonify
 from schemas.bookings_schema import BookingSchema
+from core import db
+
+from flask import jsonify
 from werkzeug.http import HTTP_STATUS_CODES
 import json
-from core import db
+import os
 
 
 def is_serializable(obj):
@@ -80,3 +82,9 @@ def get_class_by_tablename(tablename):
     for c in db.Model.registry._class_registry.values():
         if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
             return c
+
+
+# consts
+LOG_FORMAT = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | filename={name} function={function} line={line} msg={message} level={level: <8}"  # noqa
+_level = "INFO" if os.getenv('APP_ENV').lower() in ['development', 'local'] \
+    else "ERROR"

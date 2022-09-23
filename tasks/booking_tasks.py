@@ -78,6 +78,7 @@ def job_end(data):
     """ sets the start time of booking """
     from models import db
     from models.bookings import SettlementEnum
+    from core import socketio
 
     app = HueyTemplate.get_flask_app(config_options['staging'])
 
@@ -90,8 +91,16 @@ def job_end(data):
         # update booking status
         bk.update_status(4)
 
-        # calculate amount to be paid if 
+        # calculate amount to be paid if
         # settlement type is "hrly"
-        
+        if bk.settlement_type == SettlementEnum(1):
+            pay = bk.fetch_hourly_pay()
+
+            socketio.emit(
+                'settlement_total',
+                pay,
+                to=data['artisan_id'],
+                namespace='/artisan'
+            )
 
         db.session.commit()
