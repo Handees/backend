@@ -21,12 +21,16 @@ from ..messages import (
     ARTISAN_PROFILE_UPDATED,
     USER_HAS_ARTISAN_PROFILE
 )
+from ...auth.auth_helper import (
+    login_required,
+    role_required
+)
 
 
 @artisan.post('/')
-# will require auth decorators @TODO
-# TODO: pass current user to handler
-def add_new_artisan():
+@login_required
+@role_required("customer")
+def add_new_artisan(current_user):
     """create new artisan"""
     data = request.get_json(force=True)
 
@@ -118,12 +122,12 @@ def edit_artisan_profile(artisan_id):
     )
 
 
-@artisan.get('/<artisan_id>')
-# will require auth decorators @TODO
-# TODO: pass current user to handler
-def get_artisan_profile(artisan_id):
+@artisan.get('/')
+@login_required
+@role_required("artisan")
+def get_artisan_profile(current_user):
     """ fetch artisan profile """
-    artisan = Artisan.query.get(artisan_id)
+    artisan = current_user.artisan_profile
 
     if not artisan:
         return error_response(

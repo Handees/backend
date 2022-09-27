@@ -18,14 +18,18 @@ from schemas.user_schemas import UserSchema
 from schemas.bookings_schema import BookingSchema
 from .messages import (
     USER_CREATED,
-    USER_EMAIL_EXISTS
+    USER_EMAIL_EXISTS,
+    USER_PROFILE_UPDATED
 )
 from models.bookings import Booking
 from core.utils import (
     LOG_FORMAT,
     _level
 )
-from ..auth.auth_helper import login_required, permission_required
+from ..auth.auth_helper import (
+    login_required,
+    permission_required
+)
 
 
 logger.add(
@@ -44,6 +48,7 @@ def create_new_user():
     try:
         new_user = schema.load(data)
         if new_user.is_artisan:
+            new_user.upgrade_to_artisan()
             # create artisan profile
             artisan_profile = Artisan(
                 artisan_id=uuid4().hex
@@ -96,5 +101,22 @@ def fetch_bookings_for_user(current_user):
 @login_required
 @permission_required(Permission.service_request)
 def update_user_profile(current_user):
-    data = request.get_json(force=True)
-    return current_user.update_profile(params=data)
+    payload = request.get_json(force=True)
+    schema = UserSchema()
+
+    try:
+        user = schema.load(payload, instance=current_user)
+        db.session.commit()
+    except Exception as e:
+        logger.error(e)
+
+    return gen_response(
+        200,
+        data=schema.dump(user),
+        message=USER_PROFILE_UPDATED
+    )
+
+
+# @user.get('/fetch_uid')
+# def get_uid():
+#     if 

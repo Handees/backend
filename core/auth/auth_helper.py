@@ -1,4 +1,8 @@
-from models.user_models import Permission, User
+from models.user_models import (
+    Permission,
+    Role,
+    User
+)
 
 from functools import wraps
 from flask import (
@@ -24,7 +28,8 @@ def login_required(f):
         try:
             token = request.headers['access-token']
             uid = auth.verify_id_token(token)['user_id']
-            logger.debug("user with data: {} logged in!".format(uid))
+            print(uid)
+            logger.debug("user with data: {} still has access".format(uid))
             user = User.query.filter_by(user_id=uid).first()
             if not user:
                 resp = make_response({
@@ -46,7 +51,29 @@ def permission_required(permission):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not args[0].can(permission):
-                abort(403)
+                resp = make_response({
+                    'status': 'error',
+                    'msg': 'User cannot perform this action'
+                }, 403)
+                abort(resp)
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def role_required(role):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not args[0].role == Role.get_by_name(role):
+                resp = make_response(
+                    {
+                        'status': 'error',
+                        'msg': 'user cannot perform this action'
+                    },
+                    403
+                )
+                abort(resp)
             return f(*args, **kwargs)
         return decorated_function
     return decorator

@@ -15,7 +15,7 @@ class Permission:
 
 
 class Role(BaseModelPR, db.Model):
-    name = db.Column(db.String)
+    name = db.Column(db.String, index=True)
     default = db.Column(db.Boolean, default=False, index=True)
     permissions = db.Column(db.Integer)
     users = db.relationship('User', backref='role', lazy='dynamic')
@@ -66,6 +66,11 @@ class Role(BaseModelPR, db.Model):
             role.default = role.name == default
             db.session.add(role)
         db.session.commit()
+
+    @classmethod
+    def get_by_name(cls, name):
+        res = cls.query.filter_by(name=name).first()
+        return res
 
 
 class User(TimestampMixin, db.Model):
