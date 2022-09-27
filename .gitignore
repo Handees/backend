@@ -9,3 +9,4 @@ postgres_data/
 *tmp/
 *.dump
 *.rdb
+*.json

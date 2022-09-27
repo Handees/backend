@@ -1,10 +1,13 @@
 from flask import request, render_template
 from models.bookings import Booking, BookingCategory
 from schemas.bookings_schema import BookingSchema
-from models.user_models import User, Permission
+from models.user_models import Permission
 from uuid import uuid4
 from . import bookings
-# from ..auth.auth_helper import permission_required, login_required
+from ..auth.auth_helper import (
+    permission_required,
+    login_required
+)
 from core import db
 from ..utils import error_response, gen_response
 from tasks.push_booking_to_queue import pbq
@@ -12,8 +15,8 @@ import core.bookings.messages as messages
 
 
 @bookings.post('/')
-# @login_required
-# @permission_required(Permission.service_request)
+@login_required
+@permission_required(Permission.service_request)
 def create_booking():
     data = request.get_json(force=True)
 
@@ -53,8 +56,8 @@ def create_booking():
 
 
 @bookings.get('/<booking_id>')
-# @login_required
-# @permission_required(Permission.service_request)
+@login_required
+@permission_required(Permission.service_request)
 def fetch_booking_details(booking_id):
     booking = Booking.query.get(booking_id)
     if not booking:
@@ -64,8 +67,8 @@ def fetch_booking_details(booking_id):
 
 
 @bookings.delete('/<booking_id>')
-# @login_required
-# @permission_required(Permission.service_request)
+@login_required
+@permission_required(Permission.service_request)
 def delete_booking(booking_id):
     booking = Booking.query.get(booking_id)
     if not booking:

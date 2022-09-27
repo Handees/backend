@@ -1,7 +1,13 @@
-from functools import wraps
 from models.user_models import Permission, User
-from flask import abort, request, make_response
+
+from functools import wraps
+from flask import (
+    abort,
+    request,
+    make_response
+)
 from firebase_admin import auth
+from loguru import logger
 
 
 def login_required(f):
@@ -17,7 +23,8 @@ def login_required(f):
             abort(resp)
         try:
             token = request.headers['access-token']
-            uid = auth.verify_id_token(token)
+            uid = auth.verify_id_token(token)['user_id']
+            logger.debug("user with data: {} logged in!".format(uid))
             user = User.query.filter_by(user_id=uid).first()
             if not user:
                 resp = make_response({

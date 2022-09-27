@@ -4,11 +4,9 @@ from loguru import logger
 from uuid import uuid4
 import sys
 
-
 from . import user
 from core import db
 from models.user_models import (
-    User,
     Permission,
     Artisan
 )
@@ -17,6 +15,7 @@ from ..utils import (
     error_response
 )
 from schemas.user_schemas import UserSchema
+from schemas.bookings_schema import BookingSchema
 from .messages import (
     USER_CREATED,
     USER_EMAIL_EXISTS
@@ -26,7 +25,7 @@ from core.utils import (
     LOG_FORMAT,
     _level
 )
-# from auth.auth_helper import login_required, permission_required
+from ..auth.auth_helper import login_required, permission_required
 
 
 logger.add(
@@ -76,27 +75,26 @@ def create_new_user():
 
 
 @user.get('/bookings')
-# @login_required
-# @permission_required(Permission.service_request)
+@login_required
+@permission_required(Permission.service_request)
 def fetch_bookings_for_user(current_user):
     """ fetch all bookings made by a user """
-    bookings = Booking.query.filter_by(current_user.user_id).order_by(
+    bookings = current_user.bookings.order_by(
         Booking.date_of_booking
     ).limit(10).all()
 
     msg = 'fetched top recent bookings successfully'
 
     return gen_response(
-        200, bookings,
-        message=msg,
-        many=True,
-        use_schema=True
+        200,
+        data=BookingSchema(many=True).dump(bookings),
+        message=msg
     )
 
 
 @user.patch('/')
-# @login_required
-# @permission_required(Permission.service_request)
+@login_required
+@permission_required(Permission.service_request)
 def update_user_profile(current_user):
     data = request.get_json(force=True)
     return current_user.update_profile(params=data)

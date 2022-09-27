@@ -19,6 +19,10 @@ class BaseConfig:
     ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
     DB_USERNAME = os.getenv('POSTGRES_USER')
     DB_PASSPHRASE = os.getenv('POSTGRES_PASSWORD')
+    F_KEY_PATH = os.path.join(
+        os.path.abspath(os.getcwd()),
+        os.getenv('F_KEY')
+    )
 
 
 class DevConfig(BaseConfig):

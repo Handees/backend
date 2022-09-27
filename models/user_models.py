@@ -79,7 +79,7 @@ class User(TimestampMixin, db.Model):
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     artisan_profile = db.relationship('Artisan', backref='user_profile', uselist=False)
     ratings = db.relationship('Rating', backref='user')
-    bookings = db.relationship('Booking', backref='user')
+    bookings = db.relationship('Booking', backref='user', lazy='dynamic')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
 
     def __init__(self, *args, **kwargs):

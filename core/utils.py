@@ -56,7 +56,7 @@ def gen_response(
     payload = {
         'msg': message
     }
-    if data:
+    if data is not None:
         if schema:
             if many:
                 payload['data'] = schema(many=True).dump(data)

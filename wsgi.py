@@ -9,15 +9,17 @@ import os
 import eventlet
 import click
 import sys
-
-eventlet.monkey_patch()
-
+import firebase_admin
 
 load_dotenv()
 
+
 app = create_app(os.getenv('APP_ENV') or 'default')
+cred = firebase_admin.credentials.Certificate(app.config['F_KEY_PATH'])
+firebase_admin.initialize_app(cred)
 print(os.getenv('APP_ENV'))
 print(app.config['SQLALCHEMY_DATABASE_URI'])
+
 
 # test config
 COV = None
@@ -96,4 +98,5 @@ def test(coverage):
         COV.erase()
 
 if __name__ == "__main__":
+    eventlet.monkey_patch()
     socketio.run(app, host="0.0.0.0", port=5000)
