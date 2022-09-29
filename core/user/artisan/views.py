@@ -89,20 +89,15 @@ def add_new_artisan(current_user):
     )
 
 
-@artisan.put('/<artisan_id>')
-# will require auth decorators @TODO
-# TODO: pass current user to handler
-def edit_artisan_profile(artisan_id):
+@artisan.put('/')
+@login_required
+@role_required("artisan")
+def edit_artisan_profile(current_user):
     """edit profile for artisan"""
     data = request.get_json(force=True)
 
     # fetch artisan profile
-    artisan = Artisan.query.get(artisan_id)
-    if not artisan:
-        return error_response(
-            404,
-            message=ARTISAN_NOT_FOUND
-        )
+    artisan = current_user.artisan_profile
 
     schema = ArtisanSchema()
     try:

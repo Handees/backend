@@ -12,6 +12,7 @@ from flask import (
 )
 from firebase_admin import auth
 from loguru import logger
+import os
 
 
 def login_required(f):
@@ -81,3 +82,37 @@ def role_required(role):
 
 def admin_required(f):
     return permission_required(Permission.ADMIN)(f)
+
+
+def paystack_verification(f):
+    from ..payments.consts import PAYSTACK_IPS
+    from ..payments.utils import gen_hmac_hash
+
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        if request.remote_addr not in PAYSTACK_IPS:
+            resp = make_response({
+                "status": "error",
+                "message": "forbidden!"
+            }, 403)
+            abort(resp)
+            logger.info('Unidentifiable client on protected endpoint')
+
+        if 'x-paystack-signature header' not in request.headers:
+            resp = make_response({
+                "status": "error",
+                "message": "missing required headers"
+            }, 403)
+            abort(resp)
+            logger.info('Missing header from paystack')
+        else:
+            event = request.get_json(force=True)
+            hmac_hash = gen_hmac_hash(event, os.getenv('PAYSTACK_TEST_SECRET'))
+            if hmac_hash != request.headers['x-paystack-signature header']:
+                resp = make_response({
+                    "status": "error",
+                    "message": "invalid value for required header"
+                }, 403)
+                abort(resp)
+        return f(event, *args, **kwargs)
+    return wrapped

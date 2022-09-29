@@ -1,4 +1,7 @@
-from .base import TimestampMixin
+from .base import (
+    TimestampMixin,
+    BaseModelPR
+)
 from core import db
 from uuid import uuid4
 from .base import SerializableEnum
@@ -22,6 +25,30 @@ class Payment(TimestampMixin, db.Model):
     tax = db.Column(db.Float)
     tip_amount = db.Column(db.Float)
     status = db.Column(db.Boolean, default=False)
-    transaction_id = db.Column(db.String)
+    transaction_id = db.Column(db.BigInteger)
     order = db.relationship('Booking', backref='payment')
     # TODO: Add date dim
+
+
+class CardAuth(BaseModelPR, TimestampMixin, db.Model):
+    authorization_code = db.Column(db.String, unique=True)
+    card_type = db.Column(db.String, index=True)
+    last_four = db.Column(db.String)
+    exp_month = db.Column(db.String)
+    exp_year = db.Column(db.String)
+    bin = db.Column(db.String)
+    bank = db.Column(db.String, index=True)
+    channel = db.Column(db.String)
+    signature = db.Column(db.String, unique=True)
+    reusable = db.Column(db.String)
+    country_code = db.Column(db.String)
+    account_name = db.Column(db.String)
+    user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
+
+    @classmethod
+    def get_by_card_type(cls, type):
+        return cls.query.filter_by(card_type=type).first()
+
+    @classmethod
+    def get_by_bank(cls, bank):
+        return cls.query.filter_by(bank=bank).first()

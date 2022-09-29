@@ -8,5 +8,5 @@ from .base import BaseModelPR, TimestampMixin
 from .bookings import Booking, BookingCategory, BookingCategory
 from .documents import Document, Document_category
 from .location import Landmark, City
-from .payments import Payment
+from .payments import Payment, CardAuth
 from .ratings import Rating

@@ -28,7 +28,8 @@ from core.utils import (
 )
 from ..auth.auth_helper import (
     login_required,
-    permission_required
+    permission_required,
+    role_required
 )
 
 
@@ -99,7 +100,7 @@ def fetch_bookings_for_user(current_user):
 
 @user.patch('/')
 @login_required
-@permission_required(Permission.service_request)
+@role_required("customer")
 def update_user_profile(current_user):
     payload = request.get_json(force=True)
     schema = UserSchema()

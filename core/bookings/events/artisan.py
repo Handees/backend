@@ -26,7 +26,7 @@ logger.add(
 def connect():
     # # fetch client session id
     emit('msg', 'welcome!', broadcast=True)
-    print('someone connected')
+    logger.debug('new artisan client connection!')
 
 
 @socketio.on('location_update', namespace='/artisan')
@@ -47,14 +47,14 @@ def update_location(data):
         data['job_category'],
         data['artisan_id']
     )
-    print(g_hash)
+    logger.debug(g_hash)
     # reduce geohash length to 6 char
     # subscribe user to a topic named after this
     # truncated geohash
 
     def handle_updates(msg):
         print("booking payload ::", msg)
-        socketio.emit('msg', eval(msg['data']), room=room, namespace='/artisan')
+        socketio.emit('new_offer', eval(msg['data']), room=room, namespace='/artisan')
 
     psub.subscribe(**{g_hash[0][:7]: handle_updates})
 
@@ -140,3 +140,8 @@ def handle_job_end(data):
         job_end(data)
     except Exception as e:
         logger.exception(e)
+
+
+# @socketio.on('chat_msg', namespace='/artisan')
+# def send_message(data):
+#     """ triggered when new message is sent in chat """

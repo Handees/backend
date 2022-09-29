@@ -6,6 +6,7 @@ from uuid import uuid4
 from . import bookings
 from ..auth.auth_helper import (
     permission_required,
+    role_required,
     login_required
 )
 from core import db
@@ -17,7 +18,7 @@ import core.bookings.messages as messages
 @bookings.post('/')
 @login_required
 @permission_required(Permission.service_request)
-def create_booking():
+def create_booking(current_user):
     data = request.get_json(force=True)
 
     schema = BookingSchema()
@@ -40,7 +41,7 @@ def create_booking():
         ))
     new_order.booking_category = category
 
-    # new_order.user = user
+    new_order.user = current_user
     db.session.add(new_order)
     db.session.commit()
 
@@ -57,8 +58,8 @@ def create_booking():
 
 @bookings.get('/<booking_id>')
 @login_required
-@permission_required(Permission.service_request)
-def fetch_booking_details(booking_id):
+@role_required("customer")
+def fetch_booking_details(current_user, booking_id):
     booking = Booking.query.get(booking_id)
     if not booking:
         return error_response(404, message=f'booking with id {booking_id} not found')
@@ -68,8 +69,8 @@ def fetch_booking_details(booking_id):
 
 @bookings.delete('/<booking_id>')
 @login_required
-@permission_required(Permission.service_request)
-def delete_booking(booking_id):
+@role_required("customer")
+def delete_booking(current_user, booking_id):
     booking = Booking.query.get(booking_id)
     if not booking:
         return error_response(404, message=f'booking with id {booking_id} not found')

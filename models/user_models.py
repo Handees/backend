@@ -2,8 +2,6 @@ from core import db
 from flask import current_app
 from datetime import datetime
 from .base import TimestampMixin, BaseModelPR
-from uuid import uuid4
-from typing import Optional, Dict
 
 
 class Permission:
@@ -86,6 +84,7 @@ class User(TimestampMixin, db.Model):
     ratings = db.relationship('Rating', backref='user')
     bookings = db.relationship('Booking', backref='user', lazy='dynamic')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+    cards = db.relationship('CardAuth', backref='user')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
