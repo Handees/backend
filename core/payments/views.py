@@ -16,6 +16,7 @@ from .messages import (
     TRANSACTION_INITIATED
 )
 from ..auth.auth_helper import paystack_verification
+from tasks.payments import handlers
 
 from flask import request
 from loguru import logger
@@ -76,8 +77,8 @@ def new_payment_transaction(current_user):
 @paystack_verification
 def webhook(event):
     if event:
-        # do sumn
-        logger.info(event)
+        init_task = handlers[event['event']]
+        logger.info(init_task, dir(init_task))
         return {
             "status": True
         }, 200

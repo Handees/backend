@@ -43,6 +43,15 @@ class CardAuthSchema(BaseSQLAlchemyAutoSchema):
         return data
 
 
+class PaymentEventSchema(BaseSchema):
+    class Meta:
+        model = Payment
+        include_only = (
+            'amount',
+            'transaction_id'
+        )
+
+
 class InitTransactionSchema(BaseSchema):
     amount = ma.Float(required=True)
     email = ma.Email(required=True)

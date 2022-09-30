@@ -14,10 +14,12 @@ class PaymentMethodEnum(SerializableEnum):
 
 
 class Payment(TimestampMixin, db.Model):
-    payment_id = db.Column(db.String, default=str(uuid4()), primary_key=True)
+    payment_id = db.Column(db.String, primary_key=True)
     customer_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     method = db.Column(
-        db.Enum(PaymentMethodEnum), nullable=False
+        db.Enum(PaymentMethodEnum),
+        nullable=False,
+        default=PaymentMethodEnum("CARD")
     )
     total_amount = db.Column(db.Float)
     base_rate = db.Column(db.Float)
@@ -25,6 +27,7 @@ class Payment(TimestampMixin, db.Model):
     tax = db.Column(db.Float)
     tip_amount = db.Column(db.Float)
     status = db.Column(db.Boolean, default=False)
+    regulatory_charge = db.Column(db.Boolean, default=False)
     transaction_id = db.Column(db.BigInteger)
     order = db.relationship('Booking', backref='payment')
     # TODO: Add date dim
@@ -52,3 +55,7 @@ class CardAuth(BaseModelPR, TimestampMixin, db.Model):
     @classmethod
     def get_by_bank(cls, bank):
         return cls.query.filter_by(bank=bank).first()
+
+    @classmethod
+    def get_by_signature(cls, signature):
+        return cls.query.filter_by(signature=signature).first()

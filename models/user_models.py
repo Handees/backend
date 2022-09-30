@@ -75,7 +75,7 @@ class User(TimestampMixin, db.Model):
     user_id = db.Column(db.String, primary_key=True, unique=True)
     name = db.Column(db.String(100))
     telephone = db.Column(db.String(100))
-    email = db.Column(db.String(100), unique=True)
+    email = db.Column(db.String(100), unique=True, index=True)
     is_artisan = db.Column(db.Boolean, default=False)
     is_email_verified = db.Column(db.Boolean, default=False)
     addresses = db.relationship('Address', backref='user')
@@ -108,6 +108,10 @@ class User(TimestampMixin, db.Model):
 
     def can_artisan(self):
         return self.can(Permission.service_hail)
+    
+    @classmethod
+    def get_by_email(cls, email):
+        return cls.query.filter_by(email=email).first()
 
 
 class Artisan(TimestampMixin, db.Model):
