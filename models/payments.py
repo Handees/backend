@@ -3,7 +3,6 @@ from .base import (
     BaseModelPR
 )
 from core import db
-from uuid import uuid4
 from .base import SerializableEnum
 
 

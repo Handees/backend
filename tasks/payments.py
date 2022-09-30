@@ -10,6 +10,8 @@ from schemas.payment import CardAuthSchema
 from config import config_options
 from extensions import HueyTemplate
 
+import uuid
+
 
 @huey.task()
 def create_transaction(data):
@@ -31,6 +33,7 @@ def charge_sucess(data):
         total_amount=data['amount'],
         status=True
     )
+    new_payment.payment_id = uuid.uuid4().hex
     db.session.add(new_payment)
 
     # if cardAuth with sigkey exists then this wouldn't be the first charge on the card
