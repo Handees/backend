@@ -7,3 +7,7 @@ class DataValidationError(Exception):
 
     def __reduce__(self):
         return (DataValidationError, (self.msg, self.errors, self.data))
+
+
+class BookingHasContract(Exception):
+    pass

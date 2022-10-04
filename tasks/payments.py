@@ -1,4 +1,4 @@
-from .push_booking_to_queue import huey
+from .booking_tasks import huey
 from models.payments import (
     Payment,
     CardAuth,

@@ -1,6 +1,7 @@
 from .base import TimestampMixin, BaseModelPR, SerializableEnum
-from datetime import datetime as dt
 from core import db
+
+from datetime import datetime as dt
 from geoalchemy2 import Geometry
 # from typing import Optional
 
@@ -34,10 +35,10 @@ class SettlementEnum(SerializableEnum):
 
 class BookingContract(TimestampMixin, BaseModelPR, db.Model):
     booking_id = db.Column(db.String, db.ForeignKey('booking.booking_id'))
-    start_time = db.Column(db.Date)
+    start_time = db.Column(db.Date, nullable=False, default=dt.utcnow())
     end_time = db.Column(db.Date)
-    agreed_start_time = db.Column(db.Date)
-    agreed_end_time = db.Column(db.Date)
+    # agreed_start_time = db.Column(db.Date)
+    # agreed_end_time = db.Column(db.Date)
 
 
 class BookingCategory(BaseModelPR, db.Model):
@@ -82,13 +83,14 @@ class Booking(TimestampMixin, db.Model):
     location = db.Column(Geometry(geometry_type='POINT', srid='4326'))
     status = db.Column(db.Enum(BookingStatusEnum))
     payment_id = db.Column(db.String, db.ForeignKey('payment.payment_id'))
-    _contract_type = db.Column("contract_type", db.Boolean, default=False)
+    contract_type = db.Column("contract_type", db.Boolean, default=False)
     artisan_rating = db.Column(db.Integer)
     customer_rating = db.Column(db.Integer)
     settlement_type = db.Column(db.Enum(
         SettlementEnum
     ), nullable=True)
     date_of_booking = db.Column(db.Date, default=dt.utcnow())
+    booking_contract = db.relationship('BookingContract', backref='booking', uselist=False)
 
     def update_start_time(self):
         self.start_time = dt.utcnow()
@@ -104,7 +106,7 @@ class Booking(TimestampMixin, db.Model):
 
     def fetch_hourly_pay(self):
         res = None
-        if self.settlement_type == SettlementEnum(1):
+        if self.settlement_type == SettlementEnum[1]:
             time_spent = round(
                 (self.end_time - self.start_time).total_seconds(),
                 5
@@ -113,18 +115,3 @@ class Booking(TimestampMixin, db.Model):
             res = self.artisan.hourly_rate * hrs_spent
 
         return res
-
-    @property
-    def contract_type(self):
-        return self._contract_type
-
-    @contract_type.setter
-    def contract_type(self, status, contract_details):
-        if status is True:
-            # create booking contract object
-            self._contract_type = True
-            new_contract = BookingContract().load_from_param_or_kwargs(
-                params=contract_details
-            )
-            db.session.add(new_contract)
-            db.session.commit()

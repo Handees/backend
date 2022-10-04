@@ -1,15 +1,47 @@
-from extensions import HueyTemplate, redis_
-from .push_booking_to_queue import huey
+from extensions import (
+    HueyTemplate,
+    redis_,
+    redis_2
+)
+from core.exc import BookingHasContract
+from config import BaseConfig
 from models.user_models import Artisan
 from models.bookings import Booking
 from schemas.bookings_schema import BookingSchema
 from config import config_options
+
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
+# huey instance
+huey = HueyTemplate(config=BaseConfig.HUEY_CONFIG).huey
 
 # TODO: subclass decorator to include app context
+
+
+@huey.task()
+def pbq(booking_details):
+    # find nearest artisans to customer
+    lat, lon = booking_details['lat'], booking_details['lon']
+    redis_2.geoadd(
+        name="customer_pos",
+        values=(lon, lat, booking_details['user_id'])
+    )
+    g_hash = redis_2.geohash(
+        'customer_pos',
+        booking_details['user_id']
+    )
+    print(g_hash)
+    print(g_hash[0][:7])
+
+    redis_2.set(booking_details['booking_id'], str(booking_details))
+
+    # broadcast message to artisans using a redis pub/sub channel
+    # the channel is unique to each artisan and its id is synonymous
+    # to the artisan's geohash
+    redis_2.publish(g_hash[0][:7], str(booking_details))
+
 
 @huey.task()
 def assign_artisan_to_booking(data):
@@ -93,7 +125,7 @@ def job_end(data):
 
         # calculate amount to be paid if
         # settlement type is "hrly"
-        if bk.settlement_type == SettlementEnum(1):
+        if bk.settlement_type == SettlementEnum[1]:
             pay = bk.fetch_hourly_pay()
 
             socketio.emit(
@@ -104,3 +136,24 @@ def job_end(data):
             )
 
         db.session.commit()
+
+
+@huey.task()
+def update_job_type(data):
+    """ updates booking to contract type """
+    from models.bookings import BookingContract
+    from models import db
+
+    bk = Booking.query.get(data['booking_data'])
+
+    # create new booking contract
+    if not bk.booking_contract():
+        bkc = BookingContract()
+        bk.booking_contract = bkc
+
+        db.session.add(bkc)
+        db.session.commit()
+    else:
+        raise BookingHasContract(
+            f"This booking {bk} already has a booking-contract associated with it"
+        )

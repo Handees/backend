@@ -4,9 +4,14 @@ from extensions import redis_2
 from core.utils import (
     LOG_FORMAT, _level
 )
+from .. import messages
 
 from flask import request
-from flask_socketio import emit, join_room
+from flask_socketio import (
+    emit,
+    join_room,
+    send
+)
 from loguru import logger
 import sys
 
@@ -54,7 +59,7 @@ def update_location(data):
 
     def handle_updates(msg):
         print("booking payload ::", msg)
-        socketio.emit('new_offer', eval(msg['data']), room=room, namespace='/artisan')
+        socketio.emit('new_offer', eval(msg['data']), to=room, namespace='/artisan')
 
     psub.subscribe(**{g_hash[0][:7]: handle_updates})
 
@@ -79,7 +84,9 @@ def get_updates(data):
     else:
         emit(
             'offer_close',
-            "The offer is no longer available",
+            messages.dynamic_msg(
+                messages.BOOKING_CANCELED, "customer"
+            ),
             namespace='/artisan',
             to=request.sid
         )
@@ -105,7 +112,11 @@ def cancel_offer_artisan(data):
     # remove from queue once canceled
     redis_2.delete(room)
 
-    socketio.emit('offer_canceled', "Artisan canceled offer", to=room)
+    socketio.emit(
+        'offer_canceled',
+        messages.dynamic_msg(messages.BOOKING_CANCELED, "artisan"),
+        to=room
+    )
 
 
 @socketio.on('arrived_location', namespace='/artisan')
@@ -117,7 +128,7 @@ def handle_location_arrival(data):
     # update booking status
     update_booking_status(data)
 
-    socketio.emit('artisan_arrived', "Artisan has reached client location", to=room)
+    socketio.emit('artisan_arrived', messages.ARTISAN_ARRIVES, to=room)
 
 
 @socketio.on('job_started', namespace='/artisan')
@@ -129,6 +140,9 @@ def handle_job_begin(data):
         job_start(data)
     except Exception as e:
         logger.exception(e)
+        emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
+    else:
+        send(messages.JOB_STARTED)
 
 
 @socketio.on('job_completed', namespace='/artisan')
@@ -140,8 +154,18 @@ def handle_job_end(data):
         job_end(data)
     except Exception as e:
         logger.exception(e)
+        emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
+    else:
+        send(messages.JOB_COMPLETED)
 
 
-# @socketio.on('chat_msg', namespace='/artisan')
-# def send_message(data):
-#     """ triggered when new message is sent in chat """
+@socketio.on('update_job_type', namespace='/artisan')
+def update_job_type(data):
+    """ triggered when artisan needs to switch to contract type """
+    from tasks.booking_tasks import update_job_type
+
+    try:
+        update_job_type(data)
+    except Exception as e:
+        logger.exception(e)
+        emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')

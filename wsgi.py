@@ -1,4 +1,6 @@
 # flake8: noqa
+import eventlet
+eventlet.monkey_patch() # https://stackoverflow.com/questions/63026435/maximum-recursion-depth-exceeded-on-sslcontext-eventlet-flask-flask-socketio
 
 from json import load
 from core import create_app, socketio, db
@@ -6,7 +8,6 @@ from dotenv import load_dotenv
 from models import *
 from core.utils import get_class_by_tablename
 import os
-import eventlet
 import click
 import sys
 import firebase_admin
@@ -17,9 +18,6 @@ load_dotenv()
 app = create_app(os.getenv('APP_ENV') or 'default')
 cred = firebase_admin.credentials.Certificate(app.config['F_KEY_PATH'])
 firebase_admin.initialize_app(cred)
-print(os.getenv('APP_ENV'))
-print(app.config['SQLALCHEMY_DATABASE_URI'])
-
 
 # test config
 COV = None
@@ -98,5 +96,4 @@ def test(coverage):
         COV.erase()
 
 if __name__ == "__main__":
-    # eventlet.monkey_patch()
     socketio.run(app, host="0.0.0.0", port=5000)

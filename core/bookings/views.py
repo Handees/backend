@@ -11,7 +11,7 @@ from ..auth.auth_helper import (
 )
 from core import db
 from ..utils import error_response, gen_response
-from tasks.push_booking_to_queue import pbq
+from tasks.booking_tasks import pbq
 import core.bookings.messages as messages
 
 
@@ -41,7 +41,7 @@ def create_booking(current_user):
         ))
     new_order.booking_category = category
 
-    new_order.user = current_user
+    # new_order.user = current_user
     db.session.add(new_order)
     db.session.commit()
 

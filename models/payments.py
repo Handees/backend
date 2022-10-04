@@ -18,7 +18,7 @@ class Payment(TimestampMixin, db.Model):
     method = db.Column(
         db.Enum(PaymentMethodEnum),
         nullable=False,
-        default=PaymentMethodEnum("CARD")
+        default=PaymentMethodEnum["CARD"]
     )
     total_amount = db.Column(db.Float)
     base_rate = db.Column(db.Float)

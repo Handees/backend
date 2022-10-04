@@ -3,6 +3,6 @@
 # flake8: noqa
 
 
-from tasks.push_booking_to_queue import (
+from tasks.booking_tasks import (
     pbq, huey
 )

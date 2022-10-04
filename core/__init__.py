@@ -3,8 +3,11 @@
 from flask import Flask
 from config import config_options
 from .extensions import (
-    db, ma, socketio, migrate, cors
+    db, ma,
+    socketio, migrate,
+    cors
 )
+from .utils import error_response
 
 import logging
 from loguru import logger
@@ -37,6 +40,18 @@ def configure_logging(app):
     logging.getLogger("socketio").setLevel('ERROR')
 
 
+def config_error_handlers(app):
+
+    @app.errorhandler(Exception)
+    def all_exception_handler(error):
+        # traceback.print_tb(error.__traceback__)
+        logger.exception("Uncaught exception received. %s" % str(error))
+        return error_response(
+            500,
+            message="An error occurred on the server"
+        )
+
+
 #  app factory
 def create_app(config_name):
     app = Flask(__name__)
@@ -58,9 +73,13 @@ def create_app(config_name):
     app.register_blueprint(user, url_prefix='/user')
 
     # link extensions to app instance
-    socketio.init_app(app, logger=True, engineio_logger=True, async_mode='eventlet')
+    socketio.init_app(app, logger=True, engineio_logger=True)
     db.init_app(app)
     ma.init_app(app)
     migrate.init_app(app, db)
     cors.init_app(app, resources={r"/*": {"origins": "*"}})
+
+    config_error_handlers(app)
+    configure_logging(app)
+
     return app
