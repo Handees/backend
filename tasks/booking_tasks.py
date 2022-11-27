@@ -144,16 +144,19 @@ def update_job_type(data):
     from models.bookings import BookingContract
     from models import db
 
-    bk = Booking.query.get(data['booking_data'])
+    app = HueyTemplate.get_flask_app(config_options['staging'])
 
-    # create new booking contract
-    if not bk.booking_contract():
-        bkc = BookingContract()
-        bk.booking_contract = bkc
+    with app.app_context():
+        bk = Booking.query.get(data['booking_id'])
 
-        db.session.add(bkc)
-        db.session.commit()
-    else:
-        raise BookingHasContract(
-            f"This booking {bk} already has a booking-contract associated with it"
-        )
+        # create new booking contract
+        if not bk.booking_contract:
+            bkc = BookingContract()
+            bk.booking_contract = bkc
+
+            db.session.add(bkc)
+            db.session.commit()
+        else:
+            raise BookingHasContract(
+                f"This booking {bk} already has a booking-contract associated with it"
+            )

@@ -40,16 +40,16 @@ def configure_logging(app):
     logging.getLogger("socketio").setLevel('ERROR')
 
 
-def config_error_handlers(app):
+# def config_error_handlers(app):
 
-    @app.errorhandler(Exception)
-    def all_exception_handler(error):
-        # traceback.print_tb(error.__traceback__)
-        logger.exception("Uncaught exception received. %s" % str(error))
-        return error_response(
-            500,
-            message="An error occurred on the server"
-        )
+#     @app.errorhandler(Exception)
+#     def all_exception_handler(error):
+#         # traceback.print_tb(error.__traceback__)
+#         logger.exception("Uncaught exception received. %s" % str(error))
+#         return error_response(
+#             500,
+#             message="An error occurred on the server"
+#         )
 
 
 #  app factory
@@ -79,7 +79,7 @@ def create_app(config_name):
     migrate.init_app(app, db)
     cors.init_app(app, resources={r"/*": {"origins": "*"}})
 
-    config_error_handlers(app)
+    # config_error_handlers(app)
     configure_logging(app)
 
     return app

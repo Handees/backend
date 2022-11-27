@@ -10,3 +10,5 @@ postgres_data/
 *.dump
 *dump.rdb
 *.json
+*.pem
+data/
