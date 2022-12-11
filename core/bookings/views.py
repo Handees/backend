@@ -1,4 +1,6 @@
 from flask import request, render_template
+from loguru import logger
+
 from models.bookings import Booking, BookingCategory
 from schemas.bookings_schema import BookingSchema
 from models.user_models import Permission
@@ -10,9 +12,17 @@ from ..auth.auth_helper import (
     login_required
 )
 from core import db
-from ..utils import error_response, gen_response
+from ..utils import (
+    error_response,
+    gen_response,
+    setLogger
+)
 from tasks.booking_tasks import pbq
 import core.bookings.messages as messages
+
+
+logger.remove()
+setLogger()
 
 
 @bookings.post('/')
@@ -41,7 +51,7 @@ def create_booking(current_user):
         ))
     new_order.booking_category = category
 
-    # new_order.user = current_user
+    new_order.user = current_user
     db.session.add(new_order)
     db.session.commit()
 

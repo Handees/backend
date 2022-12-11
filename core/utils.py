@@ -88,3 +88,15 @@ def get_class_by_tablename(tablename):
 LOG_FORMAT = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | filename={name} function={function} line={line} msg={message} level={level: <8}"  # noqa
 _level = "INFO" if os.getenv('APP_ENV').lower() in ['development', 'local'] \
     else "ERROR"
+
+
+def setLogger():
+    import sys
+    from loguru import logger
+
+    logger.add(
+        sys.stderr,
+        colorize=True,
+        format=LOG_FORMAT,
+        level=_level
+    )

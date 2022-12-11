@@ -23,15 +23,18 @@ class BaseConfig:
         os.path.abspath(os.getcwd()),
         os.getenv('F_KEY')
     )
+    SQLALCHEMY_ECHO = False
 
 
 class DevConfig(BaseConfig):
     DB_NAME = os.getenv('POSTGRES_DB')
-    EXPLAIN_TEMPLATE_LOADING = True
     DEBUG = True
     URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@localhost:5432/{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
     FLASK_COVERAGE = True
+    # SQLALCHEMY_BINDS = {
+    #     'writer': SQLALCHEMY_DATABASE_URI
+    # }
 
 
 class StagingConfig(BaseConfig):

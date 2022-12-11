@@ -12,3 +12,5 @@ postgres_data/
 *.json
 *.pem
 data/
+*.pem
+

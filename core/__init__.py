@@ -39,6 +39,15 @@ def configure_logging(app):
     # reduce noise from noisy libraries
     logging.getLogger("socketio").setLevel('ERROR')
 
+    @app.errorhandler(Exception)
+    def all_exception_handler(error):
+        # traceback.print_tb(error.__traceback__)
+        logger.exception("Uncaught exception received. %s" % str(error))
+        return error_response(
+            500,
+            message="Internal Server error..🤧"
+        )
+
 
 # def config_error_handlers(app):
 
