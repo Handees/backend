@@ -8,7 +8,6 @@ from uuid import uuid4
 from . import bookings
 from core.api.auth.auth_helper import (
     permission_required,
-    role_required,
     login_required
 )
 from core import db

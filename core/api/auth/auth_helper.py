@@ -70,7 +70,7 @@ def role_required(role):
                 resp = make_response(
                     {
                         'status': 'error',
-                        'msg': 'user cannot perform this action'
+                        'msg': 'user-role cannot perform this action'
                     },
                     403
                 )

@@ -1,6 +1,7 @@
 from . import payments
 from ..auth.auth_helper import (
     login_required,
+    paystack_verification,
     role_required
 )
 from schemas.payment import InitTransactionSchema
@@ -16,7 +17,6 @@ from .messages import (
     PAYSTACK_ERROR,
     TRANSACTION_INITIATED
 )
-from core.api.auth.auth_helper import paystack_verification
 from tasks.payments import handlers
 
 from flask import request
