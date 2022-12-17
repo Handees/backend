@@ -6,19 +6,19 @@ from schemas.bookings_schema import BookingSchema
 from models.user_models import Permission
 from uuid import uuid4
 from . import bookings
-from ..auth.auth_helper import (
+from core.api.auth.auth_helper import (
     permission_required,
     role_required,
     login_required
 )
 from core import db
-from ..utils import (
+from core.utils import (
     error_response,
     gen_response,
     setLogger
 )
 from tasks.booking_tasks import pbq
-import core.bookings.messages as messages
+from . import messages as messages
 
 
 logger.remove()
@@ -68,7 +68,7 @@ def create_booking(current_user):
 
 @bookings.get('/<booking_id>')
 @login_required
-@role_required("customer")
+@permission_required(Permission.service_request)
 def fetch_booking_details(current_user, booking_id):
     booking = Booking.query.get(booking_id)
     if not booking:
@@ -79,7 +79,7 @@ def fetch_booking_details(current_user, booking_id):
 
 @bookings.delete('/<booking_id>')
 @login_required
-@role_required("customer")
+@permission_required(Permission.service_request)
 def delete_booking(current_user, booking_id):
     booking = Booking.query.get(booking_id)
     if not booking:

@@ -3,7 +3,7 @@
 from flask import Blueprint
 
 bookings = Blueprint(
-    "bookings", __name__, template_folder='templates'
+    "bookings", __name__, template_folder='templates', url_prefix='/bookings'
 )
 
 from . import views

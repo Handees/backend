@@ -35,7 +35,12 @@ if app.config['FLASK_COVERAGE']:
 # flask shell
 @app.shell_context_processor
 def make_shell_context():
-    return dict(app=app, role=Role, bk_cat=BookingCategory, db=db)
+    return dict(
+        app=app,
+        role=Role,
+        bk_cat=BookingCategory,
+        db=db
+    )
 
 
 # flask cli commands

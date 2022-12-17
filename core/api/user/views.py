@@ -10,9 +10,11 @@ from models.user_models import (
     Permission,
     Artisan
 )
-from ..utils import (
+from core.utils import (
     gen_response,
-    error_response
+    error_response,
+    LOG_FORMAT,
+    _level
 )
 from schemas.user_schemas import UserSchema
 from schemas.bookings_schema import BookingSchema
@@ -22,11 +24,7 @@ from .messages import (
     USER_PROFILE_UPDATED
 )
 from models.bookings import Booking
-from core.utils import (
-    LOG_FORMAT,
-    _level
-)
-from ..auth.auth_helper import (
+from core.api.auth.auth_helper import (
     login_required,
     permission_required,
     role_required

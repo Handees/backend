@@ -104,7 +104,7 @@ def paystack_verification(f):
                 "message": "missing required headers"
             }, 403)
             abort(resp)
-            logger.info('Missing header from paystack')
+            logger.info('Missing header from paystack -- aborted requested')
         else:
             event = request.get_json(force=True)
             hmac_hash = gen_hmac_hash(event, os.getenv('PAYSTACK_TEST_SECRET'))

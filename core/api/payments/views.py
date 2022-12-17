@@ -4,9 +4,10 @@ from ..auth.auth_helper import (
     role_required
 )
 from schemas.payment import InitTransactionSchema
-from ..utils import (
+from core.utils import (
     error_response,
-    gen_response
+    gen_response,
+    setLogger
 )
 from .utils import (
     PaystackClient
@@ -15,12 +16,15 @@ from .messages import (
     PAYSTACK_ERROR,
     TRANSACTION_INITIATED
 )
-from ..auth.auth_helper import paystack_verification
+from core.api.auth.auth_helper import paystack_verification
 from tasks.payments import handlers
 
 from flask import request
 from loguru import logger
 import os
+
+logger.remove()
+setLogger()
 
 
 @payments.post('/')

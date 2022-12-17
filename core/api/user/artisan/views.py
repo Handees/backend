@@ -8,7 +8,7 @@ from models.user_models import (
     Artisan
 )
 from models.bookings import BookingCategory
-from core.bookings import messages
+from core.api.bookings import messages
 from schemas.user_schemas import ArtisanSchema
 from core.utils import (
     gen_response,
