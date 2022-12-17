@@ -5,10 +5,11 @@ After=docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/root/bootvar
+RemainAfterExit=true
+WorkingDirectory=/home/azureuser/backend
 Environment=COMPOSE_HTTP_TIMEOUT=600
-ExecStart=/usr/local/bin/docker-compose -f /home/azureuser/backend/docker-compose.yml up -d
-ExecStop=/usr/local/bin/docker-compose -f /home/azureuser/backend/docker-compose.yml stop
+ExecStart=sudo /usr/local/bin/docker-compose up -d
+ExecStop=sudo /usr/local/bin/docker-compose stop
 StandardOutput=syslog
 RemainAfterExit=yes
 
