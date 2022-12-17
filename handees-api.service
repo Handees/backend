@@ -15,3 +15,6 @@ RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
+
+StandardOutput=append:/var/log/handees-api/stdout.log
+StandardError=append:/var/log/handees-api/error.log
