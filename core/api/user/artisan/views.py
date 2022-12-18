@@ -62,7 +62,7 @@ def add_new_artisan(current_user):
             message=USER_NOT_FOUND
         )
 
-    if user.is_artisan():
+    if user.is_artisan:
         db.session.rollback()
         return error_response(
             400,
