@@ -34,8 +34,6 @@ def add_new_artisan(current_user):
     """create new artisan"""
     data = request.get_json(force=True)
 
-    db.session.begin()
-
     # add category rel
     category = BookingCategory.get_by_name(data['job_category'])
     if not category:
