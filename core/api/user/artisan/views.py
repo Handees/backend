@@ -71,6 +71,7 @@ def add_new_artisan(current_user):
 
     # ascend user role
     user.upgrade_to_artisan()
+    user.is_artisan = 1
     new_artisan.user_profile = user
 
     # add other props
