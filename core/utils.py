@@ -94,6 +94,8 @@ def setLogger():
     import sys
     from loguru import logger
 
+    logger.remove()
+
     logger.add(
         sys.stderr,
         colorize=True,

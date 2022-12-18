@@ -1,5 +1,6 @@
 from flask import request
 from uuid import uuid4
+from loguru import logger
 
 from . import artisan
 from core import db
@@ -12,7 +13,8 @@ from core.api.bookings import messages
 from schemas.user_schemas import ArtisanSchema
 from core.utils import (
     gen_response,
-    error_response
+    error_response,
+    setLogger
 )
 from ..messages import (
     USER_NOT_FOUND,
@@ -25,6 +27,10 @@ from ...auth.auth_helper import (
     login_required,
     role_required
 )
+
+
+# config logging
+setLogger()
 
 
 @artisan.post('/')
@@ -63,6 +69,8 @@ def add_new_artisan(current_user):
         )
 
     if user.is_artisan:
+        logger.debug('yes this i true')
+        logger.debug(user.is_artisan)
         db.session.rollback()
         return error_response(
             400,
