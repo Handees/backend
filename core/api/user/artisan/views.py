@@ -69,8 +69,6 @@ def add_new_artisan(current_user):
         )
 
     if user.is_artisan:
-        logger.debug('yes this i true')
-        logger.debug(user.is_artisan)
         db.session.rollback()
         return error_response(
             400,
