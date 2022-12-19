@@ -62,7 +62,11 @@ def create_booking(current_user):
         'booking_id': new_order.booking_id
     }
 
-    return gen_response(201, payload, message=messages.BOOKING_MADE)
+    return gen_response(
+        201,
+        payload,
+        message=messages.BOOKING_MADE
+    )
 
 
 @bookings.get('/<booking_id>')
