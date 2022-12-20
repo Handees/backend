@@ -58,7 +58,6 @@ def add_new_artisan(current_user):
             400,
             message=schema.error_messages
         )
-
     # @dev_only: find user with user_id
     user = User.query.get(data['user_profile_id'])
     if not user:

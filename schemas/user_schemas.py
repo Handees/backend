@@ -15,6 +15,7 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         include_fk = True
         include_relationships = True
         load_instance = True
+        transient = True
         sqla_session = db.session
         load_relationships = True
 

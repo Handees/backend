@@ -19,6 +19,7 @@ class PaymentSchema(BaseSQLAlchemyAutoSchema):
             'customer_id'
         )
         sqla_session = db.session
+        transient = True
         load_instance = True
         include_fk = True
         include_relationships = True
@@ -33,6 +34,7 @@ class CardAuthSchema(BaseSQLAlchemyAutoSchema):
         sqla_session = db.session
         load_instance = True
         include_fk = True
+        transient = True
         include_relationships = False
 
     @pre_load

@@ -63,8 +63,9 @@ def create_new_user():
             400,
             message=schema.error_messages
         )
-    db.session.add(new_user)
+
     try:
+        db.session.add(new_user)
         db.session.commit()
         return gen_response(
             201,

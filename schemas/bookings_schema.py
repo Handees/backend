@@ -1,5 +1,7 @@
 from .base import BaseSQLAlchemyAutoSchema
-from core import ma
+from core import (
+    ma, db
+)
 from models.bookings import Booking
 from marshmallow import pre_load
 from marshmallow import fields
@@ -24,6 +26,8 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
         model = Booking
         include_fk = True
         include_relationships = True
+        transient = True
+        sqla_session = db.session
         dump_only = (
             'booking_id',
             'created_at', 'settlement_type'
