@@ -41,7 +41,7 @@ logger.add(
 )
 
 
-@user.route('/', methods=['POST'])
+@user.post('/')
 def create_new_user():
     """ adds new user data to db """
     data = request.get_json(force=True)
@@ -81,7 +81,7 @@ def create_new_user():
         )
 
 
-@user.route('/sign-in', methods=['POST'])
+@user.get('/<uid>')
 def check_uid(uid):
     """ checks if uid exists """
     user = User.query.get(uid)
