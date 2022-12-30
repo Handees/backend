@@ -8,7 +8,8 @@ from . import user
 from core import db
 from models.user_models import (
     Permission,
-    Artisan
+    Artisan,
+    User
 )
 from core.utils import (
     gen_response,
@@ -21,6 +22,7 @@ from schemas.bookings_schema import BookingSchema
 from .messages import (
     USER_CREATED,
     USER_EMAIL_EXISTS,
+    USER_NOT_FOUND,
     USER_PROFILE_UPDATED
 )
 from models.bookings import Booking
@@ -76,6 +78,23 @@ def create_new_user():
         return error_response(
             400,
             message=USER_EMAIL_EXISTS
+        )
+
+
+@user.route('/sign-in', methods=['POST'])
+def check_uid(uid):
+    """ checks if uid exists """
+    user = User.query.get(uid)
+    schema = UserSchema()
+    if user:
+        return gen_response(
+            200,
+            data=schema.dump(user)
+        )
+    else:
+        return error_response(
+            404,
+            message=USER_NOT_FOUND
         )
 
 
