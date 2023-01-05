@@ -49,7 +49,6 @@ def create_booking(current_user):
             messages.CATEGORY_NOT_FOUND, data['job_category']
         ))
     new_order.booking_category = category
-
     new_order.user = current_user
     db.session.add(new_order)
     db.session.commit()

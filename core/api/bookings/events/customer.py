@@ -6,21 +6,29 @@ from flask_socketio import emit, join_room
 # import pygeohash as pgh
 
 
-@socketio.on('connect')
+
+@socketio.on('connect', namespace='/chat')
+def connect_chat():
+    logger.info(f'artisan socket joined chat namespace')
+    emit('msg', 'welcome!', broadcast=True)
+
+
+@socketio.on('connect', namespace='/customer')
 def connect():
     # # fetch client session id
     emit('msg', 'welcome!', broadcast=True)
     logger.info('new client connected')
 
 
-@socketio.on('booking_update')
+@socketio.on('booking_update', namespace='/customer')
 def booking_upate(data):
     room = data['booking_id']
     join_room(room)
+    join_room(room, namespace='/chat')
     logger.info("added user to updates room {}".format(room))
 
 
-# @socketio.on('close_offer')
+# @socketio. on('close_offer')
 # def close_offer(data):
 #     room = data['booking_id']
 
@@ -28,7 +36,7 @@ def booking_upate(data):
 #     redis_.delete(room)
 
 
-@socketio.on('cancel_offer')
+@socketio.on('cancel_offer', namespace='/customer')
 def cancel_offer(data):
     room = data['artisan_id']
 

@@ -26,7 +26,11 @@ if app.config['FLASK_COVERAGE']:
     import coverage
     COV = coverage.Coverage(
         branch=True,
-        source=['core/', 'models/', 'schemas/']
+        source=[
+            'core/',
+            'models/',
+            'schemas/'
+        ]
     )
     # COV.
     COV.start()

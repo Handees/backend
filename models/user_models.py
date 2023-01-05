@@ -85,6 +85,7 @@ class User(TimestampMixin, db.Model):
     bookings = db.relationship('Booking', backref='user', lazy='dynamic')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
     cards = db.relationship('CardAuth', backref='user')
+    payments = db.relationship('Payment', backref='user')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -27,6 +27,12 @@ logger.add(
 )
 
 
+@socketio.on('connect', namespace='/chat')
+def connect_chat():
+    logger.info(f'artisan socket joined chat namespace')
+    emit('msg', 'welcome!', broadcast=True)
+
+
 @socketio.on('connect', namespace='/artisan')
 def connect():
     # # fetch client session id
@@ -81,6 +87,8 @@ def get_updates(data):
 
         # send updates to user
         socketio.emit('msg', data, to=room)
+
+        join_room(room, namespace='/chat')
     else:
         emit(
             'offer_close',

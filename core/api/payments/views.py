@@ -1,10 +1,15 @@
 from . import payments
 from ..auth.auth_helper import (
     login_required,
+    permission_required,
     paystack_verification,
     role_required
 )
-from schemas.payment import InitTransactionSchema
+from schemas.payment import (
+    InitTransactionSchema,
+    PaymentSchema
+)
+from models.user_models import Permission
 from core.utils import (
     error_response,
     gen_response,
@@ -74,6 +79,18 @@ def new_payment_transaction(current_user):
                     req.status_code,
                     message=PAYSTACK_ERROR
                 )
+
+
+@payments.get('/')
+@login_required
+@permission_required(Permission.service_request)
+def fetch_customer_transactions(current_user):
+    transactions = current_user.payments
+    schema = PaymentSchema(many=True)
+    return gen_response(
+        200,
+        data=schema.dump(transactions)
+    )
 
 
 # paystack webhook
