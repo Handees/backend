@@ -86,7 +86,7 @@ def get_updates(data):
         assign_artisan_to_booking(data)
 
         # send updates to user
-        socketio.emit('msg', data, to=room)
+        socketio.emit('msg', data, to=room, namespace='/customer')
 
         join_room(room, namespace='/chat')
     else:
@@ -136,7 +136,7 @@ def handle_location_arrival(data):
     # update booking status
     update_booking_status(data)
 
-    socketio.emit('artisan_arrived', messages.ARTISAN_ARRIVES, to=room)
+    socketio.emit('artisan_arrived', messages.ARTISAN_ARRIVES, to=room, namespace='/customer')
 
 
 @socketio.on('job_started', namespace='/artisan')
@@ -177,3 +177,11 @@ def update_job_type(data):
     except Exception as e:
         logger.exception(e)
         emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
+
+
+@socketio.on('msg', namespace='/chat')
+def send_chat_msg(data):
+    """sends message to chat room"""
+    msg = data['msg']
+    room = data['booking_id']
+    socketio.emit('msg', msg, to=room, namespace='/chat')

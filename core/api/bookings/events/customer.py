@@ -22,7 +22,6 @@ def connect():
 @socketio.on('booking_update', namespace='/customer')
 def booking_upate(data):
     room = data['booking_id']
-    join_room(room)
     join_room(room, namespace='/chat')
     logger.info("added user to updates room {}".format(room))
 
@@ -49,6 +48,15 @@ def cancel_offer(data):
         data['booking_id']
     ))
     socketio.emit('offer_canceled', "Client cancelled offer", namespace='/artisan', to=room)
+
+
+@socketio.on('msg', namespace='/chat')
+def send_chat_msg(data):
+    """sends message to chat room"""
+    msg = data['msg']
+    room = data['booking_id']
+    socketio.emit('msg', msg, to=room, namespace='/chat')
+
 
 
 # {
