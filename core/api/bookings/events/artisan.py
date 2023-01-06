@@ -27,10 +27,10 @@ logger.add(
 )
 
 
-@socketio.on('connect', namespace='/chat')
-def connect_chat():
-    logger.info(f'artisan socket joined chat namespace')
-    emit('msg', 'welcome!', broadcast=True)
+@socketio.on('join_chat', namespace='/chat')
+def connect_chat(data):
+    room = data['booking_id']
+    join_room(room)
 
 
 @socketio.on('connect', namespace='/artisan')

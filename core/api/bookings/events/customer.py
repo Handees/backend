@@ -6,10 +6,9 @@ from flask_socketio import emit, join_room
 # import pygeohash as pgh
 
 
-
 @socketio.on('connect', namespace='/chat')
 def connect_chat():
-    logger.info(f'artisan socket joined chat namespace')
+    logger.info('artisan socket joined chat namespace')
     emit('msg', 'welcome!', broadcast=True)
 
 
