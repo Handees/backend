@@ -9,13 +9,13 @@ from flask_socketio import emit, join_room
 @socketio.on('connect', namespace='/chat')
 def connect_chat():
     logger.info('artisan socket joined chat namespace')
-    emit('msg', 'welcome!', broadcast=True)
+    emit('msg', 'welcome! to chat', broadcast=True)
 
 
 @socketio.on('connect', namespace='/customer')
 def connect():
     # # fetch client session id
-    emit('msg', 'welcome!', broadcast=True)
+    emit('msg', 'welcome! customer', broadcast=True)
     logger.info('new client connected')
 
 
