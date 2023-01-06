@@ -22,6 +22,7 @@ def connect():
 @socketio.on('booking_update', namespace='/customer')
 def booking_upate(data):
     room = data['booking_id']
+    join_room(room, namespace='/customer')
     join_room(room, namespace='/chat')
     logger.info("added user to updates room {}".format(room))
 
