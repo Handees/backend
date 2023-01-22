@@ -6,10 +6,10 @@ from flask_socketio import emit, join_room
 # import pygeohash as pgh
 
 
-@socketio.on('connect', namespace='/chat')
-def connect_chat():
-    logger.info('artisan socket joined chat namespace')
-    emit('msg', 'welcome! to chat', broadcast=True)
+# @socketio.on('connect', namespace='/chat')
+# def connect_chat():
+#     logger.info('artisan socket joined chat namespace')
+#     emit('msg', 'welcome! to chat', broadcast=True)
 
 
 @socketio.on('connect', namespace='/customer')
@@ -22,7 +22,6 @@ def connect():
 @socketio.on('booking_update', namespace='/customer')
 def booking_upate(data):
     room = data['booking_id']
-    join_room(room, namespace='/customer')
     join_room(room, namespace='/chat')
     logger.info("added user to updates room {}".format(room))
 
@@ -58,6 +57,10 @@ def send_chat_msg(data):
     room = data['booking_id']
     socketio.emit('msg', msg, to=room, namespace='/chat')
 
+
+@socketio.on('test', namespace='/customer')
+def sendstuff(msg):
+    socketio.emit('msg', msg, namespace='/customer')
 
 
 # {

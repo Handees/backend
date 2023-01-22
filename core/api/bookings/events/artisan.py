@@ -27,17 +27,28 @@ logger.add(
 )
 
 
+@socketio.on('connect', namespace='/chat')
+def enter_chat_namespace(data):
+    emit('msg', 'welcome to chat')
+
+
 @socketio.on('join_chat', namespace='/chat')
-def connect_chat(data):
+def enter_chat_room(data):
     room = data['booking_id']
     join_room(room)
+
+
+# @socketio.on('connect', namespace='/chat')
+# def connect_chat():
+#     join_room("room")
+#     emit("msg-chat", "new {} person joined chat".format(request.sid), namespace='/chat')
 
 
 @socketio.on('connect', namespace='/artisan')
 def connect():
     # # fetch client session id
     emit('msg', 'welcome!', broadcast=True)
-    logger.debug('new artisan client connection!')
+    logger.debug('new artisan {} client connection!'.format(request.sid))
 
 
 @socketio.on('location_update', namespace='/artisan')
