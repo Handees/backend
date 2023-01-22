@@ -56,6 +56,8 @@ def update_location(data):
     data = data.replace('\\n', '')
     data = eval(data)
     print(data, type(data))
+    data = eval(data)
+    print(data, type(data))
     # TODO: add data validation
     # update artisan location on redis
     room = data['artisan_id']
@@ -89,6 +91,8 @@ def update_location(data):
 @socketio.on('accept_offer', namespace='/artisan')
 def get_updates(data):
     data = data.replace('\\n', '')
+    data = eval(data)
+    print(data, type(data))
     data = eval(data)
     print(data, type(data))
     """ triggered when artisan accepts offer """
