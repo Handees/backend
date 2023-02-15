@@ -1,6 +1,12 @@
 from core import socketio
-from tasks.booking_tasks import update_booking_status
-from extensions import redis_2
+from tasks.booking_tasks import (
+    update_booking_status,
+    send_event
+)
+from extensions import (
+    redis_2,
+    redis_4
+)
 from core.utils import (
     LOG_FORMAT, _level
 )
@@ -48,30 +54,21 @@ def enter_chat_room(data):
 def connect():
     # # fetch client session id
     emit('msg', 'welcome!', broadcast=True)
+    redis_4.set(
+        request.sid, 1
+    )
+    print(request.sid, type(request.sid))
     logger.debug('new artisan {} client connection!'.format(request.sid))
 
 
-@socketio.on('pong', namespace='/chat')
-def pong_event(data):
-    if data:
-        print(data)
-    print("PONG received!!")
-
-
-@socketio.on('pong', namespace='/artisan')
-def pong_event_artisan(data):
-    if data:
-        print(data)
-    print("PONG received!!")
+@socketio.on('disconnect', namespace='/artisan')
+def disconnect():
+    if redis_4.exists(request.sid):
+        redis_4.delete(request.sid)
 
 
 @socketio.on('location_update', namespace='/artisan')
 def update_location(data):
-    data = data.replace('\\n', '')
-    data = eval(data)
-    print(data, type(data))
-    data = eval(data)
-    print(data, type(data))
     # TODO: add data validation
     # update artisan location on redis
     room = data['artisan_id']
@@ -104,11 +101,6 @@ def update_location(data):
 
 @socketio.on('accept_offer', namespace='/artisan')
 def get_updates(data):
-    data = data.replace('\\n', '')
-    data = eval(data)
-    print(data, type(data))
-    data = eval(data)
-    print(data, type(data))
     """ triggered when artisan accepts offer """
     from tasks.booking_tasks import assign_artisan_to_booking
 
@@ -121,7 +113,12 @@ def get_updates(data):
         assign_artisan_to_booking(data)
 
         # send updates to user
-        socketio.emit('msg', data, to=room, namespace='/customer')
+        payload = {
+            'payload': data,
+            'recipient': data['sender']
+        }
+        send_event('msg', payload, namespace='/artisan')
+        # socketio.emit('msg', data, to=room, namespace='/customer')
 
         join_room(room, namespace='/chat')
     else:
