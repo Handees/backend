@@ -112,12 +112,7 @@ def get_updates(data):
         assign_artisan_to_booking(data)
 
         # send updates to user
-        payload = {
-            'payload': data,
-            'recipient': data['sender']
-        }
-        send_event('msg', payload, namespace='/artisan')
-        # socketio.emit('msg', data, to=room, namespace='/customer')
+        socketio.emit('msg', data, to=room, namespace='/customer')
 
         join_room(room, namespace='/chat')
     else:
