@@ -1,7 +1,6 @@
 from core import socketio
 from tasks.booking_tasks import (
-    update_booking_status,
-    send_event
+    update_booking_status
 )
 from extensions import (
     redis_2,
