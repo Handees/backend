@@ -3,8 +3,7 @@ from tasks.booking_tasks import (
     update_booking_status
 )
 from extensions import (
-    redis_2,
-    redis_4
+    redis_2
 )
 from core.utils import (
     LOG_FORMAT, _level
