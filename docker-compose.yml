@@ -59,11 +59,11 @@ services:
     env_file:
       - ./.env
     logging:
-    driver: local
-    options:
-      mode: non-blocking
-      max-file: "3"
-      max-size: "10m"
+      driver: local
+      options:
+        mode: non-blocking
+        max-file: "3"
+        max-size: "10m"
     restart: unless-stopped
 
   db-test:
