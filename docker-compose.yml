@@ -16,7 +16,13 @@ services:
     depends_on:
       - db
     container_name: hbackend
-    restart: always
+    restart: unless-stopped
+    logging:
+      driver: local
+      options:
+        mode: non-blocking
+        max-file: "3"
+        max-size: "10m"
   
   huey-worker:
     build:
@@ -31,7 +37,13 @@ services:
       - db
       - backend
     container_name: huey-backend
-    restart: always
+    restart: unless-stopped
+    logging:
+      driver: local
+      options:
+        mode: non-blocking
+        max-file: "3"
+        max-size: "10m"
   
   db:
     build:
@@ -46,6 +58,13 @@ services:
       - 5432:5432
     env_file:
       - ./.env
+    logging:
+    driver: local
+    options:
+      mode: non-blocking
+      max-file: "3"
+      max-size: "10m"
+    restart: unless-stopped
 
   db-test:
     build:
@@ -61,6 +80,13 @@ services:
       - POSTGRES_DB=handeestestdb
     env_file:
       - ./.env.test
+    logging:
+      driver: local
+      options:
+        mode: non-blocking
+        max-file: "3"
+        max-size: "10m"
+    restart: unless-stopped
 
   redis:
     image: redis:6.2.6
@@ -72,6 +98,13 @@ services:
       - ./data:/data
       - ./redis.conf:/etc/redis/redis.conf
     command: ["redis-server", "/etc/redis/redis.conf"]
+    logging:
+      driver: local
+      options:
+        mode: non-blocking
+        max-file: "3"
+        max-size: "10m"
+    restart: unless-stopped
 
 volumes:
   postgres_data:
