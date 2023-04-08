@@ -4,13 +4,20 @@ from models.payments import (
     CardAuth,
     db
 )
+from core.api.payments.utils import PaystackClient
 from models.user_models import User
 from core.exc import DataValidationError
 from schemas.payment import CardAuthSchema
 from config import config_options
 from extensions import HueyTemplate
+from core.utils import setLogger
 
 import uuid
+import os
+from loguru import logger
+
+logger.remove()
+setLogger()
 
 
 @huey.task()
@@ -58,6 +65,18 @@ def charge_sucess(data):
             db.session.commit()
 
 
+@huey.task()
+def initiate_refund(data):
+    client = PaystackClient(os.getenv('PAYSTACK_TEST_SECRET'))
+    try:
+        client.init_refund(data)
+    except Exception as e:
+        logger.exception(e)
+
+    # TODO: Store refund transaction dets
+
+
 handlers = {
-    'charge.success': charge_sucess
+    'charge.success': charge_sucess,
+    'initate_refund': initiate_refund
 }

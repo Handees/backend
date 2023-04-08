@@ -98,8 +98,11 @@ def fetch_customer_transactions(current_user):
 @paystack_verification
 def webhook(event):
     if event:
-        init_task = handlers[event['event']]
-        logger.info(init_task, dir(init_task))
+        init_card_auth = handlers[event['event']]
+        init_refund = handlers['initate_refund']
+
+        logger.info(init_card_auth, dir(init_card_auth))
+        logger.info(init_refund)
         return {
             "status": True
         }, 200

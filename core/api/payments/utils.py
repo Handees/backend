@@ -43,6 +43,23 @@ class PaystackClient:
         else:
             return req
 
+    def init_refund(self, payload):
+        """ initializes new refund """
+        logger.info("Attempting to initialize new refund with Paystack ...")
+
+        endpoint = "/refund"
+
+        try:
+            req = requests.post(
+                url=PaystackClient.BASE_URL + endpoint,
+                json=payload,
+                headers=self.headers
+            )
+        except Exception:
+            raise Exception
+        else:
+            return req
+
 
 def gen_hmac_hash(payload, secret):
     """ paystack requires that we verify a header by comparing a hash signature
