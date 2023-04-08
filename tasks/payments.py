@@ -4,7 +4,6 @@ from models.payments import (
     CardAuth,
     db
 )
-from core.api.payments.utils import PaystackClient
 from models.user_models import User
 from core.exc import DataValidationError
 from schemas.payment import CardAuthSchema
@@ -67,6 +66,8 @@ def charge_sucess(data):
 
 @huey.task()
 def initiate_refund(data):
+    from core.api.payments.utils import PaystackClient
+
     client = PaystackClient(os.getenv('PAYSTACK_TEST_SECRET'))
     try:
         client.init_refund(data)
