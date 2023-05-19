@@ -127,9 +127,16 @@ class Artisan(TimestampMixin, db.Model):
     ratings = db.relationship('Rating', backref='artisan')
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     job_category_id = db.Column(db.Integer, db.ForeignKey('bookingcategory.id'))
-    # job_category = db.relationship('BookingCategory', foreign_keys='Artisan.job_category_id')
-    bookings = db.relationship('Booking', backref='artisan')
+    booking = db.relationship('Booking', backref='artisan', uselist=False)
+
+    @property
+    def bookings(self):
+        from models import Booking
+        return Booking.query.filter_by(artisan_id=self.artisan_id)
 
     def update_completed_job_count(self):
         """ increase the no of job completed by unit value """
         self.jobs_completed += 1
+
+    def is_assigned_to_booking(self, booking_id):
+        return self.booking.booking_id == booking_id

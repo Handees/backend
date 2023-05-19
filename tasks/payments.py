@@ -31,46 +31,48 @@ def create_transaction(data):
 
 @huey.task()
 def charge_sucess(data):
-    # TODO: record transaction in database (making sure to add the transaction id)
+    app = HueyTemplate.get_flask_app(config_options['staging'])
 
-    data = data['data']
-    new_payment = Payment(
-        transaction_id=data['id'],
-        total_amount=data['amount'],
-        status=True
-    )
-    new_payment.payment_id = uuid.uuid4().hex
-    db.session.add(new_payment)
+    with app.app_context():
+        # TODO: record transaction in database (making sure to add the transaction id)
+        new_payment = Payment(
+            transaction_id=data['id'],
+            total_amount=data['amount'],
+            status=True
+        )
+        new_payment.payment_id = uuid.uuid4().hex
+        db.session.add(new_payment)
 
-    # if cardAuth with sigkey exists then this wouldn't be the first charge on the card
-    # (A.K.A its not a new card)
-    card_authorization = data['authorization']
-    _cauth = CardAuth.get_by_signature(
-        card_authorization['signature']
-    )
-    if not _cauth:
-        new_payment.regulatory_charge = True
-        schema = CardAuthSchema()
-        try:
-            new_card = schema.load(card_authorization)
+        # if cardAuth with sigkey exists then this wouldn't be the first charge on the card
+        # (A.K.A its not a new card)
+        card_authorization = data['authorization']
+        _cauth = CardAuth.get_by_signature(
+            card_authorization['signature']
+        )
+        if not _cauth:
+            new_payment.regulatory_charge = True
+            schema = CardAuthSchema()
+            try:
+                new_card = schema.load(card_authorization)
 
-            # find owner by email
-            card_owner = User.get_by_email(data['data']['customer']['email'])
-            new_card.user = card_owner
-        except Exception as e:
-            db.session.rollback()
-            raise DataValidationError(schema.error_messages, e)
-        else:
-            db.session.commit()
+                # find owner by email
+                card_owner = User.get_by_email(data['customer']['email'])
+                new_card.user = card_owner
+            except Exception as e:
+                db.session.rollback()
+                raise DataValidationError(schema.error_messages, e)
+            else:
+                db.session.commit()
 
 
 @huey.task()
-def initiate_refund(data):
+def initiate_refund(trans_id):
     from core.api.payments.utils import PaystackClient
 
     client = PaystackClient(os.getenv('PAYSTACK_TEST_SECRET'))
     try:
-        client.init_refund(data)
+        req = client.init_refund({'transaction': trans_id})
+        print(req.json(), req.status_code)
     except Exception as e:
         logger.exception(e)
 

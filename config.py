@@ -28,18 +28,16 @@ class BaseConfig:
 
 class DevConfig(BaseConfig):
     DB_NAME = os.getenv('POSTGRES_DB')
-    DEBUG = True
-    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@localhost:5432/{DB_NAME}"
+    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@db/{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
     FLASK_COVERAGE = True
-    # SQLALCHEMY_BINDS = {
-    #     'writer': SQLALCHEMY_DATABASE_URI
-    # }
+    SESSION_REDIS = "redis://redis:6378/5"
 
 
 class StagingConfig(BaseConfig):
     DB_NAME = os.getenv('POSTGRES_DB')
-    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@db/{DB_NAME}"
+    DEBUG = True
+    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@localhost:5432/{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
     FLASK_COVERAGE = True
 

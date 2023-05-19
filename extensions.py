@@ -70,3 +70,4 @@ class RedCache:
 
 data_store = redis_ = RedCache().client
 cat_geo_store = redis_2 = RedCache(2).client
+socket_id_store = redis_4 = RedCache(4).client

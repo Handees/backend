@@ -12,20 +12,27 @@ class PaymentMethodEnum(SerializableEnum):
     CARD = 2
 
 
+class PaymentStatusEnum(SerializableEnum):
+    PENDING = 1
+    FAILED = 2
+    SUCCESS = 4
+    TIMEOUT = 8
+
+
 class Payment(TimestampMixin, db.Model):
     payment_id = db.Column(db.String, primary_key=True)
     customer_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     method = db.Column(
         db.Enum(PaymentMethodEnum),
         nullable=False,
-        default=PaymentMethodEnum["CARD"]
+        default=PaymentMethodEnum['CARD']
     )
     total_amount = db.Column(db.Float)
     base_rate = db.Column(db.Float)
     surge_rate = db.Column(db.Float)
     tax = db.Column(db.Float)
     tip_amount = db.Column(db.Float)
-    status = db.Column(db.Boolean, default=False)
+    status = db.Column(db.Enum(PaymentStatusEnum))
     regulatory_charge = db.Column(db.Boolean, default=False)
     transaction_id = db.Column(db.BigInteger)
     order = db.relationship('Booking', backref='payment')
@@ -42,9 +49,10 @@ class CardAuth(BaseModelPR, TimestampMixin, db.Model):
     bank = db.Column(db.String, index=True)
     channel = db.Column(db.String)
     signature = db.Column(db.String, unique=True)
-    reusable = db.Column(db.String)
+    reusable = db.Column(db.Boolean)
     country_code = db.Column(db.String)
     account_name = db.Column(db.String)
+    brand = db.Column(db.String)
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
 
     @classmethod

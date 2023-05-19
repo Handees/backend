@@ -11,8 +11,18 @@ from flask import (
     make_response
 )
 from firebase_admin import auth
+from firebase_admin.auth import (
+    InvalidIdTokenError,
+    ExpiredIdTokenError,
+    RevokedIdTokenError,
+    CertificateFetchError
+)
 from loguru import logger
+from core.utils import setLogger
 import os
+import json
+
+setLogger()
 
 
 def login_required(f):
@@ -95,7 +105,14 @@ def paystack_verification(f):
 
     @wraps(f)
     def wrapped(*args, **kwargs):
-        if request.remote_addr not in PAYSTACK_IPS:
+        if 'X-Forwarded-For' in request.headers:
+            ip = request.headers.get(
+                'X-Forwarded-For',
+                request.remote_addr
+            ).split(',')[0].strip()
+        else:
+            ip = request.remote_addr
+        if ip not in PAYSTACK_IPS:
             resp = make_response({
                 "status": "error",
                 "message": "forbidden!"
@@ -103,7 +120,7 @@ def paystack_verification(f):
             abort(resp)
             logger.info('Unidentifiable client on protected endpoint')
 
-        if 'x-paystack-signature header' not in request.headers:
+        if 'x-paystack-signature' not in request.headers:
             resp = make_response({
                 "status": "error",
                 "message": "missing required headers"
@@ -111,13 +128,56 @@ def paystack_verification(f):
             abort(resp)
             logger.info('Missing header from paystack -- aborted requested')
         else:
-            event = request.get_json(force=True)
+            event = json.dumps(request.get_json(force=True), separators=(',', ':'))
             hmac_hash = gen_hmac_hash(event, os.getenv('PAYSTACK_TEST_SECRET'))
-            if hmac_hash != request.headers['x-paystack-signature header']:
+            if hmac_hash != request.headers['x-paystack-signature']:
+                print("HERE3")
                 resp = make_response({
                     "status": "error",
                     "message": "invalid value for required header"
                 }, 403)
+                logger.info('invalid value for required header')
                 abort(resp)
         return f(event, *args, **kwargs)
     return wrapped
+
+
+def verify_token(token):
+    import time
+    # try:
+    #     uid = auth.verify_id_token(token)['user_id']
+    #     return uid
+    # except Exception as e:
+    #     logger.error("An error occurred while trying to verify token")
+    #     logger.error(e)
+    #     return None
+    try:
+        payload = auth.verify_id_token(token)
+    except ValueError as err:
+        raise Exception(
+            "Unable to verify token"
+        ) from err
+    except (
+        ExpiredIdTokenError,
+        InvalidIdTokenError,
+        RevokedIdTokenError,
+    ) as err:
+        logger.error("An error occurred while trying to verify token")
+        logger.error(err)
+        # this happens on localhost all the time.
+        str_err = str(err)
+        if (str_err.find("Token used too early") > -1):
+            times = str_err.split(",")[1]
+            times = times.strip().split("<")
+            time_ = int(times[1].split('.')[0].strip()) - int(times[0].strip())
+            time.sleep(time_)
+            return auth.verify_id_token(token)['user_id']
+        raise Exception(
+            message=err.default_message
+        ) from err
+    except CertificateFetchError as err:
+        raise Exception(
+            "Failed to fetch public key certificates",
+        ) from err
+
+    return payload['user_id']

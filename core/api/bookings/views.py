@@ -17,6 +17,7 @@ from core.utils import (
     setLogger
 )
 from tasks.booking_tasks import pbq
+from extensions import redis_4
 from . import messages as messages
 
 
@@ -54,6 +55,10 @@ def create_booking(current_user):
     db.session.commit()
 
     data['booking_id'] = new_order.booking_id
+    redis_4.hset(
+        'booking_id_to_uid',
+        mapping={new_order.booking_id: current_user.user_id}
+    )
     init_task = pbq(data)
 
     payload = {

@@ -7,7 +7,9 @@ ARTISAN_ARRIVES = "artisan has reached client location"
 JOB_STARTED = "new job initiated successfully"
 JOB_COMPLETED = "job completed"
 UPDATED_JOB_TYPE = "job type updated successfully"
-INTERNAL_SERVER_ERROR = "an error occured from the backend while trying to perform this task"
+INTERNAL_SERVER_ERROR = "😬an error occured from the backend while trying to perform this task"
+SCHEMA_ERROR = 'DataValidationError🤡: Client done screwed up'
+JOB_STARTED = 'Artisan started job'
 
 
 def dynamic_msg(msg: str, val):

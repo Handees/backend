@@ -1,6 +1,20 @@
 from schemas.bookings_schema import BookingSchema
 from extensions import redis_
-from flask import jsonify
+from core import socketio
+from core.api.auth.auth_helper import verify_token
+
+from flask import (
+    jsonify,
+    request,
+    abort
+)
+from loguru import logger
+import functools
+from flask_socketio import (
+    disconnect,
+    ConnectionRefusedError
+)
+from flask import session
 import json
 
 
@@ -36,3 +50,40 @@ def exit_cache(id):
     while redis_.get(id):
         redis_.delete(id)
     return redis_.get(id)
+
+
+def parse_data(data):
+    pass
+
+
+def auth_param_required(f):
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        if len(args) < 1:
+            logger.error("HEYY")
+            socketio.emit(
+                "msg",
+                "Client error: Missing Auth param"
+            )
+            disconnect(sid=request.sid)
+        else:
+            logger.info("OMO")
+            return f(*args, **kwargs)
+    return wrapped
+
+
+def valid_auth_required(f):
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        try:
+            if 'token' in session:
+                uid = verify_token(session.get('token'))
+                print(uid)
+                return f(uid, *args, **kwargs)
+            else:
+                print('WAHALA')
+        except Exception as e:
+            disconnect()
+            print(str(e))
+            raise ConnectionRefusedError(str(e))
+    return wrapped

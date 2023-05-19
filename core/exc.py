@@ -11,3 +11,11 @@ class DataValidationError(Exception):
 
 class BookingHasContract(Exception):
     pass
+
+
+class ClientNotConnected(Exception):
+    pass
+
+
+class InvalidBookingTransaction(Exception):
+    pass

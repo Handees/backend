@@ -63,3 +63,20 @@ class CancelBookingSchema(ma.Schema):
     booking_id = fields.Str(required=True, load_only=True)
     status_code = fields.Integer(required=True, load_only=True)
     artisan_id = fields.Str(required=True, load_only=True)
+
+
+class BookingSettlementSchema(ma.Schema):
+    type: str = fields.Str(required=True)
+    amount: float = fields.Float()
+
+    @pre_load
+    def transform_type(self, data, *args, **kwargs):
+        if data:
+            data['type'] = data['type'].upper()
+        return data
+
+
+class BookingStartSchema(ma.Schema):
+    booking_id = fields.Str(required=True)
+    is_contract = fields.Boolean(required=True)
+    settlement = fields.Nested(BookingSettlementSchema)

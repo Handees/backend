@@ -5,7 +5,7 @@ from config import config_options
 from .extensions import (
     db, ma,
     socketio, migrate,
-    cors
+    cors, sess
 )
 from .utils import error_response
 
@@ -76,17 +76,17 @@ def create_app(config_name):
     # configure application
     app.config.from_object(config_options[config_name])
 
-    # register blueprints
-    from .api import api
-
-    app.register_blueprint(api)
-
     # link extensions to app instance
-    socketio.init_app(app, logger=True, engineio_logger=True)
+    socketio.init_app(app)
     db.init_app(app)
     ma.init_app(app)
     migrate.init_app(app, db)
+    sess.init_app(app)
     cors.init_app(app, resources={r"/*": {"origins": "*"}})
+
+    # register blueprints
+    from .api import api
+    app.register_blueprint(api)
 
     # config_error_handlers(app)
     configure_logging(app)

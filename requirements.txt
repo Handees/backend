@@ -12,6 +12,8 @@ bidict==0.22.0
     # via python-socketio
 cachecontrol==0.12.10
     # via firebase-admin
+cachelib==0.10.2
+    # via flask-session
 cachetools==5.0.0
     # via google-auth
 certifi==2021.10.8
@@ -42,6 +44,7 @@ flask==2.1.1
     #   flask-cors
     #   flask-marshmallow
     #   flask-migrate
+    #   flask-session
     #   flask-socketio
     #   flask-sqlalchemy
 flask-cors==3.0.10
@@ -49,6 +52,8 @@ flask-cors==3.0.10
 flask-marshmallow==0.14.0
     # via -r requirements.in
 flask-migrate==3.1.0
+    # via -r requirements.in
+flask-session==0.4.1
     # via -r requirements.in
 flask-socketio==5.3.1
     # via -r requirements.in

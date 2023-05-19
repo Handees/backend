@@ -27,6 +27,7 @@ from tasks.payments import handlers
 from flask import request
 from loguru import logger
 import os
+import json
 
 logger.remove()
 setLogger()
@@ -98,11 +99,13 @@ def fetch_customer_transactions(current_user):
 @paystack_verification
 def webhook(event):
     if event:
-        init_card_auth = handlers[event['event']]
-        init_refund = handlers['initate_refund']
+        event = json.loads(event)
+        if event['event'] in handlers:
+            init_card_auth = handlers[event['event']](event['data'])
+            init_refund = handlers['initate_refund'](event['data']['id'])
 
-        logger.info(init_card_auth, dir(init_card_auth))
-        logger.info(init_refund)
-        return {
-            "status": True
-        }, 200
+            logger.info(init_card_auth, dir(init_card_auth))
+            logger.info(init_refund)
+    return {
+        "status": True
+    }, 200

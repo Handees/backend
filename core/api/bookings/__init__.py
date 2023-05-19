@@ -1,5 +1,4 @@
 # flake8: noqa
-
 from flask import Blueprint
 
 bookings = Blueprint(

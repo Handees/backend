@@ -2,7 +2,10 @@ from .base import (
     BaseSQLAlchemyAutoSchema,
     BaseSchema
 )
-from models.payments import Payment
+from models.payments import (
+    Payment,
+    CardAuth
+)
 from core import (
     db,
     ma
@@ -27,7 +30,7 @@ class PaymentSchema(BaseSQLAlchemyAutoSchema):
 
 class CardAuthSchema(BaseSQLAlchemyAutoSchema):
     class Meta:
-        model = Payment
+        model = CardAuth
         dump_only = (
             'id'
         )
@@ -38,7 +41,8 @@ class CardAuthSchema(BaseSQLAlchemyAutoSchema):
         include_relationships = False
 
     @pre_load
-    def pre_format_data(data, *args, **kwargs):
+    def pre_format_data(self, data, *args, **kwargs):
+        print(data, type(data))
         if data:
             data['last_four'] = data['last4']
             del data['last4']

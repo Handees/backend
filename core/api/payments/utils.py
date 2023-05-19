@@ -68,10 +68,10 @@ def gen_hmac_hash(payload, secret):
     """
 
     # reference : https://stackoverflow.com/questions/53910845/generate-hmac-sha256-signature-python
-    skey = secret.encode("ASCII")
+    skey = secret.encode("utf-8")
     try:
         new_hash = hmac.new(
-            skey, payload, hashlib.sha256
+            skey, payload.encode('utf-8'), hashlib.sha512
         ).hexdigest()
     except Exception as e:
         logger.exception(e)

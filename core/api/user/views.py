@@ -21,7 +21,7 @@ from schemas.user_schemas import UserSchema
 from schemas.bookings_schema import BookingSchema
 from .messages import (
     USER_CREATED,
-    USER_EMAIL_EXISTS,
+    USER_DATA_EXISTS,
     USER_NOT_FOUND,
     USER_PROFILE_UPDATED
 )
@@ -75,10 +75,13 @@ def create_new_user():
             message=USER_CREATED
         )
     except IntegrityError:
+        db.session.rollback()
         return error_response(
             400,
-            message=USER_EMAIL_EXISTS
+            message=USER_DATA_EXISTS
         )
+    finally:
+        db.session.close()
 
 
 @user.get('/<uid>')

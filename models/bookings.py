@@ -40,6 +40,12 @@ class BookingContract(TimestampMixin, BaseModelPR, db.Model):
     # agreed_start_time = db.Column(db.Date)
     # agreed_end_time = db.Column(db.Date)
 
+    def update_start_time(self):
+        self.start_time = dt.utcnow()
+
+    def update_end_time(self):
+        self.end_time = dt.utcnow()
+
 
 class BookingCategory(BaseModelPR, db.Model):
     __tablename__ = 'bookingcategory'
@@ -106,7 +112,7 @@ class Booking(TimestampMixin, db.Model):
 
     def fetch_hourly_pay(self):
         res = None
-        if self.settlement_type == SettlementEnum[1]:
+        if self.settlement_type == SettlementEnum('1'):
             time_spent = round(
                 (self.end_time - self.start_time).total_seconds(),
                 5
