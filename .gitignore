@@ -8,6 +8,7 @@ postgres_data/
 *.db
 *tmp/
 *.dump
+*.rdb
 *dump.rdb
 *.json
 *.pem
