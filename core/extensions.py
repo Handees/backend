@@ -3,7 +3,6 @@ from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
 from flask_cors import CORS
-from flask_session import Session
 # from core.sqlalchemy_ext import RouteSQLAlchemy
 
 
