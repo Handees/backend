@@ -84,21 +84,32 @@ def create_new_user():
         db.session.close()
 
 
-@user.get('/<uid>')
-def check_uid(uid):
+# @user.get('/<uid>')
+# def check_uid(uid):
+#     """ checks if uid exists """
+#     user = User.query.get(uid)
+#     schema = UserSchema()
+#     if user:
+#         return gen_response(
+#             200,
+#             data=schema.dump(user)
+#         )
+#     else:
+#         return error_response(
+#             404,
+#             message=USER_NOT_FOUND
+#         )
+
+
+@user.get('/signin')
+@login_required
+def fetch_user(current_user):
     """ checks if uid exists """
-    user = User.query.get(uid)
     schema = UserSchema()
-    if user:
-        return gen_response(
-            200,
-            data=schema.dump(user)
-        )
-    else:
-        return error_response(
-            404,
-            message=USER_NOT_FOUND
-        )
+    return gen_response(
+        200,
+        data=schema.dump(current_user)
+    )
 
 
 @user.get('/bookings')
@@ -139,6 +150,6 @@ def update_user_profile(current_user):
     )
 
 
-# @user.get('/fetch_uid')
+# @user.get('/')
 # def get_uid():
 #     if 
