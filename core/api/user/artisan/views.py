@@ -6,7 +6,8 @@ from . import artisan
 from core import db
 from models.user_models import (
     User,
-    Artisan
+    Artisan,
+    Role
 )
 from models.bookings import BookingCategory
 from core.api.bookings import messages
@@ -58,6 +59,8 @@ def add_new_artisan(current_user):
             400,
             message=schema.error_messages
         )
+    finally:
+        db.session.close()
     # @dev_only: find user with user_id
     user = User.query.get(data['user_profile_id'])
     if not user:
@@ -67,7 +70,7 @@ def add_new_artisan(current_user):
             message=USER_NOT_FOUND
         )
 
-    if user.is_artisan:
+    if user.is_artisan or user.role == Role.get_by_name("artisan"):
         db.session.rollback()
         return error_response(
             400,
@@ -83,12 +86,19 @@ def add_new_artisan(current_user):
     new_artisan.artisan_id = uuid4().hex
     new_artisan.job_category = category
 
-    db.session.add(new_artisan)
-    db.session.commit()
+    try:
+        db.session.add(new_artisan)
+        db.session.commit()
+
+        resp = schema.dump(new_artisan)
+    except Exception:
+        db.session.rollback()
+    finally:
+        db.session.close()
 
     return gen_response(
         201,
-        data=schema.dump(new_artisan),
+        data=resp,
         message=ARTISAN_CREATED
     )
 

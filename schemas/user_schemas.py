@@ -29,10 +29,10 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     class Meta:
         model = Artisan
         include_fk = True
-        include_relationships = True
+        # include_relationships = True
         load_instance = True
         sqla_session = db.session
-        load_relationships = True
+        # load_relationships = True
 
         # read only
         dump_only = (
