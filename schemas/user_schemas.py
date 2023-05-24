@@ -14,7 +14,6 @@ from marshmallow import (
 class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     class Meta:
         model = Artisan
-        include_relationships = True
         load_instance = True
         sqla_session = db.session
         include_fk = False
