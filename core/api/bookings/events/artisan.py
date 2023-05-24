@@ -92,6 +92,7 @@ def on_disconnect():
     if redis_4.exists(request.sid):
         redis_4.delete(request.sid)
     sid_all = redis_4.hgetall("sid_to_user")
+    print(sid_all)
     uid_all = redis_4.hgetall("user_to_sid")
     if request.sid in sid_all:
         del uid_all[sid_all[request.sid]]
