@@ -16,7 +16,8 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         model = Artisan
         load_instance = True
         sqla_session = db.session
-        include_fk = False
+        include_fk = True
+        include_relationship = True
 
         # read only
         dump_only = (
@@ -51,13 +52,18 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         load_instance = True
         transient = True
         sqla_session = db.session
+        include_fk = True
+        include_relationship = True
 
         # read only
         dump_only = (
             'created_at',
         )
-    artisan_profile = ma.Nested(ArtisanSchema(
-    ), dump_only=True)
+    artisan_profile = ma.Nested(ArtisanSchema(exclude=(
+        'booking',
+        'user_profile',
+        'booking_category'
+    )), dump_only=True)
 
     @post_dump
     def edit_dump(self, data, *args, **kwargs):
