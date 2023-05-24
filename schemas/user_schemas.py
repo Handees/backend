@@ -14,10 +14,10 @@ from marshmallow import (
 class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     class Meta:
         model = Artisan
-        include_fk = True
         include_relationships = True
         load_instance = True
         sqla_session = db.session
+        include_fk = False
 
         # read only
         dump_only = (
@@ -47,7 +47,7 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         exclude = (
             'role',
             'role_id',
-            'updated_at'
+            'updated_at',
         )
         load_instance = True
         transient = True
@@ -55,11 +55,13 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
 
         # read only
         dump_only = (
-            'created_at'
+            'created_at',
         )
     artisan_profile = ma.Nested(ArtisanSchema(
         exclude=(
             'booking',
+            # 'booking_category',
+            # 'user_profile'
         )
     ), dump_only=True)
 
