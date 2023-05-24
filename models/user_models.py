@@ -127,7 +127,7 @@ class Artisan(TimestampMixin, db.Model):
     ratings = db.relationship('Rating', backref='artisan')
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     job_category_id = db.Column(db.Integer, db.ForeignKey('bookingcategory.id'))
-    booking = db.relationship('Booking', backref='artisan', uselist=False)
+    booking = db.relationship('Booking', backref='artisan')
 
     @property
     def bookings(self):

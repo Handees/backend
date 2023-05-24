@@ -103,7 +103,7 @@ def add_new_artisan(current_user):
     )
 
 
-@artisan.put('/')
+@artisan.patch('/')
 @login_required
 @role_required("artisan")
 def edit_artisan_profile(current_user):

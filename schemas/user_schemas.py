@@ -4,7 +4,11 @@ from core import (
     db
 )
 from .base import BaseSQLAlchemyAutoSchema
-from marshmallow import fields, pre_load
+from marshmallow import (
+    fields,
+    pre_load,
+    pre_dump
+)
 
 
 class ArtisanSchema(BaseSQLAlchemyAutoSchema):
@@ -58,3 +62,9 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
             'booking',
         )
     ), dump_only=True)
+
+    @pre_dump
+    def edit_dump(self, data, *args, **kwargs):
+        if not data['artisan_profile']:
+            data['artisan_profile'] = None
+        return data

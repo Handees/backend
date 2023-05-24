@@ -57,6 +57,7 @@ class Production(BaseConfig):
 
 config_options = {
     "default": TestConfig,
+    "local": StagingConfig,
     "staging": StagingConfig,
     "development": DevConfig,
     "testing": TestConfig,
