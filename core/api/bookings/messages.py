@@ -10,6 +10,7 @@ UPDATED_JOB_TYPE = "job type updated successfully"
 INTERNAL_SERVER_ERROR = "😬an error occured from the backend while trying to perform this task"
 SCHEMA_ERROR = 'DataValidationError🤡: Client done screwed up'
 JOB_STARTED = 'Artisan started job'
+INVALID_TOKEN = 'Token is either expired or invalid 🙃'
 
 
 def dynamic_msg(msg: str, val):

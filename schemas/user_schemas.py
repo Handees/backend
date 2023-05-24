@@ -1,38 +1,19 @@
 from models.user_models import User, Artisan
-from core import db
+from core import (
+    ma,
+    db
+)
 from .base import BaseSQLAlchemyAutoSchema
 from marshmallow import fields, pre_load
-
-
-class UserSchema(BaseSQLAlchemyAutoSchema):
-    class Meta:
-        model = User
-        exclude = (
-            'role',
-            'role_id',
-            'updated_at'
-        )
-        include_fk = True
-        include_relationships = True
-        load_instance = True
-        transient = True
-        sqla_session = db.session
-        load_relationships = True
-
-        # read only
-        dump_only = (
-            'created_at'
-        )
 
 
 class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     class Meta:
         model = Artisan
         include_fk = True
-        # include_relationships = True
+        include_relationships = True
         load_instance = True
         sqla_session = db.session
-        # load_relationships = True
 
         # read only
         dump_only = (
@@ -54,3 +35,26 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         if data:
             del data['job_category']
         return data
+
+
+class UserSchema(BaseSQLAlchemyAutoSchema):
+    class Meta:
+        model = User
+        exclude = (
+            'role',
+            'role_id',
+            'updated_at'
+        )
+        load_instance = True
+        transient = True
+        sqla_session = db.session
+
+        # read only
+        dump_only = (
+            'created_at'
+        )
+    artisan_profile = ma.Nested(Artisan(
+        exclue=(
+            'bookin'
+        )
+    ), dump_only=True)

@@ -2,6 +2,7 @@ from schemas.bookings_schema import BookingSchema
 from extensions import redis_
 from core import socketio
 from core.api.auth.auth_helper import verify_token
+from core.api.bookings import messages
 
 from flask import (
     jsonify,
@@ -61,6 +62,13 @@ def auth_param_required(f):
     def wrapped(*args, **kwargs):
         if len(args) < 1:
             logger.error("HEYY")
+            # verify token
+            try:
+                uid = verify_token(args[0])
+            except Exception as e:
+                disconnect()
+                logger.error(messages.INVALID_TOKEN)
+                raise ConnectionRefusedError(str(e))
             socketio.emit(
                 "msg",
                 "Client error: Missing Auth param"

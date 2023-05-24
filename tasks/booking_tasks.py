@@ -225,7 +225,7 @@ def exp_backoff_task(retries, retry_backoff):
     return deco
 
 
-@exp_backoff_task(retries=3, retry_backoff=1.15)
+@exp_backoff_task(retries=3, retry_backoff=1.5)
 def send_event(event, data, namespace):
     from flask_socketio import SocketIO
     from core.exc import ClientNotConnected
