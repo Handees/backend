@@ -60,7 +60,7 @@ def parse_data(data):
 def auth_param_required(f):
     @functools.wraps(f)
     def wrapped(*args, **kwargs):
-        if len(args) < 1:
+        if len(args) < 1 or 'access_token' not in args[0]:
             logger.error("TOKEN NOT SENT ON CONNECT")
             socketio.emit(
                 "msg",
@@ -71,9 +71,10 @@ def auth_param_required(f):
             logger.info("TOKEN RECEIVED ON CONNECT")
              # verify token
             try:
-                uid = verify_token(args[0])
+                uid = verify_token(args[0]['access_token'])
                 return f(*args, **kwargs)
             except Exception as e:
+                raise e
                 logger.error(messages.INVALID_TOKEN)
                 socketio.emit(
                     "msg",

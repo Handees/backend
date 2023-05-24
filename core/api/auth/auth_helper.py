@@ -175,7 +175,7 @@ def login_required(f):
                 }, 404)
                 abort(resp)
             return f(user, *args, **kwargs)
-        except auth.ExpiredIdTokenError | Exception:
+        except auth.ExpiredIdTokenError or Exception:
             resp = make_response({
                 'msg': 'Expired/Invalid token'
             }, 403)
