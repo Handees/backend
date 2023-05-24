@@ -74,7 +74,7 @@ def on_connect(auth):
     if not uid:
         raise ConnectionRefusedError
     # # fetch client sessilogger.info(uidon id
-    emit('msg', 'welcome!', broadcast=True)
+    emit('msg', 'welcome!')
     redis_4.set(request.sid, 1)
     redis_4.hset(
         "user_to_sid",
