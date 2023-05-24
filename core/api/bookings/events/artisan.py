@@ -92,16 +92,14 @@ def on_disconnect():
     if redis_4.exists(request.sid):
         redis_4.delete(request.sid)
     sid_all = redis_4.hgetall("sid_to_user")
-    print(sid_all)
     uid_all = redis_4.hgetall("user_to_sid")
-    print(uid_all)
     if request.sid in sid_all:
         del uid_all[sid_all[request.sid]]
         del sid_all[request.sid]
-    print(sid_all)
-    print(uid_all)
-    redis_4.hset("sid_to_user", mapping=sid_all)
-    redis_4.hset("user_to_sid", mapping=uid_all)
+    if sid_all:
+        redis_4.hset("sid_to_user", mapping=sid_all)
+    if uid_all:
+        redis_4.hset("user_to_sid", mapping=uid_all)
 
 
 @socketio.on('location_update', namespace='/artisan')
