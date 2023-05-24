@@ -55,6 +55,6 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         )
     artisan_profile = ma.Nested(ArtisanSchema(
         exclude=(
-            'booking'
+            'booking',
         )
     ), dump_only=True)
