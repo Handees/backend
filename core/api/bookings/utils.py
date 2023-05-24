@@ -61,22 +61,26 @@ def auth_param_required(f):
     @functools.wraps(f)
     def wrapped(*args, **kwargs):
         if len(args) < 1:
-            logger.error("HEYY")
-            # verify token
-            try:
-                uid = verify_token(args[0])
-            except Exception as e:
-                disconnect()
-                logger.error(messages.INVALID_TOKEN)
-                raise ConnectionRefusedError(str(e))
+            logger.error("TOKEN NOT SENT ON CONNECT")
             socketio.emit(
                 "msg",
                 "Client error: Missing Auth param"
             )
             disconnect(sid=request.sid)
         else:
-            logger.info("OMO")
-            return f(*args, **kwargs)
+            logger.info("TOKEN RECEIVED ON CONNECT")
+             # verify token
+            try:
+                uid = verify_token(args[0])
+                return f(*args, **kwargs)
+            except Exception as e:
+                logger.error(messages.INVALID_TOKEN)
+                raise ConnectionRefusedError(str(e))
+                socketio.emit(
+                    "msg",
+                    "Client error: Missing Auth param"
+                )
+                disconnect(sid=request.sid)
     return wrapped
 
 
