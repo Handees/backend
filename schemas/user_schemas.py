@@ -53,12 +53,8 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         dump_only = (
             'created_at'
         )
-    artisan_profile = ma.Nested(Artisan(
-        only=(
-            'artisan_id', 'is_verified',
-            'jobs_title', 'jobs_completed',
-            'sign_up_date', 'hourly_rate',
-            'ratings', 'user_id',
-            'job_category_id',
+    artisan_profile = ma.Nested(ArtisanSchema(
+        exclude=(
+            'booking'
         )
     ), dump_only=True)
