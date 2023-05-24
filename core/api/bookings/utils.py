@@ -75,7 +75,6 @@ def auth_param_required(f):
                 return f(*args, **kwargs)
             except Exception as e:
                 logger.error(messages.INVALID_TOKEN)
-                raise ConnectionRefusedError(str(e))
                 socketio.emit(
                     "msg",
                     "Client error: Missing Auth param"
