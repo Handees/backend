@@ -16,8 +16,8 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         model = Artisan
         load_instance = True
         sqla_session = db.session
-        load_fk = True
-        load_relationship = True
+        include_fk = True
+        include_relationship = True
 
         # read only
         dump_only = (
@@ -60,9 +60,6 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
             'created_at',
         )
     artisan_profile = ma.Nested(ArtisanSchema(exclude=(
-        'booking',
-        'user_profile',
-        'booking_category'
     )), dump_only=True)
 
     @post_dump
