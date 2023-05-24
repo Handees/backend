@@ -131,8 +131,7 @@ class Artisan(TimestampMixin, db.Model):
 
     @property
     def bookings(self):
-        from models import Booking
-        return Booking.query.filter_by(artisan_id=self.artisan_id)
+        return self.booking
 
     def update_completed_job_count(self):
         """ increase the no of job completed by unit value """

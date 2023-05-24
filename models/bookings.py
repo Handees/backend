@@ -75,6 +75,10 @@ class BookingCategory(BaseModelPR, db.Model):
     def get_by_name(cls, val):
         return cls.query.filter_by(name=val).first()
 
+    @property
+    def artisans(self):
+        return self.artisan
+
 
 class Booking(TimestampMixin, db.Model):
     # TODO: Implement activity track/logs

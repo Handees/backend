@@ -84,7 +84,7 @@ def add_new_artisan(current_user):
 
     # add other props
     new_artisan.artisan_id = uuid4().hex
-    new_artisan.job_category = category
+    new_artisan.booking_category = category
 
     try:
         db.session.add(new_artisan)
