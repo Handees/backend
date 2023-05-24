@@ -16,8 +16,8 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         model = Artisan
         load_instance = True
         sqla_session = db.session
-        include_fk = True
-        include_relationship = True
+        load_fk = True
+        load_relationship = True
 
         # read only
         dump_only = (
