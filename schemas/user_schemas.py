@@ -57,10 +57,6 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
             'created_at',
         )
     artisan_profile = ma.Nested(ArtisanSchema(
-        exclude=(
-            'booking_category',
-            'user_profile'
-        )
     ), dump_only=True)
 
     @post_dump
