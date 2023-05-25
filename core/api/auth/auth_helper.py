@@ -141,7 +141,7 @@ def verify_token(token):
             time.sleep(time_)
             return auth.verify_id_token(token)['user_id']
         raise Exception(
-            message=err.default_message
+            err.default_message
         ) from err
     except CertificateFetchError as err:
         raise Exception(
@@ -156,6 +156,11 @@ def login_required(f):
     def wrapped(*args, **kwargs):
         token = None
         resp = None
+        excs = (
+            ExpiredIdTokenError,
+            InvalidIdTokenError,
+            RevokedIdTokenError,
+        )
         if 'access-token' not in request.headers:
             resp = make_response({
                 'status': 'error',
@@ -175,7 +180,7 @@ def login_required(f):
                 }, 404)
                 abort(resp)
             return f(user, *args, **kwargs)
-        except auth.ExpiredIdTokenError or Exception:
+        except Exception in excs or auth.ExpiredIdTokenError:
             resp = make_response({
                 'msg': 'Expired/Invalid token'
             }, 403)

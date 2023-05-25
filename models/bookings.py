@@ -8,14 +8,14 @@ from geoalchemy2 import Geometry
 
 categories = [
     'laundry',
-    'carpentary',
+    'carpentry',
     'hair styling',
     'clothing',
     'plumbing',
     'automobile',
     'generator repair',
     'tv cable engineer',
-    'weldering',
+    'welding',
     'gardening',
     'house keeping'
 ]
