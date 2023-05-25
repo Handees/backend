@@ -1,7 +1,5 @@
-from models.user_models import (
-    User, Artisan
-)
-from models.bookings import categories
+from models.user_models import User
+from .artisan import ArtisanSchema
 from core import (
     ma,
     db
@@ -15,39 +13,7 @@ from marshmallow import (
 )
 
 
-class ArtisanSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Artisan
-        load_instance = True
-        include_fk = True
-        include_reltionships = True
 
-        # read only
-        dump_only = (
-            'user_id',
-            'artisan_id'
-        )
-
-        # additional fields
-        additional_fields = (
-            'user_profile_id',
-            'job_category'
-        )
-    created_at = ma.String(dump_only=True, data_key="became_artisan_on")
-
-
-    @pre_load
-    def preformat_data(self, data, *args, **kwargs):
-        if data:
-            del data['job_category']
-        return data
-
-    @post_dump
-    def append_job_category(self, data, *args, **kwargs):
-        if data:
-            data['job_category'] = categories[data['job_category_id']]
-            del data['job_category_id']
-        return data
 
 class UserSchema(BaseSQLAlchemyAutoSchema):
     class Meta:
@@ -63,7 +29,9 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         )
 
     artisan_profile = ma.Nested(
-        ArtisanSchema(exclude=('user_id',))
+        ArtisanSchema(exclude=(
+            'user_id', 'user_profile',
+        ))
     )
     cards = ma.Nested(CardAuthSchema, many=True)
     # addresses = ma.Nested()
