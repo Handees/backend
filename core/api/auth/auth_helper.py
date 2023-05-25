@@ -180,7 +180,7 @@ def login_required(f):
                 }, 404)
                 abort(resp)
             return f(user, *args, **kwargs)
-        except Exception in excs or auth.ExpiredIdTokenError:
+        except Exception or Exception in excs or auth.ExpiredIdTokenError:
             resp = make_response({
                 'msg': 'Expired/Invalid token'
             }, 403)
