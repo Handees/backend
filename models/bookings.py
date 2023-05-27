@@ -33,12 +33,19 @@ class SettlementEnum(SerializableEnum):
     HOURLY_RATE = 1
 
 
+class BookingContractDurationEnum(SerializableEnum):
+    DAYS = 1
+    WEEKS = 2
+
+
 class BookingContract(TimestampMixin, BaseModelPR, db.Model):
     booking_id = db.Column(db.String, db.ForeignKey('booking.booking_id'))
     start_time = db.Column(db.Date, nullable=False, default=dt.utcnow())
     end_time = db.Column(db.Date)
-    # agreed_start_time = db.Column(db.Date)
-    # agreed_end_time = db.Column(db.Date)
+    duration = db.Column(db.Integer, nullable=False)
+    duration_unit = db.Column(db.Enum(
+        BookingContractDurationEnum
+    ), nullable=False)
 
     def update_start_time(self):
         self.start_time = dt.utcnow()
@@ -99,6 +106,7 @@ class Booking(TimestampMixin, db.Model):
     settlement_type = db.Column(db.Enum(
         SettlementEnum
     ), nullable=True)
+    details_confirmed = db.Column(db.Boolean, default=False)
     date_of_booking = db.Column(db.Date, default=dt.utcnow())
     booking_contract = db.relationship('BookingContract', backref='booking', uselist=False)
 

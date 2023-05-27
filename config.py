@@ -24,6 +24,7 @@ class BaseConfig:
         os.getenv('F_KEY')
     )
     SQLALCHEMY_ECHO = False
+    SESSION_TYPE = 'redis'
 
 
 class DevConfig(BaseConfig):
@@ -31,7 +32,7 @@ class DevConfig(BaseConfig):
     URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@db/{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
     FLASK_COVERAGE = True
-    SESSION_REDIS = "redis://redis:6378/5"
+    SESSION_REDIS = redis.Redis(host='redis', port='6378', db=5)
 
 
 class StagingConfig(BaseConfig):

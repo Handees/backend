@@ -3,24 +3,39 @@ from extensions import (
     redis_,
     redis_4
 )
-from core.api.bookings.utils import auth_param_required
+from core.api.bookings.utils import (
+    auth_param_required,
+    valid_auth_required
+)
+from core.exc import (
+    DataValidationError,
+    InvalidBookingTransaction
+)
 from core.api.bookings.events.utils import parse_event_data
+from schemas.bookings_schema import BookingStartSchema
 from core.api.auth.auth_helper import verify_token
+from tasks.events import send_event
+from tasks.booking_tasks import confirm_job_details
 
 from loguru import logger
 from flask_socketio import emit, join_room
-from flask import request
+from flask import (
+    request,
+    session
+)
 
 
 @socketio.on('connect', namespace='/customer')
 @auth_param_required
 def connect(auth):
     uid = verify_token(auth['access_token'])
-    logger.info("HERE I AMML:::")
-    print(auth['access_token'])
     if not uid:
         raise ConnectionRefusedError
-    # # fetch client session id
+    # fetch client session id
+    session['uid'] = uid
+    print("BELLOOWWW:::")
+    print(session.get('uid'))
+
     emit('msg', 'welcome!', broadcast=True)
     redis_4.set(request.sid, 1)
     redis_4.hset(
@@ -36,15 +51,17 @@ def connect(auth):
 
 @socketio.on('disconnect', namespace='/customer')
 def disconnect():
-    sid_all = redis_4.hgetall("sid_to_user") 
+    if redis_4.exists(request.sid):
+        redis_4.delete(request.sid)
+    sid_all = redis_4.hgetall("sid_to_user")
     uid_all = redis_4.hgetall("user_to_sid")
     if request.sid in sid_all:
         del uid_all[sid_all[request.sid]]
         del sid_all[request.sid]
-    redis_4.hset("sid_to_user", mapping=sid_all)
-    redis_4.hset("user_to_sid", mapping=uid_all)
-    if redis_4.exists(request.sid):
-        redis_4.delete(request.sid)
+    if sid_all:
+        redis_4.hset("sid_to_user", mapping=sid_all)
+    if uid_all:
+        redis_4.hset("user_to_sid", mapping=uid_all)
 
 
 @socketio.on('booking_update', namespace='/customer')
@@ -107,6 +124,25 @@ def send_chat_msg(data):
 def sendstuff(msg):
     socketio.emit('msg', msg, namespace='/customer')
 
+
+@socketio.on('confirm_job_details', namespace='/customer')
+@parse_event_data
+@valid_auth_required
+def confirm_job_details(uid, data):
+    """ triggered when customer has confirmed job details """
+    from tasks.booking_tasks import confirm_job_details
+
+    try:
+        data = BookingStartSchema().load(data)
+    except DataValidationError:
+        logger.exception(e)
+        emit("error", messages.SCHEMA_ERROR, namespace='/customer')
+
+    try:
+        confirm_job_details(data)
+    except Exception as e:
+        logger.exception(e)
+        emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/customer')
 
 # {
 #     "lat": 6.518139822341671,

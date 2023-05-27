@@ -74,7 +74,6 @@ def auth_param_required(f):
                 uid = verify_token(args[0]['access_token'])
                 return f(*args, **kwargs)
             except Exception as e:
-                raise e
                 logger.error(messages.INVALID_TOKEN)
                 socketio.emit(
                     "msg",
@@ -87,15 +86,10 @@ def auth_param_required(f):
 def valid_auth_required(f):
     @functools.wraps(f)
     def wrapped(*args, **kwargs):
-        try:
-            if 'token' in session:
-                uid = verify_token(session.get('token'))
-                print(uid)
-                return f(uid, *args, **kwargs)
-            else:
-                print('WAHALA')
-        except Exception as e:
+        if 'uid' in session:
+            uid = session.get('uid')
+            return f(uid, *args, **kwargs)
+        else:
             disconnect()
             print(str(e))
-            raise ConnectionRefusedError(str(e))
     return wrapped

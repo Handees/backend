@@ -1,12 +1,16 @@
-from core import socketio
+from core import (
+    socketio,
+    db
+)
 from core.api.bookings.utils import (
     auth_param_required,
     valid_auth_required
 )
 from tasks.booking_tasks import (
     update_booking_status,
-    send_event
+    confirm_job_details
 )
+from tasks.events import send_event
 from extensions import (
     redis_2,
     redis_4
@@ -21,7 +25,11 @@ from core.exc import (
 from core.api.auth.auth_helper import verify_token
 from core.api.bookings.events.utils import parse_event_data
 from schemas.bookings_schema import BookingStartSchema
-from models import Artisan
+from models import (
+    Artisan,
+    Booking
+)
+from models.bookings import BookingStatusEnum
 from .. import messages
 
 from flask import (
@@ -70,10 +78,11 @@ def default_error_handler(e):
 @auth_param_required
 def on_connect(auth):
     uid = verify_token(auth['access_token'])
-    session['token'] = auth['access_token']
     if not uid:
         raise ConnectionRefusedError
-    # # fetch client sessilogger.info(uidon id
+    session['uid'] = uid
+    print("BELLOOWWW:::")
+    print(session.get('uid'))
     emit('msg', 'welcome!')
     redis_4.set(request.sid, 1)
     redis_4.hset(
@@ -228,43 +237,49 @@ def handle_location_arrival(uid, data):
     send_event('artisan_arrived', payload, '/customer')
 
 
-@socketio.on('job_started', namespace='/artisan')
+@socketio.on('start_job', namespace='/artisan')
 @parse_event_data
 @valid_auth_required
 def handle_job_begin(uid, data):
     """ triggered when artisan begins a job """
-    from tasks.booking_tasks import job_start
-
-    # parse data with schema
-    schema = BookingStartSchema()
-
-    try:
-        data = schema.load(data)
-    except Exception as e:
-        raise DataValidationError(messages.SCHEMA_ERROR, e)
-
-    print(uid)
     artisan = Artisan.query.get(uid)
+    bk = Booking.query.get(data['booking_id'])
+    artisan = redis_4.hget(
+        'user_to_sid',
+        uid
+    )
     if artisan.booking.booking_id == data['booking_id']:
         try:
-            job_start(data)
-            payload = {
-                'payload': messages.JOB_STARTED,
-                'recipient': redis_4.hget(
-                    'booking_id_to_uid',
-                    data['booking_id']
-                )
-            }
-            send_event(
-                'job_started',
-                payload,
-                '/customer'
-            )
+            if not bk.status == BookingStatusEnum('8'):
+                bk.update_status('8')
+                try:
+                    db.session.commit()
+                    payload = {
+                        'payload': messages.JOB_STARTED,
+                        'recipient': artisan
+                    }
+                    send_event(
+                        'job_started',
+                        payload,
+                        '/artisan'
+                    )
+                except Exception as e:
+                    logger.exception(e)
+                    db.session.rollback()
+                    emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
+                finally:
+                    db.session.close()
         except Exception as e:
             logger.exception(e)
+            emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
     else:
-        raise InvalidBookingTransaction(
+        logger.error(InvalidBookingTransaction(
             f"Artisan with id {artisan.artisan_id} has not been assigned this order"
+        ))
+        emit(
+            'error',
+            f"Artisan with id {artisan.artisan_id} has not been assigned this order",
+            namespace='/artisan'
         )
 
 
@@ -284,18 +299,29 @@ def handle_job_end(uid, data):
         send(messages.JOB_COMPLETED)
 
 
-@socketio.on('update_job_type', namespace='/artisan')
+@socketio.on('request_customer_approval', namespace='/artisan')
 @parse_event_data
 @valid_auth_required
-def update_job_type(uid, data):
-    """ triggered when artisan needs to switch to contract type """
-    from tasks.booking_tasks import update_job_type
-
+def customer_approval(uid, data):
+    """ triggered when artisan specifies initial details of the booking """
     try:
-        update_job_type(data)
-    except Exception as e:
+        data = BookingStartSchema().load(data)
+    except DataValidationError:
         logger.exception(e)
-        emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
+        emit("error", messages.SCHEMA_ERROR, namespace='/artisan')
+    
+    try:
+        payload = {
+            'payload': data,
+            'recipient': redis_4.hget(
+                'booking_id_to_uid',
+                data['booking_id']
+            )
+        }
+        send_event('customer_approval', payload, '/customer')
+    except Exception as e:
+        logger.error(e)
+        emit('error', messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
 
 
 @socketio.on('msg', namespace='/chat')

@@ -2,11 +2,12 @@ from .base import BaseSQLAlchemyAutoSchema
 from core import (
     ma, db
 )
-from models.bookings import Booking
+from models.bookings import (Booking, BookingContractDurationEnum)
 from marshmallow import pre_load
 from marshmallow import fields
 from geoalchemy2.types import Geometry as GeometryType
 from marshmallow_sqlalchemy import ModelConverter
+from core.exc import DataValidationError
 from .utils import v_float
 
 
@@ -80,3 +81,16 @@ class BookingStartSchema(ma.Schema):
     booking_id = fields.Str(required=True)
     is_contract = fields.Boolean(required=True)
     settlement = fields.Nested(BookingSettlementSchema)
+    duration = fields.Integer()
+    duration_unit = fields.Str()
+
+    @pre_load
+    def verify_unit(self, data, *args, **kwargs):
+        if data:
+            try:
+                BookingContractDurationEnum[data['duration_unit'].upper()]
+            except KeyError:
+                raise DataValidationError('invalid duration unit passed', errors)
+            else:
+                data['duration_unit'] = data['duration_unit'].upper()
+        return data

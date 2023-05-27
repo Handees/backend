@@ -7,8 +7,8 @@ ARTISAN_ARRIVES = "artisan has reached client location"
 JOB_STARTED = "new job initiated successfully"
 JOB_COMPLETED = "job completed"
 UPDATED_JOB_TYPE = "job type updated successfully"
-INTERNAL_SERVER_ERROR = "😬an error occured from the backend while trying to perform this task"
-SCHEMA_ERROR = 'DataValidationError🤡: Client done screwed up'
+INTERNAL_SERVER_ERROR = "Omo:: 😬an error occured from the backend while trying to perform this task"
+SCHEMA_ERROR = 'DataValidationError🤡: Client done screwed up check the data you sent abeg'
 JOB_STARTED = 'Artisan started job'
 INVALID_TOKEN = 'Token is either expired or invalid 🙃'
 

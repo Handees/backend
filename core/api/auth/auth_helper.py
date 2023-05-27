@@ -156,6 +156,7 @@ def login_required(f):
     def wrapped(*args, **kwargs):
         token = None
         resp = None
+        user = None
         excs = (
             ExpiredIdTokenError,
             InvalidIdTokenError,
@@ -173,16 +174,16 @@ def login_required(f):
             print(uid)
             logger.debug("user with data: {} still has access".format(uid))
             user = User.query.filter_by(user_id=uid).first()
-            if not user:
-                resp = make_response({
-                    'status': 'error',
-                    'msg': 'User with token uid not found'
-                }, 404)
-                abort(resp)
-            return f(user, *args, **kwargs)
         except Exception or Exception in excs or auth.ExpiredIdTokenError:
             resp = make_response({
                 'msg': 'Expired/Invalid token'
             }, 403)
             abort(resp)
+        if not user:
+            resp = make_response({
+                'status': 'error',
+                'msg': 'User with token uid not found'
+            }, 404)
+            abort(resp)
+        return f(user, *args, **kwargs)
     return wrapped

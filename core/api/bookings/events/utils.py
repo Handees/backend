@@ -49,7 +49,7 @@ def parse_event_data(fn):
         import os
         from dotenv import load_dotenv
         load_dotenv()
-        if os.getenv('APP_ENV') == 'local':
+        if os.getenv('P_ENV') == 'local':
             data, *other_args = args
             data = json.loads(data)
             data = eval(data)
