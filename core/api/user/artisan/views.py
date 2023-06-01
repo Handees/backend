@@ -12,7 +12,7 @@ from models.user_models import (
 from models.bookings import BookingCategory
 from core.api.bookings import messages
 from schemas import ArtisanSchema
-from core.utils import (
+from utils import (
     gen_response,
     error_response,
     setLogger

@@ -9,7 +9,7 @@ base_dir = os.path.abspath(os.getcwd())
 
 class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = os.getenv("app_secret")
+    SECRET_KEY = os.getenv("APP_SECRET")
     HUEY_CONFIG = dict(
         connection_pool=redis.ConnectionPool(
             host=os.getenv('REDIS_HOST') or 'redis', port=6378,
@@ -17,8 +17,8 @@ class BaseConfig:
         )
     )
     ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
-    DB_USERNAME = os.getenv('POSTGRES_USER')
-    DB_PASSPHRASE = os.getenv('POSTGRES_PASSWORD')
+    DB_USERNAME = os.getenv('DATABASE_USER')
+    DB_PASSPHRASE = os.getenv('DATABASE_PASSWORD')
     F_KEY_PATH = os.path.join(
         os.path.abspath(os.getcwd()),
         os.getenv('F_KEY')
@@ -28,32 +28,34 @@ class BaseConfig:
 
 
 class DevConfig(BaseConfig):
-    DB_NAME = os.getenv('POSTGRES_DB')
-    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@db/{DB_NAME}"
+    DB_NAME = f"{os.getenv('DATABASE_HOST')}/{os.getenv('DATABASE_NAME')}"
+    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
     FLASK_COVERAGE = True
     SESSION_REDIS = redis.Redis(host='redis', port='6378', db=5)
 
 
 class StagingConfig(BaseConfig):
-    DB_NAME = os.getenv('POSTGRES_DB')
+    DB_NAME = f"{os.getenv('DATABASE_HOST')}/{os.getenv('DATABASE_NAME')}"
     DEBUG = True
-    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@localhost:5432/{DB_NAME}"
+    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
     FLASK_COVERAGE = True
 
 
 class TestConfig(BaseConfig):
     DB_NAME = os.getenv('TEST_DB', 'handeestestdb')
-    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@localhost:5434/{DB_NAME}"
+    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
-    ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
+    ADMIN_EMAIL = os.getenv('ADMIN-EMAIL')
     TESTING = True
     FLASK_COVERAGE = True
 
 
 class Production(BaseConfig):
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+    DB_NAME = os.getenv('DATABASE-URL')
+    URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@{DB_NAME}"
+    SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
 
 
 config_options = {
@@ -61,6 +63,7 @@ config_options = {
     "local": StagingConfig,
     "staging": StagingConfig,
     "development": DevConfig,
+    "dev": DevConfig,
     "testing": TestConfig,
     "production": Production
 }

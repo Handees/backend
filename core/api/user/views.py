@@ -11,7 +11,7 @@ from models.user_models import (
     Artisan,
     User
 )
-from core.utils import (
+from utils import (
     gen_response,
     error_response,
     LOG_FORMAT,

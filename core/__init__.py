@@ -7,7 +7,7 @@ from .extensions import (
     socketio, migrate,
     cors, sess
 )
-from .utils import error_response
+from utils import error_response
 
 import logging
 from loguru import logger
@@ -38,6 +38,7 @@ def configure_logging(app):
 
     # reduce noise from noisy libraries
     logging.getLogger("socketio").setLevel('ERROR')
+    logging.getLogger('azure').setLevel('ERROR')
 
     @app.errorhandler(404)
     def not_found(error):

@@ -9,7 +9,7 @@ from core.exc import DataValidationError
 from schemas.payment import CardAuthSchema
 from config import config_options
 from extensions import HueyTemplate
-from core.utils import setLogger
+from utils import setLogger
 
 import uuid
 import os

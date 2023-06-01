@@ -8,7 +8,7 @@ from marshmallow import fields
 from geoalchemy2.types import Geometry as GeometryType
 from marshmallow_sqlalchemy import ModelConverter
 from core.exc import DataValidationError
-from .utils import v_float
+from schemas.utils import v_float
 
 
 class BookingModelConverter(ModelConverter):

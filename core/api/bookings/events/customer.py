@@ -7,15 +7,13 @@ from core.api.bookings.utils import (
     auth_param_required,
     valid_auth_required
 )
-from core.exc import (
-    DataValidationError,
-    InvalidBookingTransaction
-)
+from core.exc import DataValidationError
 from core.api.bookings.events.utils import parse_event_data
 from schemas.bookings_schema import BookingStartSchema
 from core.api.auth.auth_helper import verify_token
 from tasks.events import send_event
 from tasks.booking_tasks import confirm_job_details
+from .. import messages
 
 from loguru import logger
 from flask_socketio import emit, join_room
@@ -128,13 +126,12 @@ def sendstuff(msg):
 @socketio.on('confirm_job_details', namespace='/customer')
 @parse_event_data
 @valid_auth_required
-def confirm_job_details(uid, data):
+def accept_job_details(uid, data):
     """ triggered when customer has confirmed job details """
-    from tasks.booking_tasks import confirm_job_details
 
     try:
         data = BookingStartSchema().load(data)
-    except DataValidationError:
+    except DataValidationError as e:
         logger.exception(e)
         emit("error", messages.SCHEMA_ERROR, namespace='/customer')
 

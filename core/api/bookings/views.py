@@ -11,7 +11,7 @@ from core.api.auth.auth_helper import (
     login_required
 )
 from core import db
-from core.utils import (
+from utils import (
     error_response,
     gen_response,
     setLogger

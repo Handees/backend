@@ -5,7 +5,7 @@ import time
 
 from extensions import redis_4
 from core.exc import ClientNotConnected
-from core.utils import setLogger
+from utils import setLogger
 
 
 setLogger()

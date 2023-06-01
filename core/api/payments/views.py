@@ -10,7 +10,7 @@ from schemas.payment import (
     PaymentSchema
 )
 from models.user_models import Permission
-from core.utils import (
+from utils import (
     error_response,
     gen_response,
     setLogger

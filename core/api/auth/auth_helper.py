@@ -18,7 +18,7 @@ from firebase_admin.auth import (
     CertificateFetchError
 )
 from loguru import logger
-from core.utils import setLogger
+from utils import setLogger
 import os
 import json
 

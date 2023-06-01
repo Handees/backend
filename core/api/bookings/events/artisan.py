@@ -6,16 +6,13 @@ from core.api.bookings.utils import (
     auth_param_required,
     valid_auth_required
 )
-from tasks.booking_tasks import (
-    update_booking_status,
-    confirm_job_details
-)
+from tasks.booking_tasks import update_booking_status
 from tasks.events import send_event
 from extensions import (
     redis_2,
     redis_4
 )
-from core.utils import (
+from utils import (
     LOG_FORMAT, _level
 )
 from core.exc import (
@@ -306,10 +303,10 @@ def customer_approval(uid, data):
     """ triggered when artisan specifies initial details of the booking """
     try:
         data = BookingStartSchema().load(data)
-    except DataValidationError:
+    except DataValidationError as e:
         logger.exception(e)
         emit("error", messages.SCHEMA_ERROR, namespace='/artisan')
-    
+
     try:
         payload = {
             'payload': data,
