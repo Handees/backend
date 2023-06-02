@@ -7,6 +7,7 @@ steps:
   - 'handees-dev'
   - '--project=handees'
   - '--zone=europe-west6-a'
+  - '--tunnel-through-iap'
   - '--command'
   - 'pkill -f supervisord || true'
 # copy changes to VM
