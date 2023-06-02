@@ -1,15 +1,15 @@
 steps:
 # stop server
-# - name: 'gcr.io/cloud-builders/gcloud'
-#   args:
-#   - 'compute'
-#   - 'ssh'
-#   - 'handees-dev'
-#   - '--tunnel-through-iap'
-#   - '--project=handees'
-#   - '--zone=europe-west6-a'
-#   - '--command'
-#   - 'pkill -f supervisord || true'
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'compute'
+  - 'ssh'
+  - 'handees-dev-vm'
+  - '--tunnel-through-iap'
+  - '--project=handees'
+  - '--zone=europe-west6-a'
+  - '--command'
+  - 'pkill -f supervisord || true'
 # copy changes to VM
 - name: 'gcr.io/cloud-builders/gcloud'
   args:
