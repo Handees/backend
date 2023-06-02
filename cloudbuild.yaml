@@ -4,7 +4,7 @@ steps:
   args:
   - 'compute'
   - 'ssh'
-  - 'handees-dev-vm'
+  - 'handeesofficial@handees-dev'
   - '--tunnel-through-iap'
   - '--project=handees'
   - '--zone=europe-west6-a'
