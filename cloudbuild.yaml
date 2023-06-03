@@ -22,7 +22,6 @@ steps:
       --tunnel-through-iap
 # install dependencies
 - name: 'gcr.io/cloud-builders/gcloud'
-  env: ['APP_ENV=dev']
   args:
     - 'compute'
     - 'ssh'
@@ -31,9 +30,18 @@ steps:
     - '--project=handees'
     - '--zone=europe-west6-a'
     - '--'
-    - 'bash'
-    - '-c'
-    - 'export APP_ENV=dev && /home/handeesofficial/backend/scripts/install_dependencies.sh'
+    - 'echo "APP_ENV=dev" > /tmp/APP_ENV.env'
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'compute'
+  - 'ssh'
+  - 'handeesofficial@handees-dev'
+  - '--tunnel-through-iap'
+  - '--project=handees'
+  - '--zone=europe-west6-a'
+  - '--'
+  - 'bash'
+  - '/home/handeesofficial/backend/scripts/installing_dependencies.sh'
 # start server
 - name: 'gcr.io/cloud-builders/gcloud'
   env: ['APP_ENV=dev']

@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # set env vars
-echo $APP_ENV
+source /tmp/APP_ENV.env
+
+echo "$APP_ENV"
 
 sudo apt-get -y update
 sudo apt-get -y install python3 python3-venv python3-dev
