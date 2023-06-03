@@ -11,7 +11,8 @@ steps:
 #   - '--command'
 #   - 'pkill -f supervisord || true'
 # copy changes to VM
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+# https://hodo.dev/posts/post-14-cloud-build-iap/
+- name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: /bin/sh
   args:
   - '-c'
@@ -19,17 +20,6 @@ steps:
     gcloud compute scp --recurse --zone europe-west6-a * \
       'handeesofficial@handees-dev:/home/handeesofficial/backend' \
       --tunnel-through-iap
-  
-# - name: 'gcr.io/cloud-builders/gcloud'
-#   args:
-#     - 'compute'
-#     - 'scp'
-#     - '--tunnel-through-iap'
-#     - '--recurse'
-#     - '/core'
-#     - 'handeesofficial@handees-dev:/home/handeesofficial/backend'
-#     - '--project=handees'
-#     - '--zone=europe-west6-a'
 # install dependencies
 - name: 'gcr.io/cloud-builders/gcloud'
   args:
