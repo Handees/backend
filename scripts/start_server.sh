@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo "$APP_ENV"
 cd /home/handeesofficial/backend
 source env/bin/activate
 
