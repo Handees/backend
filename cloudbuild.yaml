@@ -26,7 +26,7 @@ steps:
   args:
     - 'compute'
     - 'ssh'
-    - 'handees-dev'
+    - 'handeesofficial@handees-dev'
     - '--tunnel-through-iap'
     - '--project=handees'
     - '--zone=europe-west6-a'
@@ -40,7 +40,7 @@ steps:
   args:
     - 'compute'
     - 'ssh'
-    - 'handees-dev'
+    - 'handeesofficial@handees-dev'
     - '--tunnel-through-iap'
     - '--project=handees'
     - '--zone=europe-west6-a'
