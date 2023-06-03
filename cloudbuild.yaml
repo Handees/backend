@@ -31,6 +31,7 @@ steps:
     - '--zone=europe-west6-a'
     - '--'
     - 'bash'
+    - '-c'
     - 'export APP_ENV=dev && /home/handeesofficial/backend/scripts/install_dependencies.sh'
 # start server
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -43,4 +44,5 @@ steps:
     - '--zone=europe-west6-a'
     - '--'
     - 'bash'
+    - '-c'
     - 'export APP_ENV=dev && /home/handeesofficial/backend/scripts/start_server.sh'
