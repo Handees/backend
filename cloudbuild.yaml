@@ -41,10 +41,9 @@ steps:
   - '--zone=europe-west6-a'
   - '--'
   - 'bash'
-  - '/home/handeesofficial/backend/scripts/installing_dependencies.sh'
+  - '/home/handeesofficial/backend/scripts/install_dependencies.sh'
 # start server
 - name: 'gcr.io/cloud-builders/gcloud'
-  env: ['APP_ENV=dev']
   args:
     - 'compute'
     - 'ssh'
