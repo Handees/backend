@@ -17,7 +17,7 @@ steps:
     - 'scp'
     - '--tunnel-through-iap'
     - '--recurse'
-    - '.'
+    - '$(pwd)'
     - 'handeesofficial@handees-dev:~/home/handeesofficial/backend'
     - '--project=handees'
     - '--zone=europe-west6-a'
