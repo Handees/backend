@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# set env vars
 sudo apt-get -y update
 sudo apt-get -y install python3 python3-venv python3-dev
 sudo apt-get -y install supervisor nginx git
