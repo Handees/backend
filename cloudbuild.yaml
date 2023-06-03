@@ -9,7 +9,7 @@ steps:
   - '--project=handees'
   - '--zone=europe-west6-a'
   - '--command'
-  - 'sudo pkill -f supervisord || true'
+  - 'pkill -f supervisord || true'
 # copy changes to VM
 - name: 'gcr.io/cloud-builders/gcloud'
   args:
