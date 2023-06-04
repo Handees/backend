@@ -9,8 +9,8 @@ steps:
   - '--project=handees'
   - '--zone=europe-west6-a'
   - '--'
-  - 'bash'
-  - 'sudo pkill -f supervisord || true'
+  - 'sudo'
+  - 'pkill -f supervisord || true'
 # copy changes to VM
 # https://hodo.dev/posts/post-14-cloud-build-iap/
 - name: 'gcr.io/cloud-builders/gcloud'
