@@ -9,7 +9,6 @@ steps:
   - '--project=handees'
   - '--zone=europe-west6-a'
   - '--'
-  - 'bash'
   - 'killall -9 supervisord'
 # copy changes to VM
 # https://hodo.dev/posts/post-14-cloud-build-iap/
