@@ -126,7 +126,7 @@ def load_config_variables():
 
     if keys:
         try:
-            with open('.env', 'a') as file:
+            with open('.env', 'w') as file:
                 for kv in keys:
                     file.write(kv)
                     file.write("\n")
