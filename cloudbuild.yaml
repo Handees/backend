@@ -54,5 +54,3 @@ steps:
     - '--'
     - 'bash'
     - '/home/handeesofficial/backend/scripts/start_server.sh'
-
-http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
