@@ -8,7 +8,8 @@ steps:
   - '--tunnel-through-iap'
   - '--project=handees'
   - '--zone=europe-west6-a'
-  - '--command'
+  - '--'
+  - 'bash'
   - 'sudo pkill -f supervisord || true'
 # copy changes to VM
 # https://hodo.dev/posts/post-14-cloud-build-iap/
