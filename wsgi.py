@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 from models import *
 from utils import (
     get_class_by_tablename,
-    load_env_local,
     load_env,
     fetch_instance_tag
 )
@@ -123,16 +122,7 @@ def load_config_variables():
         yield f"{pipes.quote(obj['name'].split('/')[-3])}={pipes.quote(val)}"
 
     access_token = None
-    keys = []
-    if os.getenv('P_ENV').lower() == 'local': # if on local
-        try:
-            keys = load_env_local(gen_pairs)
-        except Exception as e:
-            raise e
-    else:
-        # if on VMs use resource attached service account
-        client = secretmanager.SecretManagerServiceClient()
-        keys = load_env(client, os.getenv('APP_ENV'), gen_pairs)
+    keys = load_env(gen_pairs)
 
     if keys:
         try:

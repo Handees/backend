@@ -125,7 +125,7 @@ def fetch_instance_tag():
     return tags
 
 
-def load_env_local(gpair):
+def load_env(gpair):
     access_token = None
 
     if os.getenv('P_ENV').lower() == 'local':
@@ -158,6 +158,7 @@ def load_env_local(gpair):
             "Authorization": "Bearer {}".format(access_token),
             "Content-Type": "application/json",
         }
+        print(headers)
         req = requests.get(
             url,
             headers=headers
@@ -181,29 +182,29 @@ def load_env_local(gpair):
     return keys
 
 
-def load_env(client, environment, gpair):
-    from google_crc32c import Checksum
+# def load_env(client, environment, gpair):
+#     from google_crc32c import Checksum
 
-    parent = "projects/handees"
-    keys = []
-    res = []
+#     parent = "projects/handees"
+#     keys = []
+#     res = []
 
-    # List all secrets.
-    for secret in client.list_secrets(request={"parent": parent}):
-        keys.append(secret.name)
+#     # List all secrets.
+#     for secret in client.list_secrets(request={"parent": parent}):
+#         keys.append(secret.name)
 
-    # Build the resource name of the secret version.
+#     # Build the resource name of the secret version.
 
-    for k in keys:
-        # Access the secret version.
-        name = f"projects/handees/secrets/{k}/versions/{environment}"
-        response = client.access_secret_version(request={"name": name})
+#     for k in keys:
+#         # Access the secret version.
+#         name = f"projects/handees/secrets/{k}/versions/{environment}"
+#         response = client.access_secret_version(request={"name": name})
 
-        # Verify payload checksum.
-        crc32c = Checksum()
-        crc32c.update(response.payload.data)
-        if response.payload.data_crc32c != int(crc32c.hexdigest(), 16):
-            raise Exception("Data corruption detected.")
-        else:
-            res.append(response)
-    return res
+#         # Verify payload checksum.
+#         crc32c = Checksum()
+#         crc32c.update(response.payload.data)
+#         if response.payload.data_crc32c != int(crc32c.hexdigest(), 16):
+#             raise Exception("Data corruption detected.")
+#         else:
+#             res.append(response)
+#     return res
