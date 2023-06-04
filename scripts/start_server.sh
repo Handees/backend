@@ -11,4 +11,4 @@ sudo service start nginx
 
 # start workers
 source /tmp/APP_ENV.env
-supervisord -c supervisord-$APP_ENV.conf
+sudo supervisord -c supervisord-$APP_ENV.conf
