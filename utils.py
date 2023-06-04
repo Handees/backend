@@ -3,6 +3,7 @@ from core import db
 
 from flask import jsonify
 from werkzeug.http import HTTP_STATUS_CODES
+from loguru import logger
 import json
 import os
 import requests
@@ -125,12 +126,29 @@ def fetch_instance_tag():
 
 
 def load_env_local(gpair):
-    cmd = "gcloud auth print-access-token"
-    keys = []
-    res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    access_token = None
 
-    if res.returncode == 0:
-        access_token = res.stdout.strip()
+    if os.getenv('P_ENV').lower() == 'local':
+        cmd = "gcloud auth print-access-token"
+        keys = []
+        res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+        if res.returncode == 0:
+            access_token = res.stdout.strip()
+    else:
+        try:
+            req = requests.get(
+                url=os.getenv('AUTH_URL'),
+                headers={
+                    "Metadata-Flavor": "Google"
+                }
+            )
+            if req.status_code != 200:
+                raise Exception("Omo! Error request to fetch access token came back with (well not 200 😐)")
+            access_token = req.json()['access_token']
+        except Exception as e:
+            logger.error("Ewo oo 🤷‍♂️ error occurred while trying to fetch access token")
+            raise e
 
     project_id = "handees"
     url = "https://secretmanager.googleapis.com/v1/projects/{}/secrets".format(project_id)
