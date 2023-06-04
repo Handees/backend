@@ -163,6 +163,7 @@ def load_env(gpair):
             url,
             headers=headers
         )
+        pprint.pp(req.json())
         if req.status_code == 200:
             pprint.pp(req.json())
             keys = [
