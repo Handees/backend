@@ -116,7 +116,7 @@ def test(coverage):
 
 @app.cli.command()
 def load_config_variables():
-    """fetches secrets from azure key vault and loads them into .env"""
+    """fetches secrets from GCP secret manager and loads them into .env"""
     def gen_pairs(obj):
         val = base64.b64decode(obj['payload']['data']).decode('utf-8')
         yield f"{pipes.quote(obj['name'].split('/')[-3])}={pipes.quote(val)}"
