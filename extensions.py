@@ -49,7 +49,7 @@ class RedCache:
 
     def __init__(self, db=1):
         self.client = Walrus(  # noqa: F405
-            os.getenv('REDIS_HOST'), 6378, charset='utf-8',
+            os.getenv('REDIS_HOST', 'localhost'), os.getenv('REDIS_PORT', 6378), charset='utf-8',
             decode_responses=True,
             password=os.getenv('REDIS_PASS'),
             db=db

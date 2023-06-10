@@ -13,7 +13,7 @@ class BaseConfig:
     REDIS_PORT = os.getenv('REDIS_PORT', 6378)
     HUEY_CONFIG = dict(
         connection_pool=redis.ConnectionPool(
-            host=os.getenv('REDIS_HOST') or 'redis', port=REDIS_PORT,
+            host=os.getenv('REDIS_HOST') or 'localhost', port=REDIS_PORT,
             password=os.getenv('REDIS_PASS'), db=0
         )
     )
