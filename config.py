@@ -16,7 +16,7 @@ class BaseConfig:
     HUEY_CONFIG = dict(
         connection_pool=redis.ConnectionPool(
             host=REDIS_HOST, port=REDIS_PORT,
-            password=os.getenv('REDIS_PASS'), db=0
+            password=REDIS_PASS, db=0
         )
     )
     ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
@@ -38,7 +38,7 @@ class DevConfig(BaseConfig):
     SESSION_REDIS = redis.Redis(
         host=BaseConfig.REDIS_HOST,
         port=BaseConfig.REDIS_PORT,
-        password=BaseConfig.REDIS_PORT,
+        password=BaseConfig.REDIS_PASS,
         db=5
     )
 
