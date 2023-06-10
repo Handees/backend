@@ -12,7 +12,6 @@ db = SQLAlchemy()
 ma = Marshmallow()
 
 redis_pass = os.getenv('REDIS_PASS')
-print(redis_pass, redis_port)
 
 socketio = SocketIO(
     cors_allowed_origins=[
