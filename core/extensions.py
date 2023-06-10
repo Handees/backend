@@ -10,13 +10,18 @@ import os
 
 db = SQLAlchemy()
 ma = Marshmallow()
+
+redis_pass = os.getenv('REDIS_PASS')
+redis_port = os.getenv('REDIS_PORT', 6378)
+print(redis_pass, redis_port)
+
 socketio = SocketIO(
     cors_allowed_origins=[
         'http://127.0.0.1:5020', 'http://127.0.0.1:5500',
         'https://www.piesocket.com'
     ],
     async_mode='eventlet',
-    message_queue=f"redis://:{os.getenv('REDIS_PASS')}@localhost:{os.getenv('REDIS_PORT', 6378)}/2",
+    message_queue=f"redis://:{redis_pass}@localhost:{redis_port}/2",
     logger=True,
     engineio_logger=True
 )
