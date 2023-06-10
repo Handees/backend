@@ -9,7 +9,27 @@ steps:
   - '--project=handees'
   - '--zone=europe-west6-a'
   - '--'
-  - 'sudo killall -9 supervisord || true && sudo killall -9 gunicorn || true'
+  - 'sudo killall -9 supervisord || true'
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'compute'
+  - 'ssh'
+  - 'handeesofficial@handees-dev'
+  - '--tunnel-through-iap'
+  - '--project=handees'
+  - '--zone=europe-west6-a'
+  - '--'
+  - 'sudo killall -9 gunicorn || true'
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'compute'
+  - 'ssh'
+  - 'handeesofficial@handees-dev'
+  - '--tunnel-through-iap'
+  - '--project=handees'
+  - '--zone=europe-west6-a'
+  - '--'
+  - 'sudo killall -9 huey_consumer.py || true'
 # copy changes to VM
 # https://hodo.dev/posts/post-14-cloud-build-iap/
 - name: 'gcr.io/cloud-builders/gcloud'
