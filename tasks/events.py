@@ -5,6 +5,7 @@ from extensions import (
 from config import BaseConfig
 import functools
 import logging
+import os
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -12,6 +13,9 @@ logging.basicConfig(level=logging.DEBUG)
 # huey instance
 huey = HueyTemplate(config=BaseConfig.HUEY_CONFIG).huey
 logging.getLogger('huey').setLevel(logging.DEBUG)
+
+redis_pass = os.getenv('REDIS_PASS')
+redis_port = os.getenv('REDIS_PORT', 6378)
 
 
 def exp_backoff_task(retries, retry_backoff):
@@ -52,7 +56,7 @@ def send_event(event, data, namespace):
             'http://127.0.0.1:5020', 'http://127.0.0.1:5500',
             'https://www.piesocket.com'
         ],
-        message_queue="redis://redis:6378/2",
+        message_queue=f"redis://{redis_pass}@localhost:{redis_port}/2",
         async_mode='eventlet',
         logger=True,
         engineio_logger=True
