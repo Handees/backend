@@ -10,16 +10,17 @@ from flask import current_app
 
 db = SQLAlchemy()
 ma = Marshmallow()
-socketio = SocketIO(
-    cors_allowed_origins=[
-        'http://127.0.0.1:5020', 'http://127.0.0.1:5500',
-        'https://www.piesocket.com'
-    ],
-    async_mode='eventlet',
-    message_queue=f"redis://localhost:{current_app.config['REDIS_PORT']}/2",
-    logger=True,
-    engineio_logger=True
-)
+with current_app.app_context():
+    socketio = SocketIO(
+        cors_allowed_origins=[
+            'http://127.0.0.1:5020', 'http://127.0.0.1:5500',
+            'https://www.piesocket.com'
+        ],
+        async_mode='eventlet',
+        message_queue=f"redis://localhost:{current_app.config['REDIS_PORT']}/2",
+        logger=True,
+        engineio_logger=True
+    )
 sess = Session()
 migrate = Migrate(include_schemas=True)
 cors = CORS()
