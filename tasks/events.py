@@ -56,7 +56,7 @@ def send_event(event, data, namespace):
             'http://127.0.0.1:5020', 'http://127.0.0.1:5500',
             'https://www.piesocket.com'
         ],
-        message_queue=f"redis://{redis_pass}@localhost:{redis_port}/2",
+        message_queue=f"redis://:{redis_pass}@localhost:{redis_port}/2",
         async_mode='eventlet',
         logger=True,
         engineio_logger=True

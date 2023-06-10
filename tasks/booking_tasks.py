@@ -1,7 +1,8 @@
 from extensions import (
     HueyTemplate,
     redis_,
-    redis_2
+    redis_2,
+    redis_4
 )
 from .events import send_event
 from core.exc import BookingHasContract
@@ -18,7 +19,7 @@ from models.payments import Payment
 from schemas.bookings_schema import BookingSchema
 from config import config_options
 
-import functools
+
 import logging
 
 
