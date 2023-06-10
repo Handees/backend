@@ -5,6 +5,7 @@ from flask_socketio import SocketIO
 from flask_cors import CORS
 from flask_session import Session
 # from core.sqlalchemy_ext import RouteSQLAlchemy
+from flask import current_app
 
 
 db = SQLAlchemy()
@@ -15,7 +16,7 @@ socketio = SocketIO(
         'https://www.piesocket.com'
     ],
     async_mode='eventlet',
-    message_queue='redis://redis:6378/2',
+    message_queue=f"redis://localhost:{current_app.config['REDIS_PORT']}/2",
     logger=True,
     engineio_logger=True
 )
