@@ -16,7 +16,7 @@ socketio = SocketIO(
         'https://www.piesocket.com'
     ],
     async_mode='eventlet',
-    message_queue=f"redis://localhost:{os.getenv('REDIS_PORT', 6378)}/2",
+    message_queue=f"redis://:{os.getenv('REDIS_PASS')}@localhost:{os.getenv('REDIS_PORT', 6378)}/2",
     logger=True,
     engineio_logger=True
 )
