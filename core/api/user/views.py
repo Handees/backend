@@ -8,7 +8,7 @@ from . import user
 from core import db
 from models.user_models import (
     Permission,
-    Artisan
+    User
 )
 from utils import (
     gen_response,
@@ -48,18 +48,12 @@ def create_new_user():
     data = request.get_json(force=True)
     schema = AddNewUserSchema()
     try:
-        new_user = schema.load(data)
-        if new_user.is_artisan:
-            new_user.upgrade_to_artisan()
-            # create artisan profile
-            artisan_profile = Artisan(
-                artisan_id=uuid4().hex
-            )
-            artisan_profile.user_profile = new_user
-
-            db.session.add(artisan_profile)
-        # if 'uid' not in data.keys():
-        #     new_user.user_id = uuid4().hex
+        user_data = schema.load(data)
+        new_user = User(
+            user_id=user_data['user_id'],
+            name=user_data['name'],
+            email=user_data['email']
+        )
     except Exception as e:
         logger.exception(e)
         return error_response(
