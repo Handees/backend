@@ -8,8 +8,7 @@ from . import user
 from core import db
 from models.user_models import (
     Permission,
-    Artisan,
-    User
+    Artisan
 )
 from utils import (
     gen_response,
@@ -17,12 +16,14 @@ from utils import (
     LOG_FORMAT,
     _level
 )
-from schemas.user_schemas import UserSchema
+from schemas.user_schemas import (
+    AddNewUserSchema,
+    UserSchema
+)
 from schemas.bookings_schema import BookingSchema
 from .messages import (
     USER_CREATED,
     USER_DATA_EXISTS,
-    USER_NOT_FOUND,
     USER_PROFILE_UPDATED
 )
 from models.bookings import Booking
@@ -45,7 +46,7 @@ logger.add(
 def create_new_user():
     """ adds new user data to db """
     data = request.get_json(force=True)
-    schema = UserSchema()
+    schema = AddNewUserSchema()
     try:
         new_user = schema.load(data)
         if new_user.is_artisan:
@@ -148,8 +149,3 @@ def update_user_profile(current_user):
         data=schema.dump(user),
         message=USER_PROFILE_UPDATED
     )
-
-
-# @user.get('/')
-# def get_uid():
-#     if 

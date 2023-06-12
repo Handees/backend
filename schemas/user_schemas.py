@@ -1,18 +1,11 @@
 from models.user_models import User
 from .artisan import ArtisanSchema
-from core import (
-    ma,
-    db
+from core import ma
+from .base import (
+    BaseSQLAlchemyAutoSchema,
+    BaseSchema
 )
-from .base import BaseSQLAlchemyAutoSchema
 from . import CardAuthSchema
-from marshmallow import (
-    fields,
-    pre_load,
-    post_dump
-)
-
-
 
 
 class UserSchema(BaseSQLAlchemyAutoSchema):
@@ -35,17 +28,22 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
     )
     cards = ma.Nested(CardAuthSchema, many=True)
     # addresses = ma.Nested()
-        # load_instance = True
-        # transient = True
+    # load_instance = True
+    # transient = True
 
-        # # read only
-        # dump_only = (
-        #     'created_at',
-        # )
-        
+    # # read only
+    # dump_only = (
+    #     'created_at',
+    # )
 
     # @post_dump
     # def edit_dump(self, data, *args, **kwargs):
     #     if not data['artisan_profile']:
     #         data['artisan_profile'] = None
     #     return data
+
+
+class AddNewUserSchema(BaseSchema):
+    user_id = ma.String(required=True)
+    name = ma.String(required=True)
+    email = ma.Email(required=True)
