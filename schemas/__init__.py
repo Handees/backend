@@ -12,5 +12,11 @@ from .payment import (
     PaymentSchema,
     InitTransactionSchema
 )
-from .user_schemas import UserSchema
-from .artisan import ArtisanSchema
+from .artisan import (
+    ArtisanSchema,
+    AddArtisanSchema
+)
+from .user_schemas import (
+    UserSchema,
+    AddNewUserSchema
+)

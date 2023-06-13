@@ -5,20 +5,21 @@ from loguru import logger
 from . import artisan
 from core import db
 from models.user_models import (
-    User,
     Artisan,
     Role
 )
 from models.bookings import BookingCategory
 from core.api.bookings import messages
-from schemas import ArtisanSchema
+from schemas import (
+    ArtisanSchema,
+    AddArtisanSchema
+)
 from utils import (
     gen_response,
     error_response,
     setLogger
 )
 from ..messages import (
-    USER_NOT_FOUND,
     ARTISAN_CREATED,
     ARTISAN_NOT_FOUND,
     ARTISAN_PROFILE_UPDATED,
@@ -40,35 +41,28 @@ setLogger()
 def add_new_artisan(current_user):
     """create new artisan"""
     data = request.get_json(force=True)
+    user = current_user
+    schema = AddArtisanSchema()
 
-    # add category rel
-    category = BookingCategory.get_by_name(data['job_category'])
-    if not category:
-        db.session.rollback()
-        return error_response(404, message=messages.dynamic_msg(
-            messages.CATEGORY_NOT_FOUND, data['job_category']
-        ))
-
-    schema = ArtisanSchema()
     try:
-        new_artisan = schema.load(data)
+        data = schema.load(data)
     except Exception:
-        db.session.rollback()
-        raise(Exception)
         return error_response(
             400,
             message=schema.error_messages
         )
-    finally:
-        db.session.close()
-    # @dev_only: find user with user_id
-    user = User.query.get(data['user_profile_id'])
-    if not user:
-        db.session.rollback()
-        return error_response(
-            404,
-            message=USER_NOT_FOUND
-        )
+
+    # add category rel
+    category = BookingCategory.get_by_name(data['job_category'])
+    if not category:
+        return error_response(404, message=messages.dynamic_msg(
+            messages.CATEGORY_NOT_FOUND, data['job_category']
+        ))
+
+    new_artisan = Artisan(
+        job_title=data['job_title'],
+        hourly_rate=data['hourly_rate']
+    )
 
     if user.is_artisan or user.role == Role.get_by_name("artisan"):
         db.session.rollback()
@@ -86,13 +80,16 @@ def add_new_artisan(current_user):
     new_artisan.artisan_id = uuid4().hex
     new_artisan.booking_category = category
 
+    logger.info("Attempting to create new artisan")
     try:
         db.session.add(new_artisan)
         db.session.commit()
 
-        resp = schema.dump(new_artisan)
-    except Exception:
+        resp = ArtisanSchema().dump(new_artisan)
+    except Exception as e:
         db.session.rollback()
+        logger.error("Error occurred while attempting to create new artisan")
+        logger.error(e)
     finally:
         db.session.close()
 

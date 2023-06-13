@@ -1,17 +1,18 @@
 from models.user_models import Artisan
 from core import ma
 from models.bookings import categories
-from .base import BaseSQLAlchemyAutoSchema
+from .base import (
+    BaseSQLAlchemyAutoSchema,
+    BaseSchema
+)
 from marshmallow import (
     fields,
     pre_load,
     post_dump
 )
 
-from marshmallow import fields
 
-
-class ArtisanSchema(ma.SQLAlchemyAutoSchema):
+class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     class Meta:
         model = Artisan
         load_instance = True
@@ -39,7 +40,6 @@ class ArtisanSchema(ma.SQLAlchemyAutoSchema):
         'bookings', 'payments'
     ))
 
-
     @pre_load
     def preformat_data(self, data, *args, **kwargs):
         if data:
@@ -52,3 +52,9 @@ class ArtisanSchema(ma.SQLAlchemyAutoSchema):
             data['job_category'] = categories[data['job_category_id']]
             del data['job_category_id']
         return data
+
+
+class AddArtisanSchema(BaseSchema):
+    hourly_rate = ma.String(required=True)
+    job_category = ma.String(required=True)
+    job_title = ma.String(required=True)
