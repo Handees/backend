@@ -3,6 +3,8 @@ from models.user_models import (
     Role,
     User
 )
+from core import socketio
+from core.api.bookings import messages
 
 from functools import wraps
 from flask import (
@@ -17,10 +19,13 @@ from firebase_admin.auth import (
     RevokedIdTokenError,
     CertificateFetchError
 )
+from flask_socketio import disconnect
+from flask import session
 from loguru import logger
 from utils import setLogger
 import os
 import json
+import functools
 
 setLogger()
 
@@ -186,4 +191,43 @@ def login_required(f):
             }, 404)
             abort(resp)
         return f(user, *args, **kwargs)
+    return wrapped
+
+
+# used for on_connect in socketio handlers
+def auth_param_required(f):
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        if len(args) < 1 or 'access_token' not in args[0]:
+            logger.error("TOKEN NOT SENT ON CONNECT")
+            socketio.emit(
+                "msg",
+                "Client error: Missing Auth param"
+            )
+            disconnect(sid=request.sid)
+        else:
+            logger.info("TOKEN RECEIVED ON CONNECT")
+            # verify token
+            try:
+                verify_token(args[0]['access_token'])
+                return f(*args, **kwargs)
+            except Exception:
+                logger.error(messages.INVALID_TOKEN)
+                socketio.emit(
+                    "msg",
+                    "Client error: Missing Auth param"
+                )
+                disconnect(sid=request.sid)
+    return wrapped
+
+
+# used by all other socketio handlers
+def valid_auth_required(f):
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        if 'uid' in session:
+            uid = session.get('uid')
+            return f(uid, *args, **kwargs)
+        else:
+            disconnect()
     return wrapped

@@ -2,7 +2,7 @@ from core import (
     socketio,
     db
 )
-from core.api.bookings.utils import (
+from core.api.auth.auth_helper import (
     auth_param_required,
     valid_auth_required
 )

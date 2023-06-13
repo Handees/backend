@@ -1,21 +1,7 @@
 from schemas.bookings_schema import BookingSchema
 from extensions import redis_
-from core import socketio
-from core.api.auth.auth_helper import verify_token
-from core.api.bookings import messages
 
-from flask import (
-    jsonify,
-    request,
-    abort
-)
-from loguru import logger
-import functools
-from flask_socketio import (
-    disconnect,
-    ConnectionRefusedError
-)
-from flask import session
+from flask import jsonify
 import json
 
 
@@ -55,41 +41,3 @@ def exit_cache(id):
 
 def parse_data(data):
     pass
-
-
-def auth_param_required(f):
-    @functools.wraps(f)
-    def wrapped(*args, **kwargs):
-        if len(args) < 1 or 'access_token' not in args[0]:
-            logger.error("TOKEN NOT SENT ON CONNECT")
-            socketio.emit(
-                "msg",
-                "Client error: Missing Auth param"
-            )
-            disconnect(sid=request.sid)
-        else:
-            logger.info("TOKEN RECEIVED ON CONNECT")
-             # verify token
-            try:
-                uid = verify_token(args[0]['access_token'])
-                return f(*args, **kwargs)
-            except Exception as e:
-                logger.error(messages.INVALID_TOKEN)
-                socketio.emit(
-                    "msg",
-                    "Client error: Missing Auth param"
-                )
-                disconnect(sid=request.sid)
-    return wrapped
-
-
-def valid_auth_required(f):
-    @functools.wraps(f)
-    def wrapped(*args, **kwargs):
-        if 'uid' in session:
-            uid = session.get('uid')
-            return f(uid, *args, **kwargs)
-        else:
-            disconnect()
-            print(str(e))
-    return wrapped
