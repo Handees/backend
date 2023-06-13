@@ -3,7 +3,7 @@ from extensions import (
     redis_,
     redis_4
 )
-from core.api.bookings.utils import (
+from core.api.auth.auth_helper import (
     auth_param_required,
     valid_auth_required
 )
@@ -11,7 +11,6 @@ from core.exc import DataValidationError
 from core.api.bookings.events.utils import parse_event_data
 from schemas.bookings_schema import BookingStartSchema
 from core.api.auth.auth_helper import verify_token
-from tasks.events import send_event
 from tasks.booking_tasks import confirm_job_details
 from .. import messages
 
