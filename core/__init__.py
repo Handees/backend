@@ -37,7 +37,7 @@ def configure_logging(app):
     app.logger.addHandler(InterceptHandler())
 
     # reduce noise from noisy libraries
-    logging.getLogger("socketio").setLevel('ERROR')
+    logging.getLogger("socketio").setLevel('INFO')
     logging.getLogger('azure').setLevel('ERROR')
 
     @app.errorhandler(404)
