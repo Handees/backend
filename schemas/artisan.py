@@ -55,6 +55,6 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
 
 
 class AddArtisanSchema(BaseSchema):
-    hourly_rate = ma.String(required=True)
+    hourly_rate = ma.Float(required=True)
     job_category = ma.String(required=True)
     job_title = ma.String(required=True)
