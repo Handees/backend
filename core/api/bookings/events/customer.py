@@ -7,6 +7,7 @@ from core.api.auth.auth_helper import (
     auth_param_required,
     valid_auth_required
 )
+from tasks.events import send_event
 from core.exc import DataValidationError
 from core.api.bookings.events.utils import parse_event_data
 from schemas.bookings_schema import BookingStartSchema
@@ -75,14 +76,6 @@ def enter_customer_artisan_chat(data):
     join_room(room, namespace='/chat')
 
 
-# @socketio. on('close_offer')
-# def close_offer(data):
-#     room = data['booking_id']
-
-#     # update state of offer in cache
-#     redis_.delete(room)
-
-
 @socketio.on('cancel_offer', namespace='/customer')
 @parse_event_data
 def cancel_offer(data):
@@ -137,6 +130,26 @@ def accept_job_details(uid, data):
     except Exception as e:
         logger.exception(e)
         emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/customer')
+
+
+@socketio.on('reject_job_details', namespace='/customer')
+@parse_event_data
+@valid_auth_required
+def reject_job_details(uid, data):
+    """ triggered when customer has rejected job details """
+
+    payload = {
+        'payload': {'msg': messages.BOOKING_DETAILS_REJECTED},
+        'recipient': redis_4.hget(
+            'booking_id_to_artisan',
+            data['booking_id']
+        )
+    }
+    send_event(
+        'job_details_rejected',
+        payload,
+        '/artisan'
+    )
 
 # {
 #     "lat": 6.518139822341671,

@@ -64,6 +64,10 @@ def assign_artisan_to_booking(data):
         booking = Booking.query.get(data['booking_id'])
 
         booking.artisan = artisan
+        redis_4.hset(
+            'booking_id_to_artisan',
+            mapping={booking.booking_id: artisan.user_id}
+        )
         try:
             db.session.commit()
         except Exception:
@@ -109,6 +113,8 @@ def update_booking_status(data):
 def confirm_job_details(data):
     """ called when a job is started """
     from models import db
+    from tasks.events import send_event
+    from core.api.bookings import messages
 
     app = HueyTemplate.get_flask_app(config_options['development'])
 
@@ -118,8 +124,22 @@ def confirm_job_details(data):
         is_contract: bool = data['is_contract']
         settlement: dict = data['settlement']
 
-        if is_contract:
+        if bk.details_confirmed:
+            payload = {
+                'payload': {'msg': messages.BOOKING_DETAILS_ALREADY_CONFIRMED},
+                'recipient': redis_4.hget(
+                    'booking_id_uid',
+                    data['booking_id']
+                )
+            }
+            send_event(
+                'job_details_already_confirmed',
+                payload,
+                '/customer'
+            )
+            return
 
+        if is_contract:
             # set contract
             if not bk.booking_contract:
                 bkc = BookingContract()
@@ -152,6 +172,19 @@ def confirm_job_details(data):
             db.session.rollback()
         finally:
             db.session.close()
+
+        payload = {
+            'payload': {'msg': messages.BOOKING_DETAILS_CONFIRMED},
+            'recipient': redis_4.hget(
+                'booking_id_to_artisan',
+                data['booking_id']
+            )
+        }
+        send_event(
+            'job_details_confirmed',
+            payload,
+            '/artisan'
+        )
 
 
 @huey.task()
