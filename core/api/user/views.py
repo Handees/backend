@@ -52,7 +52,8 @@ def create_new_user():
         new_user = User(
             user_id=user_data['user_id'],
             name=user_data['name'],
-            email=user_data['email']
+            email=user_data['email'],
+            telephone=user_data['telephone']
         )
     except Exception as e:
         logger.exception(e)
