@@ -1,19 +1,11 @@
-from extensions import (
-    redis_4,
-    HueyTemplate
-)
-from config import BaseConfig
+from extensions import redis_4
+from .booking_tasks import huey
 import functools
 import logging
 import os
 
 
 logging.basicConfig(level=logging.DEBUG)
-
-# huey instance
-huey = HueyTemplate(config=BaseConfig.HUEY_CONFIG).huey
-logging.getLogger('huey').setLevel(logging.DEBUG)
-
 redis_pass = os.getenv('REDIS_PASS')
 redis_port = os.getenv('REDIS_PORT', 6378)
 
@@ -41,7 +33,7 @@ def exp_backoff_task(retries, retry_backoff):
     return deco
 
 
-@exp_backoff_task(retries=3, retry_backoff=1.5)
+@exp_backoff_task(retries=5, retry_backoff=1.5)
 def send_event(event, data, namespace):
     from flask_socketio import SocketIO
     from core.exc import ClientNotConnected

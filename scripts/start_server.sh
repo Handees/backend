@@ -6,6 +6,11 @@ source env/bin/activate
 # load config variables
 flask load-config-variables
 
+# pre-start actions
+flask db upgrade
+flask create-categories
+flask create-roles
+
 # start nginx
 sudo service start nginx
 

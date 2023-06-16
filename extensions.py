@@ -2,7 +2,10 @@
 from typing import Optional, Dict
 from flask_sqlalchemy import SQLAlchemy
 from walrus import *  # noqa: F403
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 
 class HueyTemplate:

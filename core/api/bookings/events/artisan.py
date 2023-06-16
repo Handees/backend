@@ -22,6 +22,7 @@ from core.exc import (
 from core.api.auth.auth_helper import verify_token
 from core.api.bookings.events.utils import parse_event_data
 from schemas.bookings_schema import BookingStartSchema
+from schemas.artisan import ArtisanSchema
 from models import (
     Artisan,
     Booking
@@ -78,8 +79,6 @@ def on_connect(auth):
     if not uid:
         raise ConnectionRefusedError
     session['uid'] = uid
-    print("BELLOOWWW:::")
-    print(session.get('uid'))
     emit('msg', 'welcome!')
     redis_4.set(request.sid, 1)
     redis_4.hset(
@@ -126,7 +125,7 @@ def update_location(uid, data):
     )
     g_hash = redis_2.geohash(
         data['job_category'],
-        data['artisan_id']
+        uid
     )
     logger.debug(g_hash)
     # reduce geohash length to 6 charz
@@ -134,7 +133,6 @@ def update_location(uid, data):
     # truncated geohash
 
     def handle_updates(msg):
-        print("booking payload ::", msg)
         socketio.emit('new_offer', eval(msg['data']), to=room, namespace='/artisan')
 
     psub.subscribe(**{g_hash[0][:7]: handle_updates})
@@ -150,6 +148,8 @@ def get_updates(uid, data):
     from tasks.booking_tasks import assign_artisan_to_booking
 
     room = data['booking_id']
+    artisan = ArtisanSchema().dump(Artisan.get_by_user_id(uid))
+    data['artisan'] = artisan
     if redis_2.exists(room):
         # remove from queue
         redis_2.delete(room)
@@ -165,22 +165,11 @@ def get_updates(uid, data):
                 data['booking_id']
             )
         }
-        send_event('msg', payload, '/customer')
-        # socketio.emit(
-        #     'offer_accepted',
-        #     payload['payload'],
-        #     to=redis_4.hget("user_to_sid", payload['recipient']),
-        #     namespace='/customer',
-        #     callback=customer_event_ack
-        # )
-
-        # join_room(room, namespace='/chat')
+        send_event('booking_offer_accepted', payload, '/customer')
     else:
         emit(
             'offer_close',
-            messages.dynamic_msg(
-                messages.BOOKING_CANCELED, "customer"
-            ),
+            messages.BOOKING_CANCELED,
             namespace='/artisan',
             to=request.sid
         )
@@ -239,7 +228,7 @@ def handle_location_arrival(uid, data):
 @valid_auth_required
 def handle_job_begin(uid, data):
     """ triggered when artisan begins a job """
-    artisan = Artisan.query.get(uid)
+    artisan = ArtisanSchema().dump(Artisan.get_by_user_id(uid))
     bk = Booking.query.get(data['booking_id'])
     artisan = redis_4.hget(
         'user_to_sid',

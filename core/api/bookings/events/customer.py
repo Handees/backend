@@ -30,8 +30,6 @@ def connect(auth):
         raise ConnectionRefusedError
     # fetch client session id
     session['uid'] = uid
-    print("BELLOOWWW:::")
-    print(session.get('uid'))
 
     emit('msg', 'welcome!', broadcast=True)
     redis_4.set(request.sid, 1)

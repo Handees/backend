@@ -59,6 +59,7 @@ def create_booking(current_user):
         'booking_id_to_uid',
         mapping={new_order.booking_id: current_user.user_id}
     )
+    data['user_id'] = current_user.user_id
     init_task = pbq(data)
 
     payload = {

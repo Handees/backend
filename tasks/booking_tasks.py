@@ -4,7 +4,6 @@ from extensions import (
     redis_2,
     redis_4
 )
-from .events import send_event
 from core.exc import BookingHasContract
 from config import BaseConfig
 from models.user_models import Artisan
@@ -89,16 +88,17 @@ def update_booking_status(data):
         # find booking
         bk = Booking.query.get(data['booking_id'])
 
-        bk.update_status(data['status_code'])
+        # update status to artisan_arrived state
+        bk.update_status('1')
 
         try:
             db.session.commit()
+            resp = BookingSchema().dump(bk)
         except Exception:
             db.session.rollback()
         finally:
             db.session.close()
 
-        resp = BookingSchema().dump(bk)
         redis_.set(
             data['booking_id'],
             str(resp)
@@ -157,6 +157,7 @@ def job_end(data):
     """ sets the start time of booking """
     from models import db
     from models.bookings import SettlementEnum
+    from .events import send_event
 
     app = HueyTemplate.get_flask_app(config_options['development'])
 
