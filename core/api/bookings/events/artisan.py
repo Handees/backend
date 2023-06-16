@@ -148,8 +148,7 @@ def get_updates(uid, data):
     from tasks.booking_tasks import assign_artisan_to_booking
 
     room = data['booking_id']
-    artisan = ArtisanSchema().dump(Artisan.get_by_user_id(uid))
-    data['artisan'] = artisan
+    data['uid'] = uid
     if redis_2.exists(room):
         # remove from queue
         redis_2.delete(room)
@@ -158,6 +157,9 @@ def get_updates(uid, data):
         assign_artisan_to_booking(data)
 
         # send updates to user
+        artisan = ArtisanSchema().dump(Artisan.get_by_user_id(uid))
+        data['artisan'] = artisan
+        del data['uid']
         payload = {
             'payload': data,
             'recipient': redis_4.hget(
@@ -228,13 +230,23 @@ def handle_location_arrival(uid, data):
 @valid_auth_required
 def handle_job_begin(uid, data):
     """ triggered when artisan begins a job """
-    artisan = ArtisanSchema().dump(Artisan.get_by_user_id(uid))
+    artisan = Artisan.get_by_user_id(uid)
     bk = Booking.query.get(data['booking_id'])
-    artisan = redis_4.hget(
-        'user_to_sid',
-        uid
-    )
-    if artisan.booking.booking_id == data['booking_id']:
+
+    # check if customer has confirmed job
+    if not bk.details_confirmed:
+        logger.error(InvalidBookingTransaction(
+            f"{messages.BOOKING_NOT_CONFIRMED}"
+        ))
+        emit(
+            'error',
+            f"{messages.BOOKING_NOT_CONFIRMED}",
+            namespace='/artisan'
+        )
+        return
+
+    # initiate job
+    if bk.artisan.artisan_id == artisan.artisan_id:
         try:
             if not bk.status == BookingStatusEnum('8'):
                 bk.update_status('8')
@@ -258,6 +270,7 @@ def handle_job_begin(uid, data):
         except Exception as e:
             logger.exception(e)
             emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
+            return
     else:
         logger.error(InvalidBookingTransaction(
             f"Artisan with id {artisan.artisan_id} has not been assigned this order"
@@ -304,7 +317,7 @@ def customer_approval(uid, data):
                 data['booking_id']
             )
         }
-        send_event('customer_approval', payload, '/customer')
+        send_event('approve_booking_details', payload, '/customer')
     except Exception as e:
         logger.error(e)
         emit('error', messages.INTERNAL_SERVER_ERROR, namespace='/artisan')

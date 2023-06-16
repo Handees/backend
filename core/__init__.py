@@ -38,7 +38,6 @@ def configure_logging(app):
 
     # reduce noise from noisy libraries
     logging.getLogger("socketio").setLevel('INFO')
-    logging.getLogger('azure').setLevel('ERROR')
 
     @app.errorhandler(404)
     def not_found(error):

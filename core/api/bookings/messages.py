@@ -11,6 +11,7 @@ INTERNAL_SERVER_ERROR = "Omo:: 😬an error occured from the backend while tryin
 SCHEMA_ERROR = 'DataValidationError🤡: Client done screwed up check the data you sent abeg'
 JOB_STARTED = 'Artisan started job'
 INVALID_TOKEN = 'Token is either expired or invalid 🙃'
+BOOKING_NOT_CONFIRMED = 'customer is yet to confirm booking details, can not start job'
 
 
 def dynamic_msg(msg: str, val):

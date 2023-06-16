@@ -60,7 +60,7 @@ def assign_artisan_to_booking(data):
 
     with app.app_context():
         # find artisan
-        artisan = Artisan.query.get(data['artisan_id'])
+        artisan = Artisan.get_by_user_id(data['uid'])
         booking = Booking.query.get(data['booking_id'])
 
         booking.artisan = artisan
@@ -116,7 +116,7 @@ def confirm_job_details(data):
         # find booking
         bk: Booking = Booking.query.get(data['booking_id'])
         is_contract: bool = data['is_contract']
-        settlement: dict = data['settlment']
+        settlement: dict = data['settlement']
 
         if is_contract:
 
@@ -125,7 +125,6 @@ def confirm_job_details(data):
                 bkc = BookingContract()
                 bk.booking_contract = bkc
 
-                bkc.update_start_time()
             else:
                 raise BookingHasContract(
                     f"This booking {bk} already has a booking-contract associated with it"
@@ -141,6 +140,9 @@ def confirm_job_details(data):
 
         # assign payment to booking
         bk.payment = _payment
+
+        # confirm bk details
+        bk.details_confirmed = True
 
         try:
             db.session.add(bkc)

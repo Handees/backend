@@ -90,7 +90,7 @@ class BookingStartSchema(ma.Schema):
             try:
                 BookingContractDurationEnum[data['duration_unit'].upper()]
             except KeyError:
-                raise DataValidationError('invalid duration unit passed', errors)
+                raise DataValidationError('invalid duration unit passed')
             else:
                 data['duration_unit'] = data['duration_unit'].upper()
         return data
