@@ -91,7 +91,7 @@ def cancel_offer(data):
         data['booking_id']
     ))
     socketio.emit(
-        'offer_canceled',
+        'offer_cancelled',
         "Client cancelled offer",
         namespace='/artisan',
         to=room

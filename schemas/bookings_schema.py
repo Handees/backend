@@ -62,8 +62,6 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
 
 class CancelBookingSchema(ma.Schema):
     booking_id = fields.Str(required=True, load_only=True)
-    status_code = fields.Integer(required=True, load_only=True)
-    artisan_id = fields.Str(required=True, load_only=True)
 
 
 class BookingSettlementSchema(ma.Schema):
@@ -80,17 +78,32 @@ class BookingSettlementSchema(ma.Schema):
 class BookingStartSchema(ma.Schema):
     booking_id = fields.Str(required=True)
     is_contract = fields.Boolean(required=True)
-    settlement = fields.Nested(BookingSettlementSchema)
+    settlement = fields.Nested(BookingSettlementSchema, required=True)
     duration = fields.Integer()
     duration_unit = fields.Str()
 
     @pre_load
     def verify_unit(self, data, *args, **kwargs):
         if data:
-            try:
-                BookingContractDurationEnum[data['duration_unit'].upper()]
-            except KeyError:
-                raise DataValidationError('invalid duration unit passed')
-            else:
-                data['duration_unit'] = data['duration_unit'].upper()
+            if data['is_contract']:
+                if 'duration' not in data or 'duration_unit' not in data:
+                    raise DataValidationError('Missing fields: <duration_unit> or <duration> or both')
+                # validate units for duration if contract type
+                try:
+                    if data['duration_unit'].lower() not in ['days', 'weeks']:
+                        raise DataValidationError('invalid duration unit passed, check spelling')
+                    BookingContractDurationEnum[data['duration_unit'].upper()]
+                    data['duration_unit'] = data['duration_unit'].upper()
+                except ValueError:
+                    raise DataValidationError('invalid duration unit passed - ensure type is <str>')
+                except KeyError:
+                    raise DataValidationError('Missing field: <duration_unit>')
+
+            if data['settlement']['type'].lower() not in ['hourly_rate', 'negotiation']:
+                raise DataValidationError("Invalid settlement type specified: check spelling")
+            if data['settlement']['type'].lower() == 'negotiation':
+                if 'amount' not in data['settlement']:
+                    raise DataValidationError("Missing Field: <amount>, please specify the negotiated amount")
+                elif 'amount' in data['settlement'] and not (data['settlement']['amount'] > 500):
+                    raise DataValidationError("Invalid settlement amount passed")
         return data

@@ -1,6 +1,6 @@
 class DataValidationError(Exception):
-    def __init__(self, msg, errors, data=None):
-        super().__init__(msg, errors, data)
+    def __init__(self, msg, errors=None, data=None):
+        super().__init__(msg, data)
         self.msg = msg
         self.errors = errors
         self.data = data

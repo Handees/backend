@@ -2,6 +2,7 @@ from core import (
     socketio,
     db
 )
+from .utils import error_response
 from core.api.auth.auth_helper import (
     auth_param_required,
     valid_auth_required
@@ -37,7 +38,6 @@ from flask import (
 from flask_socketio import (
     emit,
     join_room,
-    send,
     ConnectionRefusedError
 )
 from loguru import logger
@@ -169,12 +169,11 @@ def get_updates(uid, data):
         }
         send_event('booking_offer_accepted', payload, '/customer')
     else:
-        emit(
-            'offer_close',
-            messages.BOOKING_CANCELED,
-            namespace='/artisan',
-            to=request.sid
-        )
+        payload = {
+            'payload': {'msg': messages.BOOKING_CANCELLED, 'data': {}},
+            'recipient': uid
+        }
+        send_event('offer_closed', payload, '/artisan')
 
 
 @socketio.on('cancel_offer', namespace='/artisan')
@@ -189,9 +188,9 @@ def cancel_offer_artisan(uid, data):
     try:
         data = schema.load(data)
     except Exception as e:
-        raise DataValidationError(messages.SCHEMA_ERROR, e)
+        raise DataValidationError(messages.SCHEMA_ERROR, errors=e)
 
-    room = data.booking_id
+    room = data['booking_id']
 
     # update status of booking
     update_booking_status(data)
@@ -200,8 +199,8 @@ def cancel_offer_artisan(uid, data):
     redis_2.delete(room)
 
     socketio.emit(
-        'offer_canceled',
-        messages.dynamic_msg(messages.BOOKING_CANCELED, "artisan"),
+        'offer_cancelled',
+        messages.dynamic_msg(messages.BOOKING_CANCELLED, "artisan"),
         to=room
     )
 
@@ -238,10 +237,10 @@ def handle_job_begin(uid, data):
         logger.error(InvalidBookingTransaction(
             f"{messages.BOOKING_NOT_CONFIRMED}"
         ))
-        emit(
+        send_event(
             'error',
-            f"{messages.BOOKING_NOT_CONFIRMED}",
-            namespace='/artisan'
+            error_response(messages.BOOKING_NOT_CONFIRMED, uid),
+            '/artisan'
         )
         return
 
@@ -254,31 +253,43 @@ def handle_job_begin(uid, data):
                     db.session.commit()
                     payload = {
                         'payload': messages.JOB_STARTED,
-                        'recipient': artisan
+                        'recipient': redis_4.hget(
+                            'booking_id_to_uid',
+                            data['booking_id']
+                        )
                     }
                     send_event(
                         'job_started',
                         payload,
-                        '/artisan'
+                        '/customer'
                     )
                 except Exception as e:
                     logger.exception(e)
                     db.session.rollback()
-                    emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
+                    send_event(
+                        'error',
+                        error_response(messages.INTERNAL_SERVER_ERROR, uid),
+                        '/artisan'
+                    )
+                    raise e
                 finally:
                     db.session.close()
         except Exception as e:
             logger.exception(e)
-            emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
+            send_event(
+                'error',
+                error_response(messages.INTERNAL_SERVER_ERROR, uid),
+                '/artisan'
+            )
             return
     else:
         logger.error(InvalidBookingTransaction(
             f"Artisan with id {artisan.artisan_id} has not been assigned this order"
         ))
-        emit(
+        send_event(
             'error',
-            f"Artisan with id {artisan.artisan_id} has not been assigned this order",
-            namespace='/artisan'
+            error_response(f"Artisan with id {artisan.artisan_id} has not been assigned this order", uid),
+            '/artisan'
         )
 
 
@@ -291,11 +302,19 @@ def handle_job_end(uid, data):
 
     try:
         job_end(data)
+        send_event(
+            'job_completed',
+            {'msg': messages.JOB_COMPLETED},
+            '/artisan'
+        )
     except Exception as e:
         logger.exception(e)
-        emit("error", messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
-    else:
-        send(messages.JOB_COMPLETED)
+        send_event(
+            'error',
+            error_response(messages.INTERNAL_SERVER_ERROR, uid),
+            '/artisan'
+        )
+        return
 
 
 @socketio.on('request_customer_approval', namespace='/artisan')
@@ -304,23 +323,27 @@ def handle_job_end(uid, data):
 def customer_approval(uid, data):
     """ triggered when artisan specifies initial details of the booking """
     try:
-        data = BookingStartSchema().load(data)
-    except DataValidationError as e:
-        logger.exception(e)
-        emit("error", messages.SCHEMA_ERROR, namespace='/artisan')
-
-    try:
-        payload = {
-            'payload': data,
-            'recipient': redis_4.hget(
-                'booking_id_to_uid',
-                data['booking_id']
-            )
-        }
-        send_event('approve_booking_details', payload, '/customer')
+        schema = BookingStartSchema()
+        data = schema.load(data)
     except Exception as e:
+        logger.error(messages.SCHEMA_ERROR)
         logger.error(e)
-        emit('error', messages.INTERNAL_SERVER_ERROR, namespace='/artisan')
+        send_event(
+            'error',
+            error_response(e.msg, uid),
+            '/artisan'
+        )
+        return
+
+    # inform customer
+    payload = {
+        'payload': data,
+        'recipient': redis_4.hget(
+            'booking_id_to_uid',
+            data['booking_id']
+        )
+    }
+    send_event('approve_booking_details', payload, '/customer')
 
 
 @socketio.on('msg', namespace='/chat')

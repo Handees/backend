@@ -56,3 +56,10 @@ def parse_event_data(fn):
             print(data)
             return fn(data, *other_args)
     return decorated
+
+
+def error_response(msg, uid):
+    return {
+        'payload': {'msg': msg},
+        'recipient': uid
+    }

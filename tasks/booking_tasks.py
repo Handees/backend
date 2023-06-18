@@ -16,10 +16,12 @@ from models.bookings import (
 from tasks.exc import InvalidBookingTransaction
 from models.payments import Payment
 from schemas.bookings_schema import BookingSchema
+from utils import setLogger
 from config import config_options
 
 
 import logging
+from loguru import logger
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -27,6 +29,8 @@ logging.basicConfig(level=logging.DEBUG)
 # huey instance
 huey = HueyTemplate(config=BaseConfig.HUEY_CONFIG).huey
 logging.getLogger('huey').setLevel(logging.DEBUG)
+
+setLogger()
 
 # TODO: subclass decorator to include app context
 
@@ -70,7 +74,8 @@ def assign_artisan_to_booking(data):
         )
         try:
             db.session.commit()
-        except Exception:
+        except Exception as e:
+            logger.exception(e)
             db.session.rollback()
         finally:
             resp = BookingSchema().dump(booking)
@@ -98,7 +103,8 @@ def update_booking_status(data):
         try:
             db.session.commit()
             resp = BookingSchema().dump(bk)
-        except Exception:
+        except Exception as e:
+            logger.exception(e)
             db.session.rollback()
         finally:
             db.session.close()
@@ -115,6 +121,7 @@ def confirm_job_details(data):
     from models import db
     from tasks.events import send_event
     from core.api.bookings import messages
+    from uuid import uuid4
 
     app = HueyTemplate.get_flask_app(config_options['development'])
 
@@ -144,19 +151,21 @@ def confirm_job_details(data):
             if not bk.booking_contract:
                 bkc = BookingContract()
                 bk.booking_contract = bkc
-
             else:
                 raise BookingHasContract(
                     f"This booking {bk} already has a booking-contract associated with it"
                 )
+            db.session.add(bkc)
 
         # associate payment with booking
         _payment = Payment()
+        _payment.payment_id = uuid4().hex
         if settlement['type'] == 'NEGOTIATION':
             _payment.total_amount = settlement['amount']
 
         # set booking settlement type
         bk.settlement_type = SettlementEnum[settlement['type']]
+        db.session.add(_payment)
 
         # assign payment to booking
         bk.payment = _payment
@@ -165,14 +174,12 @@ def confirm_job_details(data):
         bk.details_confirmed = True
 
         try:
-            db.session.add(bkc)
-            db.session.add(_payment)
             db.session.commit()
-        except Exception:
+        except Exception as e:
+            logger.exception(e)
             db.session.rollback()
         finally:
             db.session.close()
-
         payload = {
             'payload': {'msg': messages.BOOKING_DETAILS_CONFIRMED},
             'recipient': redis_4.hget(
@@ -228,7 +235,8 @@ def job_end(data):
             )
             try:
                 db.session.commit()
-            except Exception:
+            except Exception as e:
+                logger.exception(e)
                 db.session.rollback()
             finally:
                 db.session.close()
