@@ -53,7 +53,7 @@ def parse_event_data(fn):
             data, *other_args = args
             data = json.loads(data)
             data = eval(data)
-            print(data)
+            del data['local']
             return fn(data, *other_args)
     return decorated
 
