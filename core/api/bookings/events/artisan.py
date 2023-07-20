@@ -2,7 +2,10 @@ from core import (
     socketio,
     db
 )
-from .utils import error_response
+from .utils import (
+    error_response,
+    gen_response
+)
 from core.api.auth.auth_helper import (
     auth_param_required,
     valid_auth_required
@@ -154,7 +157,16 @@ def get_updates(uid, data):
         redis_2.delete(room)
 
         # assign artisan to booking
-        assign_artisan_to_booking(data)
+        try:
+            assign_artisan_to_booking(data)
+        except Exception as e:
+            logger.exception(e)
+            send_event(
+                'error',
+                error_response(messages.INTERNAL_SERVER_ERROR, uid),
+                '/artisan'
+            )
+            return
 
         # send updates to user
         artisan = ArtisanSchema().dump(Artisan.get_by_user_id(uid))
@@ -193,7 +205,15 @@ def cancel_offer_artisan(uid, data):
     room = data['booking_id']
 
     # update status of booking
-    update_booking_status(data)
+    try:
+        update_booking_status(data)
+    except Exception as e:
+        logger.exception(e)
+        send_event(
+            'error',
+            error_response(messages.INTERNAL_SERVER_ERROR, uid),
+            '/artisan'
+        )
 
     # remove from queue once canceled
     redis_2.delete(room)
@@ -212,7 +232,15 @@ def handle_location_arrival(uid, data):
     """ triggered when artisan arrives at location """
 
     # update booking status
-    update_booking_status(data)
+    try:
+        update_booking_status(data)
+    except Exception as e:
+        logger.exception(e)
+        send_event(
+            'error',
+            error_response(messages.INTERNAL_SERVER_ERROR, uid),
+            '/artisan'
+        )
 
     payload = {
         'payload': messages.ARTISAN_ARRIVES,
@@ -301,11 +329,16 @@ def handle_job_end(uid, data):
     from tasks.booking_tasks import job_end
 
     try:
+        data['uid'] = uid
         job_end(data)
         send_event(
             'job_completed',
-            {'msg': messages.JOB_COMPLETED},
-            '/artisan'
+            gen_response(
+                data={
+                    'msg': messages.JOB_COMPLETED
+                }
+            ),
+            '/customer'
         )
     except Exception as e:
         logger.exception(e)
@@ -330,7 +363,7 @@ def customer_approval(uid, data):
         logger.error(e)
         send_event(
             'error',
-            error_response(e.msg, uid),
+            error_response(e.messages, uid),
             '/artisan'
         )
         return

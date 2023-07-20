@@ -1,10 +1,13 @@
 from extensions import redis_4
 from .booking_tasks import huey
+from core.exc import ClientNotConnected
+
+from loguru import logger
 import functools
 import logging
 import os
 
-
+# config
 logging.basicConfig(level=logging.DEBUG)
 redis_pass = os.getenv('REDIS_PASS')
 redis_port = os.getenv('REDIS_PORT', 6378)
@@ -22,7 +25,7 @@ def exp_backoff_task(retries, retry_backoff):
             task = kwargs.pop('task')
             try:
                 return fn(*args, **kwargs)
-            except Exception as exc:
+            except ClientNotConnected as exc:
                 task.retry_delay *= retry_backoff
                 raise exc
 
@@ -36,11 +39,20 @@ def exp_backoff_task(retries, retry_backoff):
 @exp_backoff_task(retries=5, retry_backoff=1.5)
 def send_event(event, data, namespace):
     from flask_socketio import SocketIO
-    from core.exc import ClientNotConnected
+
+    if not data or not data['recipient']:
+        logger.error("Cannot send event: No data received, or recipient missing")
+        return
 
     # check if receiver is connected
+    if not redis_4.hexists("user_to_sid", data['recipient']):
+        logger.warning("client not connected: retrying...")
+        raise ClientNotConnected("Client no longer connected")
+
     user_sid = redis_4.hget("user_to_sid", data['recipient'])
+
     if not redis_4.exists(user_sid):
+        logger.warning("client not connected: retrying...")
         raise ClientNotConnected("Client no longer connected")
 
     sock = SocketIO(

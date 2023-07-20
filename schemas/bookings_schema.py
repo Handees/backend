@@ -3,7 +3,7 @@ from core import (
     ma, db
 )
 from models.bookings import (Booking, BookingContractDurationEnum)
-from marshmallow import pre_load
+from marshmallow import pre_load, post_load
 from marshmallow import fields
 from geoalchemy2.types import Geometry as GeometryType
 from marshmallow_sqlalchemy import ModelConverter
@@ -82,7 +82,7 @@ class BookingStartSchema(ma.Schema):
     duration = fields.Integer()
     duration_unit = fields.Str()
 
-    @pre_load
+    @post_load
     def verify_unit(self, data, *args, **kwargs):
         if data:
             if data['is_contract']:

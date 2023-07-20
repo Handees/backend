@@ -217,7 +217,7 @@ def job_end(data):
             # settlement type is "hrly"
             user_rid = redis_4.hget(
                 'user_to_sid',
-                Artisan.query.get(data['artisan_id']).user_id
+                data['uid']
             )
             if bk.settlement_type == SettlementEnum('1'):
                 pay = bk.fetch_hourly_pay()
@@ -229,7 +229,7 @@ def job_end(data):
                 'settlement_total',
                 {
                     'recipient': user_rid,
-                    'payload': pay
+                    'payload': {'data': pay}
                 },
                 namespace='/artisan'
             )

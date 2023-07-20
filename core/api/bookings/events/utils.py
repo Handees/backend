@@ -49,17 +49,26 @@ def parse_event_data(fn):
         import os
         from dotenv import load_dotenv
         load_dotenv()
+        print(args[0])
         if os.getenv('P_ENV') == 'local' or 'local' in args[0]:
             data, *other_args = args
             data = json.loads(data)
-            data = eval(data)
-            del data['local']
-            return fn(data, *other_args)
+            data = eval(data) if data != "" else data
+            if 'local' in data:
+                del data['local']
+        return fn(data, *other_args)
     return decorated
 
 
 def error_response(msg, uid):
     return {
         'payload': {'msg': msg},
+        'recipient': uid
+    }
+
+
+def gen_response(msg=None, data=None, uid):
+    return {
+        'payload': {'msg': msg, 'data': data},
         'recipient': uid
     }
