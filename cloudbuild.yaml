@@ -7,7 +7,7 @@ steps:
   - 'handeesofficial@handees-dev'
   - '--tunnel-through-iap'
   - '--project=handees'
-  - '--zone=europe-west6-a'
+  - '--zone=us-central1-a'
   - '--'
   - 'sudo killall -9 supervisord || true'
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -17,7 +17,7 @@ steps:
   - 'handeesofficial@handees-dev'
   - '--tunnel-through-iap'
   - '--project=handees'
-  - '--zone=europe-west6-a'
+  - '--zone=us-central1-a'
   - '--'
   - 'sudo killall -9 gunicorn || true'
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -27,7 +27,7 @@ steps:
   - 'handeesofficial@handees-dev'
   - '--tunnel-through-iap'
   - '--project=handees'
-  - '--zone=europe-west6-a'
+  - '--zone=us-central1-a'
   - '--'
   - 'sudo killall -9 huey_consumer.py || true'
 # copy changes to VM
@@ -37,7 +37,7 @@ steps:
   args:
   - '-c'
   - |
-    gcloud compute scp --recurse --zone europe-west6-a * \
+    gcloud compute scp --recurse --zone us-central1-a * \
       'handeesofficial@handees-dev:/home/handeesofficial/backend' \
       --tunnel-through-iap
 # install dependencies
@@ -48,7 +48,7 @@ steps:
     - 'handeesofficial@handees-dev'
     - '--tunnel-through-iap'
     - '--project=handees'
-    - '--zone=europe-west6-a'
+    - '--zone=us-central1-a'
     - '--'
     - 'echo "APP_ENV=dev" > /tmp/APP_ENV.env'
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -58,7 +58,7 @@ steps:
   - 'handeesofficial@handees-dev'
   - '--tunnel-through-iap'
   - '--project=handees'
-  - '--zone=europe-west6-a'
+  - '--zone=us-central1-a'
   - '--'
   - 'bash'
   - '/home/handeesofficial/backend/scripts/install_dependencies.sh'
@@ -70,7 +70,7 @@ steps:
     - 'handeesofficial@handees-dev'
     - '--tunnel-through-iap'
     - '--project=handees'
-    - '--zone=europe-west6-a'
+    - '--zone=us-central1-a'
     - '--'
     - 'bash'
     - '/home/handeesofficial/backend/scripts/start_server.sh'
