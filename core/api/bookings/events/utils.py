@@ -67,7 +67,7 @@ def error_response(msg, uid):
     }
 
 
-def gen_response(msg=None, data=None, uid):
+def gen_response(uid, msg=None, data=None):
     return {
         'payload': {'msg': msg, 'data': data},
         'recipient': uid
