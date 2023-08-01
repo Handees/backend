@@ -56,7 +56,8 @@ def parse_event_data(fn):
             data = eval(data) if data != "" else data
             if 'local' in data:
                 del data['local']
-        return fn(data, *other_args)
+            return fn(data, *other_args)
+        return fn(*args)
     return decorated
 
 
