@@ -20,3 +20,4 @@ from .user_schemas import (
     UserSchema,
     AddNewUserSchema
 )
+from .address import AddressSchema

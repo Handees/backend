@@ -41,11 +41,11 @@ def pbq(booking_details):
     lat, lon = booking_details['lat'], booking_details['lon']
     redis_2.geoadd(
         name="customer_pos",
-        values=(lon, lat, booking_details['user_id'])
+        values=(lon, lat, booking_details['user']['user_id'])
     )
     g_hash = redis_2.geohash(
         'customer_pos',
-        booking_details['user_id']
+        booking_details['user']['user_id']
     )
 
     redis_2.set(booking_details['booking_id'], str(booking_details))

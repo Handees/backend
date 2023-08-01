@@ -2,7 +2,10 @@ from flask import request, render_template
 from loguru import logger
 
 from models.bookings import Booking, BookingCategory
-from schemas.bookings_schema import BookingSchema
+from schemas import (
+    BookingSchema,
+    UserSchema
+)
 from models.user_models import Permission
 from uuid import uuid4
 from . import bookings
@@ -59,7 +62,7 @@ def create_booking(current_user):
         'booking_id_to_uid',
         mapping={new_order.booking_id: current_user.user_id}
     )
-    data['user_id'] = current_user.user_id
+    data['user'] = UserSchema().dump(current_user)
     init_task = pbq(data)
 
     payload = {
