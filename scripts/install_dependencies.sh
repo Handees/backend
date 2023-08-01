@@ -20,7 +20,7 @@ pip install supervisor
 
 # eventlet
 pip uninstall eventlet
-pip install eventlet==0.33.0 https://github.com/benoitc/gunicorn/archive/refs/heads/master.zip#egg=gunicorn==20.1.0
+pip install --force-reinstall eventlet==0.33.0 https://github.com/benoitc/gunicorn/archive/refs/heads/master.zip#egg=gunicorn==20.1.0
 
 # gunicorn
 pip install gunicorn==20.1.0
