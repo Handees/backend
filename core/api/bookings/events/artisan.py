@@ -179,7 +179,22 @@ def get_updates(uid, data):
                 data['booking_id']
             )
         }
-        send_event('booking_offer_accepted', payload, '/customer')
+        try:
+            send_event('booking_offer_accepted', payload, '/customer')
+            send_event(
+                'offer_matched',
+                {
+                    'payload': data,
+                    'recipient': redis_4.hget(
+                        'booking_id_to_artisan',
+                        data['booking_id']
+                    )
+                },
+                '/artisan'
+            )
+        except Exception as e:
+            logger.error(e)
+            emit('offer_matched', data)
     else:
         payload = {
             'payload': {'msg': messages.BOOKING_CANCELLED, 'data': {}},

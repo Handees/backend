@@ -11,7 +11,7 @@ class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.getenv("APP_SECRET")
     REDIS_PORT = os.getenv('REDIS_PORT', 6378)
-    REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+    REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
     REDIS_PASS = os.getenv('REDIS_PASS')
     HUEY_CONFIG = dict(
         connection_pool=redis.ConnectionPool(
@@ -49,6 +49,12 @@ class StagingConfig(BaseConfig):
     URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@{DB_NAME}"
     SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
     FLASK_COVERAGE = True
+    SESSION_REDIS = redis.Redis(
+        host=BaseConfig.REDIS_HOST,
+        port=BaseConfig.REDIS_PORT,
+        password=BaseConfig.REDIS_PASS,
+        db=5
+    )
 
 
 class TestConfig(BaseConfig):

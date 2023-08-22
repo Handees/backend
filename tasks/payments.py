@@ -5,6 +5,7 @@ from models.payments import (
     db
 )
 from models.user_models import User
+from models.payments import PaymentStatusEnum
 from core.exc import DataValidationError
 from schemas.payment import CardAuthSchema
 from config import config_options
@@ -38,7 +39,7 @@ def charge_sucess(data):
         new_payment = Payment(
             transaction_id=data['id'],
             total_amount=data['amount'],
-            status=True
+            status=PaymentStatusEnum['SUCCESS']
         )
         new_payment.payment_id = uuid.uuid4().hex
         db.session.add(new_payment)
