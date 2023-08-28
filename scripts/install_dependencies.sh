@@ -22,7 +22,7 @@ pip install supervisor
 # https://github.com/eventlet/eventlet/issues/702
 # https://stackoverflow.com/questions/75137717/eventlet-dns-python-attribute-error-module-dns-rdtypes-has-no-attribute-any
 pip uninstall eventlet
-pip install eventlet==0.31.0
+pip install eventlet==0.33.3
 
 # gunicorn
-pip install gunicorn==20.1.0
+pip install gunicorn
