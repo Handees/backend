@@ -34,8 +34,6 @@ def permission_required(permission):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print(args[0].can(permission))
-            print(args[0])
             if not args[0].can(permission):
                 logger.debug('User permission not allowed')
                 resp = make_response({
@@ -52,7 +50,6 @@ def role_required(role):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print(args[0].role, args[0])
             if not args[0].role == Role.get_by_name(role):
                 logger.debug('User role not allowed')
                 resp = make_response(
@@ -67,6 +64,12 @@ def role_required(role):
         return decorated_function
     return decorator
 
+
+# def permission_or_role_required(perm, role):
+#     def decorator(f):
+#         @wraps(f)
+#         def decorated_function(*args, **kwargs):
+#             role
 
 def admin_required(f):
     return permission_required(Permission.ADMIN)(f)

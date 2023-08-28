@@ -1,7 +1,6 @@
 from flask import request
 from sqlalchemy.exc import IntegrityError
 from loguru import logger
-from uuid import uuid4
 import sys
 
 from . import user
@@ -29,8 +28,7 @@ from .messages import (
 from models.bookings import Booking
 from core.api.auth.auth_helper import (
     login_required,
-    permission_required,
-    role_required
+    permission_required
 )
 
 
@@ -128,7 +126,6 @@ def fetch_bookings_for_user(current_user):
 
 @user.patch('/')
 @login_required
-@role_required("customer")
 def update_user_profile(current_user):
     payload = request.get_json(force=True)
     schema = UserSchema()

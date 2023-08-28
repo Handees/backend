@@ -51,6 +51,8 @@ def make_shell_context():
     return dict(
         app=app,
         role=Role,
+        user=User,
+        artisan=Artisan,
         bk_cat=BookingCategory,
         db=db
     )

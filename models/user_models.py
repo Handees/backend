@@ -73,7 +73,8 @@ class Role(BaseModelPR, db.Model):
 
 class User(TimestampMixin, db.Model):
     user_id = db.Column(db.String, primary_key=True, unique=True)
-    name = db.Column(db.String(100))
+    first_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
     telephone = db.Column(db.String(100))
     email = db.Column(db.String(100), unique=True, index=True)
     is_artisan = db.Column(db.Boolean, default=False)
