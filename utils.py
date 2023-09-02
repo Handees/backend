@@ -32,6 +32,8 @@ def error_response(status_code, message=None, data=None):
     }
     if message:
         payload['message'] = message
+    if data:
+        payload['data'] = data
     response = jsonify(payload)
     response.status_code = status_code
     return response
@@ -209,3 +211,21 @@ def load_env(gpair):
 #         else:
 #             res.append(response)
 #     return res
+
+
+# url = "https://api.prembly.com/identitypass/verification/nin_w_face"
+
+# payload = {
+#     "number": 12345678909,
+#     "image": "https://res.cloudinary.com/dh3i1wodq/image/upload/v1675417496/cbimage_3_drqdoc.jpg"
+# }
+# headers = {
+#     "accept": "application/json",
+#     "X-Api-Key": "sandbox_sk_bED6axRWzaWLLycBjIkyOVoyCaTyzSDk9L7Cc3H",
+#     "app_id": "15c9a26e-4672-41bb-b53d-3764a25dedbd",
+#     "content-type": "application/x-www-form-urlencoded"
+# }
+
+# response = requests.post(url, data=payload, headers=headers)
+
+# print(response.text)

@@ -14,7 +14,9 @@ from .payment import (
 )
 from .artisan import (
     ArtisanSchema,
-    AddArtisanSchema
+    AddArtisanSchema,
+    KYC,
+    KYCToStore
 )
 from .user_schemas import (
     UserSchema,

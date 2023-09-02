@@ -12,7 +12,9 @@ from models.bookings import BookingCategory
 from core.api.bookings import messages
 from schemas import (
     ArtisanSchema,
-    AddArtisanSchema
+    AddArtisanSchema,
+    KYC
+    # KYCToStore
 )
 from utils import (
     gen_response,
@@ -23,12 +25,15 @@ from ..messages import (
     ARTISAN_CREATED,
     ARTISAN_NOT_FOUND,
     ARTISAN_PROFILE_UPDATED,
+    ARTISAN_KYC_DATA_INVALID,
+    ARTISAN_KYC_PROCESSING,
     USER_HAS_ARTISAN_PROFILE
 )
 from ...auth.auth_helper import (
     login_required,
     role_required
 )
+from .utils import send_verification_request
 
 
 # config logging
@@ -147,3 +152,34 @@ def get_artisan_profile(current_user):
         200,
         data=schema.dump(artisan)
     )
+
+
+@artisan.post('/kyc')
+@login_required
+@role_required("artisan")
+def init_kyc_process(current_user):
+    schema = KYC()
+    data = request.get_json()
+    try:
+        kyc_data = schema.load(data)
+    except Exception as e:
+        logger.error(f'{current_user.user_id} - {ARTISAN_KYC_DATA_INVALID}')
+        return error_response(
+            400,
+            message=ARTISAN_KYC_DATA_INVALID,
+            data=str(e)
+        )
+    # send data to premply for verification
+    try:
+        resp = send_verification_request(kyc_data, current_user.artisan_profile)
+        print(resp)
+        return gen_response(
+            202,
+            message=ARTISAN_KYC_PROCESSING
+        )
+    except Exception as e:
+        logger.error(e)
+        return error_response(
+            500,
+            message=messages.INTERNAL_SERVER_ERROR
+        )

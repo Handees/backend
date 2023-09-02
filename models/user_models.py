@@ -129,6 +129,7 @@ class Artisan(TimestampMixin, db.Model):
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     job_category_id = db.Column(db.Integer, db.ForeignKey('bookingcategory.id'))
     booking = db.relationship('Booking', backref='artisan')
+    kyc_attempts = db.relationship('Kyc', backref='artisan')
 
     @property
     def bookings(self):
@@ -144,3 +145,15 @@ class Artisan(TimestampMixin, db.Model):
     @classmethod
     def get_by_user_id(cls, user_id):
         return cls.query.filter_by(user_id=user_id).first()
+
+
+class Kyc(TimestampMixin, db.Model):
+    kyc_id = db.Column(db.String(200), primary_key=True)
+    kyc_type = db.Column(db.String)
+    drivers_license_number = db.Column(db.String(11))
+    nin_number = db.Column(db.String(11))
+    date_of_birth = db.Column(db.Date)
+    last_name = db.Column(db.String)
+    passport_number = db.Column(db.String(10))
+    image = db.Column(db.String)
+    artisan_id = db.Column(db.ForeignKey('artisan.artisan_id'))
