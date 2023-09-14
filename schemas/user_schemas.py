@@ -48,6 +48,7 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
 
 class AddNewUserSchema(BaseSchema):
     user_id = ma.String(required=True)
-    name = ma.String(required=True)
+    first_name = ma.String(required=True)
+    last_name = ma.String(required=True)
     email = ma.Email(required=True)
     telephone = ma.String(required=True)
