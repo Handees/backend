@@ -49,7 +49,8 @@ def create_new_user():
         user_data = schema.load(data)
         new_user = User(
             user_id=user_data['user_id'],
-            name=user_data['name'],
+            first_name=user_data['first_name'],
+            last_name=user_data['last_name'],
             email=user_data['email'],
             telephone=user_data['telephone']
         )
