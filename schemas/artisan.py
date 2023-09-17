@@ -55,7 +55,8 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     @post_dump
     def append_job_category(self, data, *args, **kwargs):
         if data:
-            data['job_category'] = categories[data['job_category_id']]
+            data['job_category'] = categories[data['job_category_id']-1]
+            data['kyc_status'] = data['kyc_status'].name
             del data['job_category_id']
         return data
 
