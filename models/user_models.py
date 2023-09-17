@@ -1,7 +1,11 @@
 from core import db
 from flask import current_app
 from datetime import datetime
-from .base import TimestampMixin, BaseModelPR
+from .base import (
+    TimestampMixin,
+    BaseModelPR,
+    SerializableEnum
+)
 
 
 class Permission:
@@ -10,6 +14,12 @@ class Permission:
     service_hail = 4
     rating = 8
     admin = 12
+
+
+class KYCEnum(SerializableEnum):
+    UNINITIALIZED = 2
+    IN_PROGRESS = 4
+    COMPLETED = 8
 
 
 class Role(BaseModelPR, db.Model):
@@ -123,6 +133,7 @@ class Artisan(TimestampMixin, db.Model):
     jobs_completed = db.Column(db.Integer, default=0)
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     hourly_rate = db.Column(db.Float)
+    kyc_status = db.Column(db.Enum(KYCEnum), nullable=False, default=KYCEnum('2'))
 
     # relationships and f_keys
     ratings = db.relationship('Rating', backref='artisan')

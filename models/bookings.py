@@ -1,4 +1,8 @@
-from .base import TimestampMixin, BaseModelPR, SerializableEnum
+from .base import (
+    TimestampMixin,
+    BaseModelPR,
+    SerializableEnum
+)
 from core import db
 
 from datetime import datetime as dt
