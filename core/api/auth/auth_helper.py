@@ -182,7 +182,8 @@ def login_required(f):
             print(uid)
             logger.debug("user with data: {} still has access".format(uid))
             user = User.query.filter_by(user_id=uid).first()
-        except Exception or Exception in excs or auth.ExpiredIdTokenError:
+        except (Exception or Exception in excs or auth.ExpiredIdTokenError) as e:
+            logger.error(e)
             resp = make_response({
                 'msg': 'Expired/Invalid token'
             }, 403)

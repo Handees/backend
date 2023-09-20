@@ -169,10 +169,16 @@ def init_kyc_process(current_user):
             message=ARTISAN_KYC_DATA_INVALID,
             data=str(e)
         )
+
+    artisan: Artisan = current_user.artisan_profile
     # send data to premply for verification
+    # if artisan.kyc_status == KYCEnum('2'):
+    #     return gen_response(
+    #         status_code=400,
+    #         message=
+    #     )
     try:
-        resp = send_verification_request(kyc_data, current_user.artisan_profile)
-        print(resp)
+        resp = send_verification_request(kyc_data, artisan)
         return gen_response(
             202,
             message=ARTISAN_KYC_PROCESSING

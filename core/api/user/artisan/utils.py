@@ -4,8 +4,12 @@ from pyprembly.exceptions import (
     APIConnectionError,
     MissingRequiredDataError
 )
-from models.user_models import Kyc
+from models.user_models import (
+    Kyc, Artisan, KYCEnum
+)
 from core.extensions import db
+
+from typing import Dict
 import uuid
 
 
@@ -23,7 +27,7 @@ def preformat_data(data):
     return data
 
 
-def send_verification_request(data, artisan):
+def send_verification_request(data: Dict, artisan: Artisan):
     """
     Sends customer kyc data to Premply
     """
@@ -44,6 +48,9 @@ def send_verification_request(data, artisan):
         new_kyc = Kyc(**to_store)
         new_kyc.kyc_id = str(uuid.uuid4().hex)
         new_kyc.artisan = artisan
+
+        # update artisan kyc status
+        artisan.kyc_status = KYCEnum('4')
 
         # commit transaction
         db.session.add(new_kyc)
