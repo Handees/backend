@@ -13,7 +13,7 @@ import logging
 from loguru import logger
 
 
-def configure_logging(app):
+def configure_logging(app: Flask):
     """configure global logging"""
     # Add loguru as logging interceptor
     class InterceptHandler(logging.Handler):
@@ -33,16 +33,27 @@ def configure_logging(app):
             )
 
     # Register with app
-    logging.basicConfig(handlers=[InterceptHandler()], level=0)
+    default_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> \
+        | <cyan>filename={name}</cyan> <cyan>function={function}</cyan> \
+            <cyan>line={line}</cyan> msg={message} level={level: <8}"  # noqa
+
+    log_format = "%s elapsedtime={elapsed} {custom_data}" % (default_format)
+
+    logging.basicConfig(handlers=[InterceptHandler()], level=0, format=log_format)
     app.logger.addHandler(InterceptHandler())
 
     # reduce noise from noisy libraries
     logging.getLogger("socketio").setLevel('INFO')
 
+
+
+
+def config_error_handlers(app):
+
     @app.errorhandler(404)
     def not_found(error):
         return "Resource/endpoint not found!", 404
-    
+
     @app.errorhandler(405)
     def not_found(error):
         return "Method Not Allowed - Soreyeem!", 405
@@ -55,18 +66,6 @@ def configure_logging(app):
             500,
             message="Internal Server error..🤧"
         )
-
-
-# def config_error_handlers(app):
-
-#     @app.errorhandler(Exception)
-#     def all_exception_handler(error):
-#         # traceback.print_tb(error.__traceback__)
-#         logger.exception("Uncaught exception received. %s" % str(error))
-#         return error_response(
-#             500,
-#             message="An error occurred on the server"
-#         )
 
 
 #  app factory
@@ -90,5 +89,6 @@ def create_app(config_name):
 
     # config_error_handlers(app)
     configure_logging(app)
+    config_error_handlers(app)
 
     return app
