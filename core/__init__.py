@@ -57,6 +57,8 @@ def configure_logging(app: Flask):
     logging.getLogger("cachecontrol").setLevel('INFO')
     logging.getLogger("socketio").setLevel('WARNING')
     logging.getLogger("engineio").setLevel('WARNING')
+    logging.getLogger("engineio.server").setLevel('WARNING')
+    logging.getLogger("google.auth").setLevel('WARNING')
 
 
 def config_error_handlers(app):
