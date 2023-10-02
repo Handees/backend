@@ -9,8 +9,13 @@ from .extensions import (
 )
 from utils import error_response
 
+import os
 import logging
 from loguru import logger
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 def configure_logging(app: Flask):
@@ -40,12 +45,18 @@ def configure_logging(app: Flask):
     log_format = "%s elapsedtime={elapsed} {custom_data}" % (default_format)
 
     logging.basicConfig(handlers=[InterceptHandler()], level=0, format=log_format)
+
+
     app.logger.addHandler(InterceptHandler())
+    app.logger.__format__ = log_format
 
     # reduce noise from noisy libraries
-    logging.getLogger("socketio").setLevel('INFO')
-
-
+    if os.getenv('APP_ENV').lower() not in ('dev', 'development', ):
+        pass
+    logging.getLogger("urllib3").setLevel('INFO')
+    logging.getLogger("cachecontrol").setLevel('INFO')
+    logging.getLogger("socketio").setLevel('WARNING')
+    logging.getLogger("engineio").setLevel('WARNING')
 
 
 def config_error_handlers(app):
@@ -55,7 +66,7 @@ def config_error_handlers(app):
         return "Resource/endpoint not found!", 404
 
     @app.errorhandler(405)
-    def not_found(error):
+    def method_not_allowed(error):
         return "Method Not Allowed - Soreyeem!", 405
 
     @app.errorhandler(Exception)
