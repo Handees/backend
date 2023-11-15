@@ -114,12 +114,10 @@ def on_disconnect():
 @parse_event_data
 @valid_auth_required
 def update_location(uid, data):
-    # TODO: add data validation
-    # update artisan location on redis
     room = uid
     join_room(room)
-
-    psub = redis_2.pubsub()
+    # update artisan location on redis
+    psub = redis_2.pubsub(ignore_subscribe_messages=True)
     psub.unsubscribe('*')
 
     redis_2.geoadd(
@@ -132,7 +130,7 @@ def update_location(uid, data):
     )
     logger.debug(g_hash)
     # reduce geohash length to 6 charz
-    # subscribe useto a topic named after this
+    # subscribe user to a topic named after this
     # truncated geohash
 
     def handle_updates(msg):
