@@ -22,12 +22,13 @@ from config import config_options
 
 import logging
 from loguru import logger
+from huey import Huey
 
 
 logging.basicConfig(level=logging.DEBUG)
 
 # huey instance
-huey = HueyTemplate(config=BaseConfig.HUEY_CONFIG).huey
+huey: Huey = HueyTemplate(config=BaseConfig.HUEY_CONFIG).huey
 logging.getLogger('huey').setLevel(logging.DEBUG)
 
 setLogger()
@@ -36,6 +37,7 @@ setLogger()
 
 
 @huey.task()
+@huey.lock_task('lock_broadcast_task')
 def pbq(booking_details):
     # find nearest artisans to customer
     lat, lon = booking_details['lat'], booking_details['lon']
