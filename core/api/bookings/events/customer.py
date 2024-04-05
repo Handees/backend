@@ -28,7 +28,7 @@ from flask import (
 def connect(auth):
     uid = verify_token(auth['access_token'])
     if not uid:
-        raise ConnectionRefusedError
+        raise ConnectionRefusedError('Invalid user credentials found')
     # fetch client session id
     session['uid'] = uid
 

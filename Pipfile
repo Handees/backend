@@ -1,0 +1,33 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+firebase-admin = "*"
+flake8 = "*"
+flask = "*"
+flask-marshmallow = "*"
+flask-migrate = "*"
+flask-sqlalchemy = "*"
+GeoAlchemy2 = "*"
+marshmallow-sqlalchemy = "*"
+python-dotenv = "*"
+psycopg2 = "*"
+flask-socketio = "*"
+eventlet = "*"
+pygeohash = "*"
+redis = "*"
+flask-cors = "*"
+huey = "*"
+coverage = "*"
+walrus = "*"
+loguru = "*"
+flask-session = "*"
+google-cloud-secret-manager = "*"
+pyprembly = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

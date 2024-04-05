@@ -10,7 +10,7 @@ base_dir = os.path.abspath(os.getcwd())
 class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.getenv("APP_SECRET")
-    REDIS_PORT = os.getenv('REDIS_PORT', 6378)
+    REDIS_PORT = os.getenv('REDIS_PORT', 6379)
     REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
     REDIS_PASS = os.getenv('REDIS_PASS')
     HUEY_CONFIG = dict(
