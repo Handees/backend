@@ -25,21 +25,21 @@ class HueyTemplate:
         'redisex': RedisExpireHuey
     }
 
-    def __init__(self, config, type_name: Optional[str] = None):
-        if type_name:
-            self.huey = HueyTemplate._types[type_name](**config)
-        else:
-            self.huey = HueyTemplate._types['default'](**config)
+    def __init__(self, config=None, type_name: Optional[str] = None):
+        if config:
+            if type_name:
+                self.huey = HueyTemplate._types[type_name](**config)
+            else:
+                self.huey = HueyTemplate._types['default'](**config)
 
-    @classmethod
-    def get_flask_app(cls, config: Optional[Dict] = None):
+    def get_flask_app(self, config: Optional[Dict] = None):
         from flask import Flask
 
         app = Flask("huey_app")
         if config:
             app.config.from_object(config)
-        huey_db = SQLAlchemy()
-        huey_db.init_app(app)
+        self.huey_db = SQLAlchemy()
+        self.huey_db.init_app(app)
 
         return app
 

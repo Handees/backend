@@ -5,6 +5,7 @@ from extensions import (
     redis_4
 )
 from core.exc import BookingHasContract
+# from core.extensions import db
 from config import BaseConfig
 from models.user_models import Artisan
 from models.bookings import (
@@ -61,18 +62,28 @@ def pbq(booking_details):
 @huey.task()
 def assign_artisan_to_booking(data):
     """Assign artisan to booking instance"""
-    from models import db
-    app = HueyTemplate.get_flask_app(config_options['development'])
+    # from models import db
+    _huey = HueyTemplate()
+    app = _huey.get_flask_app(config_options['development'])
+    db = _huey.huey_db
 
     with app.app_context():
         # find artisan
-        artisan = Artisan.get_by_user_id(data['uid'])
-        booking = Booking.query.get(data['booking_id'])
+        artisan = Artisan.query.with_session(db.session()).filter_by(
+            user_id=data['uid']
+        ).first()
+        booking = Booking.query.with_session(db.session()).get(
+            data['booking_id']
+        )
 
         booking.artisan = artisan
         redis_4.hset(
             'booking_id_to_artisan',
             mapping={booking.booking_id: artisan.user_id}
+        )
+        redis_4.hset(
+            'artisan_to_booking_id',
+            mapping={artisan.user_id: booking.booking_id}
         )
         try:
             db.session.commit()
@@ -92,12 +103,15 @@ def assign_artisan_to_booking(data):
 @huey.task()
 def update_booking_status(data):
     """ updates status of booking """
-    from models import db
-    app = HueyTemplate.get_flask_app(config_options['development'])
+    _huey = HueyTemplate()
+    app = _huey.get_flask_app(config_options['development'])
+    db = _huey.huey_db
 
     with app.app_context():
         # find booking
-        bk = Booking.query.get(data['booking_id'])
+        bk = Booking.query.with_session(
+            db.session()
+        ).get(data['booking_id'])
 
         # update status to artisan_arrived state
         bk.update_status('1')
@@ -120,16 +134,19 @@ def update_booking_status(data):
 @huey.task()
 def confirm_job_details(data):
     """ called when a job is started """
-    from models import db
     from tasks.events import send_event
     from core.api.bookings import messages
     from uuid import uuid4
 
-    app = HueyTemplate.get_flask_app(config_options['development'])
+    _huey = HueyTemplate()
+    app = _huey.get_flask_app(config_options['development'])
+    db = _huey.huey_db
 
     with app.app_context():
         # find booking
-        bk: Booking = Booking.query.get(data['booking_id'])
+        bk: Booking = Booking.query.with_session(
+            db.session()
+        ).get(data['booking_id'])
         is_contract: bool = data['is_contract']
         settlement: dict = data['settlement']
 
@@ -199,15 +216,18 @@ def confirm_job_details(data):
 @huey.task()
 def job_end(data):
     """ sets the start time of booking """
-    from models import db
     from models.bookings import SettlementEnum
     from .events import send_event
 
-    app = HueyTemplate.get_flask_app(config_options['development'])
+    _huey = HueyTemplate()
+    app = _huey.get_flask_app(config_options['development'])
+    db = _huey.huey_db
 
     with app.app_context():
         # find booking
-        bk: Booking = Booking.query.get(data['booking_id'])
+        bk: Booking = Booking.query.with_session(
+            db.session()
+        ).get(data['booking_id'])
 
         if bk.status == BookingStatusEnum('8'):
             bk.update_end_time()

@@ -129,12 +129,30 @@ def update_location(uid, data):
         uid
     )
     logger.debug(g_hash)
+
+    # send update to user if artisan is engaged
+    if redis_4.hexists('artisan_to_booking_id', uid):
+        bk_id = redis_4.hget('artisan_to_booking_id', uid)
+        print(bk_id)
+        payload = {
+            'payload': data,
+            'recipient': redis_4.hget(
+                'booking_id_to_uid',
+                bk_id
+            )
+        }
+        send_event('artisan_location_update', payload, '/customer')
     # reduce geohash length to 6 charz
     # subscribe user to a topic named after this
     # truncated geohash
 
     def handle_updates(msg):
-        socketio.emit('new_offer', eval(msg['data']), to=room, namespace='/artisan')
+        socketio.emit(
+            'new_offer',
+            eval(msg['data']),
+            to=room,
+            namespace='/artisan'
+        )
 
     psub.subscribe(**{g_hash[0][:7]: handle_updates})
 
@@ -263,6 +281,9 @@ def handle_location_arrival(uid, data):
         )
     }
     send_event('artisan_arrived', payload, '/customer')
+
+    # stop streaming location to customer
+    redis_4.hdel('artisan_to_booking_id', uid)
 
 
 @socketio.on('start_job', namespace='/artisan')
