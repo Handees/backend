@@ -122,7 +122,11 @@ class User(TimestampMixin, db.Model):
         return self.can(Permission.service_hail)
 
     @classmethod
-    def get_by_email(cls, email):
+    def get_by_email(cls, email, session=None):
+        if session:
+            return cls.query.with_session(
+                session=session
+            ).filter_by(email=email).first()
         return cls.query.filter_by(email=email).first()
 
 

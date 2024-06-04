@@ -35,6 +35,7 @@ class Payment(TimestampMixin, db.Model):
     status = db.Column(db.Enum(PaymentStatusEnum))
     regulatory_charge = db.Column(db.Boolean, default=False)
     transaction_id = db.Column(db.BigInteger)
+    transaction_reference = db.Column(db.String(), unique=True)
     order = db.relationship('Booking', backref='payment')
     # TODO: Add date dim
 
@@ -64,5 +65,9 @@ class CardAuth(BaseModelPR, TimestampMixin, db.Model):
         return cls.query.filter_by(bank=bank).first()
 
     @classmethod
-    def get_by_signature(cls, signature):
+    def get_by_signature(cls, signature, session=None):
+        if session:
+            return cls.query.with_session(session=session).filter_by(
+                signature=signature
+            ).first()
         return cls.query.filter_by(signature=signature).first()

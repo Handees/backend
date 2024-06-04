@@ -1,7 +1,10 @@
 from flask import request, render_template
 from loguru import logger
 
-from models.bookings import Booking, BookingCategory
+from models.bookings import (
+    Booking, BookingCategory,
+    BookingPaymentMethod
+)
 from schemas import (
     BookingSchema,
     UserSchema
@@ -36,7 +39,7 @@ def create_booking(current_user):
 
     schema = BookingSchema()
     try:
-        new_order = schema.load(data)
+        new_order: Booking = schema.load(data)
     except Exception:
         db.session.rollback()
         return error_response(

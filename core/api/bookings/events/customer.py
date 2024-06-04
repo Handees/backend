@@ -137,7 +137,7 @@ def accept_job_details(uid, data):
 @valid_auth_required
 def reject_job_details(uid, data):
     """ triggered when customer has rejected job details """
-
+    # TODO: add check for already confirmed jobs
     payload = {
         'payload': {'msg': messages.BOOKING_DETAILS_REJECTED},
         'recipient': redis_4.hget(

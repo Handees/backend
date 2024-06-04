@@ -309,7 +309,7 @@ def handle_job_begin(uid, data):
     # initiate job
     if bk.artisan.artisan_id == artisan.artisan_id:
         try:
-            if not bk.status == BookingStatusEnum('8'):
+            if not bk.status == BookingStatusEnum.IN_PROGRESS:
                 bk.update_status('8')
                 try:
                     db.session.commit()
@@ -365,15 +365,6 @@ def handle_job_end(uid, data):
     try:
         data['uid'] = uid
         job_end(data)
-        send_event(
-            'job_completed',
-            gen_response(
-                data={
-                    'msg': messages.JOB_COMPLETED
-                }
-            ),
-            '/customer'
-        )
     except Exception as e:
         logger.exception(e)
         send_event(

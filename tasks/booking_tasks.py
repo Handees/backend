@@ -21,9 +21,11 @@ from utils import setLogger
 from config import config_options
 
 
+import uuid
 import logging
 from loguru import logger
 from huey import Huey
+from flask import url_for
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -216,45 +218,91 @@ def confirm_job_details(data):
 @huey.task()
 def job_end(data):
     """ sets the start time of booking """
-    from models.bookings import SettlementEnum
-    from .events import send_event
+    from models.bookings import (
+        SettlementEnum,
+        BookingPaymentMethod
+    )
+    from models.payments import CardAuth
+    from models.user_models import User
+    from tasks import (
+        send_event,
+        initiate_charge
+    )
+    from core.api.bookings.events.utils import gen_response
+    from core.api.bookings import messages
 
     _huey = HueyTemplate()
     app = _huey.get_flask_app(config_options['development'])
     db = _huey.huey_db
+    customer_rid = redis_4.hget(
+        'booking_id_to_uid',
+        data['booking_id']
+    )
 
     with app.app_context():
         # find booking
         bk: Booking = Booking.query.with_session(
             db.session()
         ).get(data['booking_id'])
+        user: User = db.session.query(User).get(bk.customer_id)
 
-        if bk.status == BookingStatusEnum('8'):
+        if bk.status == BookingStatusEnum.IN_PROGRESS:
             bk.update_end_time()
 
             # update booking status
-            bk.update_status('4')
+            bk.update_status(BookingStatusEnum.COMPLETED)
+
+            send_event(
+                'job_completed',
+                gen_response(
+                    customer_rid,
+                    data={
+                        'msg': messages.JOB_COMPLETED
+                    }
+                ),
+                '/customer'
+            )
 
             # calculate amount to be paid if
             # settlement type is "hrly"
-            user_rid = redis_4.hget(
-                'user_to_sid',
-                data['uid']
-            )
-            if bk.settlement_type == SettlementEnum('1'):
+            if bk.settlement_type == SettlementEnum.HOURLY_RATE:
                 pay = bk.fetch_hourly_pay()
                 bk.payment.total_amount = pay
             else:
                 pay = bk.payment.total_amount
+
+            # convert to naira from kobo
+            pay *= 100.0
+
             # inform artisan of total
             send_event(
                 'settlement_total',
                 {
-                    'recipient': user_rid,
-                    'payload': {'data': pay}
+                    'recipient': data['uid'],
+                    'payload': {'total_amount': pay}
                 },
                 namespace='/artisan'
             )
+
+            # check if card payment and initiate a charge on card
+            if bk.payment_method == BookingPaymentMethod.CARD:
+                # TODO: perhaps verify that user has card before trying this
+                charge_obj = {
+                    'charge_info': {
+                        'authorization_code': db.session.query(CardAuth).filter_by(  # noqa: E501
+                            user_id=bk.customer_id
+                        ).first().authorization_code,
+                        'email': user.email,
+                        'amount': pay,
+                        'callback_url': app.config['SERVER_NAME'] \
+                            + '/api/payments/charge_callback'
+                    },
+                    'customer_info': {
+                        'user_rid': customer_rid
+                    }
+                }
+                initiate_charge(charge_obj)
+
             try:
                 db.session.commit()
             except Exception as e:
@@ -263,7 +311,19 @@ def job_end(data):
             finally:
                 db.session.close()
         else:
-            raise InvalidBookingTransaction(
+            send_event(
+                'error',
+                {
+                    'recipient': data['uid'],
+                    'payload': {
+                        'data': "Invalid Transaction Attempted: Can't move "
+                        f"job from status {bk.status} "
+                        f"to {BookingStatusEnum.IN_PROGRESS}"
+                    }
+                },
+                namespace='/artisan'
+            )
+            logger.error(
                 "Invalid Transaction Attempted: Can't move job from status "
-                f"{bk.status} to {BookingStatusEnum('8')}"
+                f"{bk.status} to {BookingStatusEnum.IN_PROGRESS}"
             )

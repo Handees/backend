@@ -38,6 +38,8 @@ def exp_backoff_task(retries, retry_backoff):
 
 @exp_backoff_task(retries=5, retry_backoff=1.5)
 def send_event(event, data, namespace):
+    logger.error(f"THE PROBLEMATIC EVENT IS: {event}")
+    logger.error(f"NA THE ISSUE BE DIS:: {data}")
     from flask_socketio import SocketIO
 
     if not data or not data['recipient']:

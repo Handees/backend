@@ -24,7 +24,10 @@ from .messages import (
 )
 from tasks.payments import handlers
 
-from flask import request
+from flask import (
+    request,
+    render_template
+)
 from loguru import logger
 import os
 import json
@@ -99,13 +102,39 @@ def fetch_customer_transactions(current_user):
 @paystack_verification
 def webhook(event):
     if event:
+        logger.error(event)
         event = json.loads(event)
-        if event['event'] in handlers:
-            init_card_auth = handlers[event['event']](event['data'])
-            init_refund = handlers['initate_refund'](event['data']['id'])
+        event_name = event['event']
+        if event_name.lower().strip() in handlers:
+            init_card_auth = handlers[event_name](event['data'])
 
             logger.info(init_card_auth, dir(init_card_auth))
-            logger.info(init_refund)
     return {
         "status": True
     }, 200
+
+
+# callback for authorization challenge
+@payments.get('/charge_callback')
+@paystack_verification
+def charge_callback(data=None):
+    return render_template(
+        """
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <title>Popup Message</title>
+        <style>
+            body {
+            text-align: center;
+            font-family: sans-serif;
+            margin: 0; /* Remove default margin */
+            }
+        </style>
+        </head>
+        <body>
+        <p>You may close this popup and head back to the app</p>
+        </body>
+        </html>
+        """
+    ), 200

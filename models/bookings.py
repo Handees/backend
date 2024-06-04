@@ -42,6 +42,11 @@ class BookingContractDurationEnum(SerializableEnum):
     WEEKS = 2
 
 
+class BookingPaymentMethod(SerializableEnum):
+    CASH = 1
+    CARD = 2
+
+
 class BookingContract(TimestampMixin, BaseModelPR, db.Model):
     booking_id = db.Column(db.String, db.ForeignKey('booking.booking_id'))
     start_time = db.Column(db.Date, nullable=False, default=dt.utcnow())
@@ -112,6 +117,7 @@ class Booking(TimestampMixin, db.Model):
     ), nullable=True)
     details_confirmed = db.Column(db.Boolean, default=False)
     date_of_booking = db.Column(db.Date, default=dt.utcnow())
+    payment_method = db.Column(db.Enum(BookingPaymentMethod))
     booking_contract = db.relationship('BookingContract', backref='booking', uselist=False)
 
     def update_start_time(self):
@@ -123,12 +129,12 @@ class Booking(TimestampMixin, db.Model):
     # TODO: set artisan_rating
     # TODO: set customer_rating
 
-    def update_status(self, status_code):
-        self.status = BookingStatusEnum(status_code)
+    def update_status(self, enum):
+        self.status = enum
 
     def fetch_hourly_pay(self):
         res = None
-        if self.settlement_type == SettlementEnum('1'):
+        if self.settlement_type == SettlementEnum.HOURLY_RATE:
             time_spent = round(
                 (self.end_time - self.start_time).total_seconds(),
                 5

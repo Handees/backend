@@ -60,6 +60,24 @@ class PaystackClient:
         else:
             return req
 
+    def init_charge(self, payload):
+        """ Charges card """
+
+        logger.info("Attempting to charge card with Paystack ...")
+
+        endpoint = "/transaction/charge_authorization"
+
+        try:
+            req = requests.post(
+                url=PaystackClient.BASE_URL + endpoint,
+                json=payload,
+                headers=self.headers
+            )
+        except Exception:
+            raise Exception
+        else:
+            return req
+
 
 def gen_hmac_hash(payload, secret):
     """ paystack requires that we verify a header by comparing a hash signature

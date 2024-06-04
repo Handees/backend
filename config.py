@@ -28,6 +28,7 @@ class BaseConfig:
     )
     SQLALCHEMY_ECHO = False
     SESSION_TYPE = 'redis'
+    SERVER_NAME = os.getenv('SERVER_NAME')
 
 
 class DevConfig(BaseConfig):
