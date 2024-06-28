@@ -45,6 +45,7 @@ from flask_socketio import (
 )
 from loguru import logger
 import sys
+import json
 
 
 # configure local logger
@@ -147,9 +148,15 @@ def update_location(uid, data):
     # truncated geohash
 
     def handle_updates(msg):
+        raw_data: str = msg['data']
+        try:
+            data = eval(msg['data'])
+        except Exception:
+            data = raw_data.replace("'", '"')
+            data = json.loads(data)
         socketio.emit(
             'new_offer',
-            eval(msg['data']),
+            data,
             to=room,
             namespace='/artisan'
         )

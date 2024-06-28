@@ -1,6 +1,7 @@
 from flask import request
 from uuid import uuid4
 from loguru import logger
+from marshmallow import INCLUDE
 
 from . import artisan
 from core import db

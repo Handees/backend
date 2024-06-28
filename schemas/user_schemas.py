@@ -5,7 +5,9 @@ from .base import (
     BaseSchema
 )
 from core import ma
-from marshmallow import fields
+from marshmallow import (
+    fields, post_dump
+)
 from . import CardAuthSchema
 
 
@@ -39,11 +41,13 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
     #     'created_at',
     # )
 
-    # @post_dump
-    # def edit_dump(self, data, *args, **kwargs):
-    #     if not data['artisan_profile']:
-    #         data['artisan_profile'] = None
-    #     return data
+    @post_dump
+    def edit_dump(self, data, *args, **kwargs):
+        if data:
+            if data['artisan_profile']:
+                kyc_status = data['artisan_profile']['kyc_status']
+                data['artisan_profile']['kyc_status'] = kyc_status.value
+        return data
 
 
 class AddNewUserSchema(BaseSchema):
