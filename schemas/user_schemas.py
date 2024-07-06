@@ -44,7 +44,7 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
     @post_dump
     def edit_dump(self, data, *args, **kwargs):
         if data:
-            if data['artisan_profile']:
+            if 'artisan_profile' in data and data['artisan_profile']:
                 kyc_status = data['artisan_profile']['kyc_status']
                 data['artisan_profile']['kyc_status'] = kyc_status.value
         return data
