@@ -35,11 +35,7 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
             'booking',
         )
 
-        # additional fields
-        additional_fields = (
-            'user_profile_id',
-            'job_category'
-        )
+        # additional field
     created_at = ma.String(dump_only=True, data_key="became_artisan_on")
     user_profile = fields.Nested("UserSchema", exclude=(
         'artisan_profile', 'role_id',
