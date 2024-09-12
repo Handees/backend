@@ -17,9 +17,9 @@ class Permission:
 
 
 class KYCEnum(SerializableEnum):
-    UNINITIALIZED = 2
-    IN_PROGRESS = 4
-    COMPLETED = 8
+    UNINITIALIZED = 'UNINITIALIZED'
+    IN_PROGRESS = 'IN_PROGRESS'
+    COMPLETED = 'COMPLETED'
 
 
 class Role(BaseModelPR, db.Model):
@@ -137,7 +137,11 @@ class Artisan(TimestampMixin, db.Model):
     jobs_completed = db.Column(db.Integer, default=0)
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     hourly_rate = db.Column(db.Float)
-    kyc_status = db.Column(db.Enum(KYCEnum), nullable=False, default=KYCEnum('2'))
+    kyc_status = db.Column(
+        db.Enum(KYCEnum),
+        nullable=False,
+        default=KYCEnum.UNINITIALIZED
+    )
 
     # relationships and f_keys
     ratings = db.relationship('Rating', backref='artisan')

@@ -1,5 +1,7 @@
 from schemas.bookings_schema import BookingSchema
-from extensions import redis_
+from extensions import (
+    redis_, redis_5
+)
 
 from flask import jsonify
 import json
@@ -41,3 +43,12 @@ def exit_cache(id):
 
 def parse_data(data):
     pass
+
+
+def count_nearby_artisans():
+    keys = redis_5.keys('*')
+    results = {}
+    for key in keys:
+        results[key] = redis_5.zcard(key)
+
+    return results

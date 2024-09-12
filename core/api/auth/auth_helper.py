@@ -216,7 +216,8 @@ def auth_param_required(f):
             try:
                 verify_token(args[0]['access_token'])
                 return f(*args, **kwargs)
-            except Exception:
+            except Exception as e:
+                logger.exception(e)
                 logger.error(messages.INVALID_TOKEN)
                 socketio.emit(
                     "msg",

@@ -53,7 +53,7 @@ def pbq(booking_details):
         booking_details['user']['user_id']
     )
 
-    redis_2.set(booking_details['booking_id'], str(booking_details))
+    redis_.set(booking_details['booking_id'], str(booking_details))
 
     # broadcast message to artisans using a redis pub/sub channel
     # the channel is unique to each artisan and its id is synonymous

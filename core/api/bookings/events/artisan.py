@@ -4,7 +4,8 @@ from core import (
 )
 from .utils import (
     error_response,
-    gen_response
+    gen_response,
+    update_nearby_count
 )
 from core.api.auth.auth_helper import (
     auth_param_required,
@@ -14,7 +15,10 @@ from tasks.booking_tasks import update_booking_status
 from tasks.events import send_event
 from extensions import (
     redis_2,
-    redis_4
+    redis_,
+    redis_4,
+    redis_5,
+    redis_6
 )
 from utils import (
     LOG_FORMAT, _level
@@ -31,6 +35,7 @@ from models import (
     Artisan,
     Booking
 )
+from models.bookings import categories
 from models.bookings import BookingStatusEnum
 from .. import messages
 
@@ -121,15 +126,53 @@ def update_location(uid, data):
     psub = redis_2.pubsub(ignore_subscribe_messages=True)
     psub.unsubscribe('*')
 
-    redis_2.geoadd(
+    redis_5.geoadd(
         name=data['job_category'],
         values=(data['lon'], data['lat'], uid)
     )
-    g_hash = redis_2.geohash(
+    g_hash = redis_5.geohash(
         data['job_category'],
         uid
     )
-    logger.debug(g_hash)
+    g_hash = g_hash[0]
+    # store the count in a g_hash
+    geo_fence_key = g_hash[:6]
+
+    category = data['job_category']
+    cat_hash_key = f'{category}+{geo_fence_key}'
+    prev_cat_hash_key = redis_6.get(uid)
+
+    if not redis_6.hexists(cat_hash_key, uid):
+        # in the event that artisan moved away to new geo_fence
+        # clear previous entry in the previous geo_fence
+
+        if prev_cat_hash_key and prev_cat_hash_key != cat_hash_key:
+            prev = prev_cat_hash_key.split('+')[-1]
+            update_nearby_count(uid, category, decr=True, prev_hash=prev)
+
+    if redis_.hexists('ghash_to_artisan_count', geo_fence_key):
+        if not prev_cat_hash_key:
+            curr = geo_fence_key
+            update_nearby_count(uid, category, curr_hash=curr)
+        elif prev_cat_hash_key and not redis_6.hexists(cat_hash_key, uid):
+            prev, curr = prev_cat_hash_key.split('+')[-1], geo_fence_key
+            update_nearby_count(uid, category, prev_hash=prev, curr_hash=curr)
+    else:
+        _count_store = {}
+        for cat in categories:
+            if cat == category:
+                _count_store[cat] = 1
+            else:
+                _count_store[cat] = 0
+        redis_.hset(
+            'ghash_to_artisan_count',
+            geo_fence_key,
+            str(_count_store)
+        )
+
+    redis_6.hset(cat_hash_key, uid, 1)
+    redis_6.set(uid, cat_hash_key)
+    # logger.info(f"The ARTISAN GEOHASH IS:: {g_hash}")
 
     # send update to user if artisan is engaged
     if redis_4.hexists('artisan_to_booking_id', uid):
@@ -143,9 +186,9 @@ def update_location(uid, data):
             )
         }
         send_event('artisan_location_update', payload, '/customer')
-    # reduce geohash length to 6 charz
-    # subscribe user to a topic named after this
-    # truncated geohash
+    # reduce geohash length to 6 characters
+    # subscribe user to a topic named
+    # after this truncated geohash
 
     def handle_updates(msg):
         raw_data: str = msg['data']
@@ -161,7 +204,7 @@ def update_location(uid, data):
             namespace='/artisan'
         )
 
-    psub.subscribe(**{g_hash[0][:7]: handle_updates})
+    psub.subscribe(**{geo_fence_key: handle_updates})
 
     psub.run_in_thread(sleep_time=.01)
 
@@ -175,9 +218,9 @@ def get_updates(uid, data):
 
     room = data['booking_id']
     data['uid'] = uid
-    if redis_2.exists(room):
+    if redis_.exists(room):
         # remove from queue
-        redis_2.delete(room)
+        redis_.delete(room)
 
         # assign artisan to booking
         try:
@@ -193,6 +236,11 @@ def get_updates(uid, data):
 
         # send updates to user
         artisan = ArtisanSchema().dump(Artisan.get_by_user_id(uid))
+        print("## THIS IS THE THING")
+        print(data)
+        print(Artisan.get_by_user_id(uid))
+        print("## THIS IS THE THING")
+        print(artisan)
         data['artisan'] = artisan
         del data['uid']
         payload = {

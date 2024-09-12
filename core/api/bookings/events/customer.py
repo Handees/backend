@@ -1,6 +1,7 @@
 from core import socketio
 from extensions import (
     redis_,
+    redis_2,
     redis_4
 )
 from core.api.auth.auth_helper import (
@@ -27,6 +28,8 @@ from flask import (
 @auth_param_required
 def connect(auth):
     uid = verify_token(auth['access_token'])
+    coords = auth['initialCoordinates']
+    lon, lat = coords['lon'], coords['lat']
     if not uid:
         raise ConnectionRefusedError('Invalid user credentials found')
     # fetch client session id
@@ -42,6 +45,20 @@ def connect(auth):
         "sid_to_user",
         mapping={request.sid: uid}
     )
+    # get ghash
+    redis_2.geoadd(
+        name="customer_pos",
+        values=(lon, lat, uid)
+    )
+    g_hash_key = redis_2.geohash(
+        'customer_pos',
+        uid
+    )[0][:6]
+    emit(
+        "nearby_counts",
+        eval(redis_.hget('ghash_to_artisan_count', g_hash_key))
+    )
+    print(g_hash_key)
     logger.debug('new customer {} client connection!'.format(request.sid))
 
 

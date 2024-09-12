@@ -3,7 +3,11 @@ from flask_socketio import emit
 from loguru import logger
 import time
 
-from extensions import redis_4
+from extensions import (
+    redis_4,
+    redis_6,
+    redis_
+)
 from core.exc import ClientNotConnected
 from utils import setLogger
 
@@ -73,3 +77,40 @@ def gen_response(uid, msg=None, data=None):
         'payload': {'msg': msg, 'data': data},
         'recipient': uid
     }
+
+
+def update_nearby_count(uid, category, prev_hash=None, curr_hash=None, decr=False):
+    if decr:
+        if not prev_hash:
+            raise ValueError('Must pass prev_hash if decr==False')
+        prev = redis_.hget(
+            'ghash_to_artisan_count',
+            prev_hash
+        )
+        prev = eval(prev)
+        redis_6.hdel(category+'+'+prev_hash, uid)
+        prev[category] -= 1
+
+        redis_.hset(
+            'ghash_to_artisan_count',
+            prev_hash,
+            str(prev)
+        )
+    else:
+        prev = None
+        if not curr_hash:
+            raise ValueError('Must pass curr_hash if decr==True')
+        else:
+            curr = redis_.hget(
+                'ghash_to_artisan_count',
+                curr_hash
+            )
+            curr = eval(curr)
+            curr[category] += 1
+            data = curr
+
+        redis_.hset(
+            'ghash_to_artisan_count',
+            curr_hash,
+            str(data)
+        )
