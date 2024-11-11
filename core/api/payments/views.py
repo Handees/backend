@@ -1,4 +1,9 @@
+import os
+import json
+import uuid
+
 from . import payments
+from core.extensions import db
 from ..auth.auth_helper import (
     login_required,
     permission_required,
@@ -10,6 +15,10 @@ from schemas.payment import (
     PaymentSchema
 )
 from models.user_models import Permission
+from models.payments import (
+    Payment,
+    PaymentStatusEnum
+)
 from utils import (
     error_response,
     gen_response,
@@ -29,8 +38,7 @@ from flask import (
     render_template
 )
 from loguru import logger
-import os
-import json
+
 
 logger.remove()
 setLogger()
@@ -38,7 +46,7 @@ setLogger()
 
 @payments.post('/')
 @login_required
-@role_required("customer")
+@role_required("customer")  # TODO: make this support more roles
 def new_payment_transaction(current_user):
     payload = request.get_json(force=True)
     schema = InitTransactionSchema()
@@ -62,23 +70,38 @@ def new_payment_transaction(current_user):
                 message=PAYSTACK_ERROR
             )
         else:
-            body, status_code = req.json(), req.status_code
+            status_code = req.status_code
             if status_code == 200:
+                body = req.json()
                 if body['status'] is True:
+                    body = body['data']
+                    new_payment = Payment(
+                        total_amount=data['amount'],
+                        transaction_reference=body['reference']
+                    )
+                    new_payment.payment_id = uuid.uuid4().hex
+                    db.session.add(new_payment)
+                    try:
+                        db.session.commit()
+                    except Exception as e:
+                        logger.exception(e)
+                        db.session.rollback()
+                    finally:
+                        db.session.close()
                     return gen_response(
                         status_code=200,
                         message=TRANSACTION_INITIATED,
-                        data=body['data']
+                        data=body
                     )
                 else:
-                    logger.debug(body)
+                    logger.exception(body)
                     return error_response(
                         400,
                         message=PAYSTACK_ERROR,
                         data=body['data']
                     )
             else:
-                logger.debug(body)
+                logger.exception(req.text)
                 return error_response(
                     req.status_code,
                     message=PAYSTACK_ERROR
@@ -102,7 +125,7 @@ def fetch_customer_transactions(current_user):
 @paystack_verification
 def webhook(event):
     if event:
-        logger.error(event)
+        logger.info("Event from paystack received")
         event = json.loads(event)
         event_name = event['event']
         if event_name.lower().strip() in handlers:
@@ -138,3 +161,11 @@ def charge_callback(data=None):
         </html>
         """
     ), 200
+
+
+@payments.get('/testcharge')
+def test():
+    from schemas.payment import FrontEndCardSchema, CardAuth
+    cauth = CardAuth.query.get(9)
+    print(FrontEndCardSchema().dump(cauth))
+    return {}, 200

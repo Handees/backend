@@ -68,6 +68,19 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
         return data
 
 
+class ListBookingsSchema(BaseSQLAlchemyAutoSchema):
+    class Meta:
+        model = Booking
+        dump_only = (
+            'booking_id',
+            'created_at', 'settlement_type',
+            'status', 'contract_type',
+            'artisan_rating', 'customer_rating'
+        )
+        include_fk = True
+        model_converter = BookingModelConverter
+
+
 class CancelBookingSchema(ma.Schema):
     booking_id = fields.Str(required=True, load_only=True)
 

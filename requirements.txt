@@ -4,41 +4,41 @@
 #
 #    pip-compile
 #
-alembic==1.7.7
+alembic
     # via flask-migrate
-async-timeout==4.0.2
+async-timeout
     # via redis
-bidict==0.22.0
+bidict
     # via python-socketio
-cachecontrol==0.12.10
+cachecontrol
     # via firebase-admin
-cachelib==0.10.2
+cachelib
     # via flask-session
-cachetools==5.0.0
+cachetools
     # via google-auth
-certifi==2021.10.8
+certifi
     # via requests
-charset-normalizer==2.0.12
+charset-normalizer
     # via requests
-click==8.1.2
+click
     # via flask
-colorama==0.4.4
+colorama
     # via
     #   click
     #   loguru
-coverage==6.4.3
+coverage
     # via -r requirements.in
-deprecated==1.2.13
+deprecated
     # via redis
-dnspython==2.2.1
+dnspython
     # via eventlet
-eventlet==0.33.0
+eventlet
     # via -r requirements.in
-firebase-admin==5.2.0
+firebase-admin
     # via -r requirements.in
-flake8==4.0.1
+flake8
     # via -r requirements.in
-flask==2.1.1
+flask
     # via
     #   -r requirements.in
     #   flask-cors
@@ -47,21 +47,21 @@ flask==2.1.1
     #   flask-session
     #   flask-socketio
     #   flask-sqlalchemy
-flask-cors==3.0.10
+flask-cors
     # via -r requirements.in
-flask-marshmallow==0.14.0
+flask-marshmallow
     # via -r requirements.in
-flask-migrate==3.1.0
+flask-migrate
     # via -r requirements.in
-flask-session==0.4.1
+flask-session
     # via -r requirements.in
-flask-socketio==5.3.1
+flask-socketio
     # via -r requirements.in
-flask-sqlalchemy==2.5.1
+flask-sqlalchemy
     # via
     #   -r requirements.in
     #   flask-migrate
-geoalchemy2==0.11.1
+geoalchemy2
     # via -r requirements.in
 google-api-core[grpc]==2.11.0
     # via
@@ -71,96 +71,96 @@ google-api-core[grpc]==2.11.0
     #   google-cloud-firestore
     #   google-cloud-secret-manager
     #   google-cloud-storage
-google-api-python-client==2.44.0
+google-api-python-client
     # via firebase-admin
-google-auth==2.19.0
+google-auth
     # via
     #   google-api-core
     #   google-api-python-client
     #   google-auth-httplib2
     #   google-cloud-core
     #   google-cloud-storage
-google-auth-httplib2==0.1.0
+google-auth-httplib2
     # via google-api-python-client
-google-cloud-core==2.3.0
+google-cloud-core
     # via
     #   google-cloud-firestore
     #   google-cloud-storage
-google-cloud-firestore==2.4.0
+google-cloud-firestore
     # via firebase-admin
-google-cloud-secret-manager==2.16.1
+google-cloud-secret-manager
     # via -r requirements.in
-google-cloud-storage==2.3.0
+google-cloud-storage
     # via firebase-admin
-google-crc32c==1.3.0
+google-crc32c
     # via google-resumable-media
-google-resumable-media==2.3.2
+google-resumable-media
     # via google-cloud-storage
-googleapis-common-protos[grpc]==1.59.0
+googleapis-common-protos[grpc]
     # via
     #   google-api-core
     #   grpc-google-iam-v1
     #   grpcio-status
-greenlet==1.1.2
+greenlet
     # via
     #   eventlet
     #   sqlalchemy
-grpc-google-iam-v1==0.12.6
+grpc-google-iam-v1
     # via google-cloud-secret-manager
-grpcio==1.44.0
+grpcio
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.44.0
+grpcio-status
     # via google-api-core
-httplib2==0.20.4
+httplib2
     # via
     #   google-api-python-client
     #   google-auth-httplib2
-huey==2.4.3
+huey
     # via -r requirements.in
-idna==3.3
+idna
     # via requests
-importlib-metadata==4.11.3
+importlib-metadata
     # via
     #   alembic
     #   flask
-importlib-resources==5.7.1
+importlib-resources
     # via alembic
-itsdangerous==2.1.2
+itsdangerous
     # via flask
-jinja2==3.1.1
+jinja2
     # via flask
-loguru==0.6.0
+loguru
     # via -r requirements.in
-mako==1.2.0
+mako
     # via alembic
-markupsafe==2.1.1
+markupsafe
     # via
     #   jinja2
     #   mako
-marshmallow==3.15.0
+marshmallow
     # via
     #   flask-marshmallow
     #   marshmallow-sqlalchemy
-marshmallow-sqlalchemy==0.27.0
+marshmallow-sqlalchemy
     # via -r requirements.in
-mccabe==0.6.1
+mccabe
     # via flake8
-msgpack==1.0.3
+msgpack
     # via cachecontrol
-packaging==21.3
+packaging
     # via
     #   geoalchemy2
     #   marshmallow
     #   redis
-proto-plus==1.22.2
+proto-plus
     # via
     #   google-cloud-firestore
     #   google-cloud-secret-manager
-protobuf==4.23.2
+protobuf
     # via
     #   google-api-core
     #   google-cloud-secret-manager
@@ -171,40 +171,41 @@ protobuf==4.23.2
     #   proto-plus
 psycopg2
     # via -r requirements.in
-pyasn1==0.4.8
+pyasn1
     # via
     #   pyasn1-modules
     #   rsa
-pyasn1-modules==0.2.8
+pyasn1-modules
     # via google-auth
-pycodestyle==2.8.0
+pycodestyle
     # via flake8
-pyflakes==2.4.0
+pyflakes
     # via flake8
-pygeohash==1.2.0
+pygeohash
     # via -r requirements.in
-pyparsing==3.0.8
+pyparsing
     # via
     #   httplib2
     #   packaging
-python-dotenv==0.19.2
+pyprembly git+https://github.com/Curiouspaul1/prembly_python
+python-dotenv
     # via -r requirements.in
-python-engineio==4.3.1
+python-engineio
     # via python-socketio
-python-socketio==5.5.2
+python-socketio
     # via flask-socketio
-redis==4.2.2
+redis
     # via
     #   -r requirements.in
     #   walrus
-requests==2.27.1
+requests
     # via
     #   cachecontrol
     #   google-api-core
     #   google-cloud-storage
-rsa==4.8
+rsa
     # via google-auth
-six==1.16.0
+six
     # via
     #   eventlet
     #   flask-cors
@@ -212,27 +213,27 @@ six==1.16.0
     #   google-auth
     #   google-auth-httplib2
     #   grpcio
-sqlalchemy==1.4.35
+sqlalchemy
     # via
     #   alembic
     #   flask-sqlalchemy
     #   geoalchemy2
     #   marshmallow-sqlalchemy
-uritemplate==4.1.1
+uritemplate
     # via google-api-python-client
-urllib3==1.26.9
+urllib3
     # via
     #   google-auth
     #   requests
-walrus==0.9.2
+walrus
     # via -r requirements.in
-werkzeug==2.1.1
+werkzeug
     # via flask
-win32-setctime==1.1.0
+win32-setctime
     # via loguru
-wrapt==1.14.0
+wrapt
     # via deprecated
-zipp==3.8.0
+zipp
     # via
     #   importlib-metadata
     #   importlib-resources

@@ -2,6 +2,7 @@
 
 from .bookings_schema import (
     BookingSchema,
+    ListBookingsSchema,
     BookingSettlementSchema,
     BookingStartSchema,
     CancelBookingSchema

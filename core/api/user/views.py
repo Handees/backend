@@ -9,6 +9,7 @@ from models.user_models import (
     Permission,
     User
 )
+from models.payments import CardAuth
 from utils import (
     gen_response,
     error_response,
@@ -19,7 +20,7 @@ from schemas.user_schemas import (
     AddNewUserSchema,
     UserSchema
 )
-from schemas.bookings_schema import BookingSchema
+from schemas.payment import FrontEndCardSchema
 from .messages import (
     USER_CREATED,
     USER_DATA_EXISTS,
@@ -78,6 +79,19 @@ def create_new_user():
     finally:
         db.session.close()
 
+
+@user.get('/cards')
+@login_required
+def view_cards(current_user):
+    cards = CardAuth.query.filter_by(
+        user_id=current_user.user_id
+    ).all()
+    return gen_response(
+        200,
+        cards,
+        schema=FrontEndCardSchema,
+        many=True
+    )
 
 # @user.get('/<uid>')
 # def check_uid(uid):

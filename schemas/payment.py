@@ -40,17 +40,31 @@ class CardAuthSchema(BaseSQLAlchemyAutoSchema):
 
     @pre_load
     def pre_format_data(self, data, *args, **kwargs):
-        print(data, type(data))
         if data:
             data['last_four'] = data['last4']
             del data['last4']
         return data
 
 
+class FrontEndCardSchema(BaseSQLAlchemyAutoSchema):
+    class Meta:
+        model = CardAuth
+        dump_only = (
+            'id'
+        )
+        fields = (
+            'account_name',
+            'last_four',
+            'exp_month',
+            'exp_year',
+            'signature',
+        )
+
+
 class PaymentEventSchema(BaseSchema):
     class Meta:
         model = Payment
-        include_only = (
+        fields = (
             'amount',
             'transaction_id'
         )

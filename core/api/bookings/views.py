@@ -7,6 +7,7 @@ from models.bookings import (
 )
 from schemas import (
     BookingSchema,
+    ListBookingsSchema,
     UserSchema
 )
 from models.user_models import Permission
@@ -80,13 +81,33 @@ def create_booking(current_user):
     )
 
 
+@bookings.get('/')
+@login_required
+@permission_required(Permission.service_request)
+def view_bookings(current_user):
+    with db.session():
+        bookings = Booking.query.filter_by(
+            customer_id=current_user.user_id
+        ).all()
+
+        return gen_response(
+            200,
+            bookings,
+            schema=ListBookingsSchema,
+            many=True
+        )
+
+
 @bookings.get('/<booking_id>')
 @login_required
 @permission_required(Permission.service_request)
 def fetch_booking_details(current_user, booking_id):
     booking = Booking.query.get(booking_id)
     if not booking:
-        return error_response(404, message=f'booking with id {booking_id} not found')
+        return error_response(
+            404,
+            message=f'booking with id {booking_id} not found'
+        )
 
     return gen_response(200, booking, schema=BookingSchema)
 

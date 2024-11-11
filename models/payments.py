@@ -41,6 +41,7 @@ class Payment(TimestampMixin, db.Model):
 
 
 class CardAuth(BaseModelPR, TimestampMixin, db.Model):
+    # TODO: add email column
     authorization_code = db.Column(db.String, unique=True)
     card_type = db.Column(db.String, index=True)
     last_four = db.Column(db.String)
