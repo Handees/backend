@@ -187,7 +187,7 @@ pyparsing
     # via
     #   httplib2
     #   packaging
-pyprembly git+https://github.com/Curiouspaul1/prembly_python
+git+https://github.com/Curiouspaul1/prembly_python@main
 python-dotenv
     # via -r requirements.in
 python-engineio
