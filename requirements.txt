@@ -169,7 +169,7 @@ protobuf
     #   grpc-google-iam-v1
     #   grpcio-status
     #   proto-plus
-psycopg2
+psycopg2-binary
     # via -r requirements.in
 pyasn1
     # via
