@@ -41,13 +41,13 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
     #     'created_at',
     # )
 
-    @post_dump
-    def edit_dump(self, data, *args, **kwargs):
-        if data:
-            if 'artisan_profile' in data and data['artisan_profile']:
-                kyc_status = data['artisan_profile']['kyc_status']
-                data['artisan_profile']['kyc_status'] = kyc_status.value
-        return data
+    # @post_dump
+    # def edit_dump(self, data, *args, **kwargs):
+    #     if data:
+    #         if 'artisan_profile' in data and data['artisan_profile']:
+    #             kyc_status = data['artisan_profile']['kyc_status']
+    #             data['artisan_profile']['kyc_status'] = kyc_status
+    #     return data
 
 
 class AddNewUserSchema(BaseSchema):
