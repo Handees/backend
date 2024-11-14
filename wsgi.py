@@ -91,6 +91,20 @@ def create_roles():
 
 @app.cli.command()
 @click.option(
+    '--role_name',
+    help="specify name of role to be updated"
+)
+@click.option(
+    '--perm_value',
+    help="specify value of permission to be added"
+)
+def update_role_permissions(role, perm):
+    print(f"To add permission with value {perm} to role {role}")
+    user_models.Role.updateRolePermissions(role, perm)
+    print("Completed operation!")
+
+@app.cli.command()
+@click.option(
     '--coverage/--no-coverage', default=False,
     help='Run tests under coverage'
 )

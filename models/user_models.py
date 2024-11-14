@@ -1,6 +1,9 @@
-from core import db
-from flask import current_app
 from datetime import datetime
+
+from flask import current_app
+from loguru import logger
+
+from core import db
 from .base import (
     TimestampMixin,
     BaseModelPR,
@@ -10,10 +13,11 @@ from .base import (
 
 class Permission:
     service_request = 1
-    cancel_request = 2
-    service_hail = 4
-    rating = 8
-    admin = 12
+    make_payments = 2
+    cancel_request = 4
+    service_hail = 8
+    rating = 16
+    admin = 32
 
 
 class KYCEnum(SerializableEnum):
@@ -49,16 +53,16 @@ class Role(BaseModelPR, db.Model):
 
     @staticmethod
     def insert_roles():
+        customer = [
+            Permission.service_request,
+            Permission.cancel_request,
+            Permission.make_payments,
+            Permission.rating
+        ]
         roles = {
-            'customer': [
-                Permission.service_request,
-                Permission.cancel_request,
-                Permission.rating
-            ],
+            'customer': customer,
             'artisan': [
-                Permission.service_request,
-                Permission.cancel_request,
-                Permission.rating,
+                *customer,
                 Permission.service_hail
             ],
             'admin': [Permission.admin]
@@ -80,6 +84,18 @@ class Role(BaseModelPR, db.Model):
         res = cls.query.filter_by(name=name).first()
         return res
 
+    @staticmethod
+    def updateRolePermissions(role_name, perm_val):
+        role: Role = Role.query.filter_by(name=role_name).first()
+        role.add_permission(perm_val)
+        try:
+            db.session.commit()
+        except Exception as e:
+            logger.exception(e)
+            db.session.rollback()
+        finally:
+            db.session.close()
+
 
 class User(TimestampMixin, db.Model):
     user_id = db.Column(db.String, primary_key=True, unique=True)
@@ -91,7 +107,11 @@ class User(TimestampMixin, db.Model):
     is_email_verified = db.Column(db.Boolean, default=False)
     addresses = db.relationship('Address', backref='user')
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
-    artisan_profile = db.relationship('Artisan', backref='user_profile', uselist=False)
+    artisan_profile = db.relationship(
+        'Artisan',
+        backref='user_profile',
+        uselist=False
+    )
     ratings = db.relationship('Rating', backref='user')
     bookings = db.relationship('Booking', backref='user', lazy='dynamic')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
@@ -146,7 +166,10 @@ class Artisan(TimestampMixin, db.Model):
     # relationships and f_keys
     ratings = db.relationship('Rating', backref='artisan')
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
-    job_category_id = db.Column(db.Integer, db.ForeignKey('bookingcategory.id'))
+    job_category_id = db.Column(
+        db.Integer,
+        db.ForeignKey('bookingcategory.id')
+    )
     booking = db.relationship('Booking', backref='artisan')
     kyc_attempts = db.relationship('Kyc', backref='artisan')
 

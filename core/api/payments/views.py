@@ -7,18 +7,14 @@ from core.extensions import db
 from ..auth.auth_helper import (
     login_required,
     permission_required,
-    paystack_verification,
-    role_required
+    paystack_verification
 )
 from schemas.payment import (
     InitTransactionSchema,
     PaymentSchema
 )
 from models.user_models import Permission
-from models.payments import (
-    Payment,
-    PaymentStatusEnum
-)
+from models.payments import Payment
 from utils import (
     error_response,
     gen_response,
@@ -46,7 +42,7 @@ setLogger()
 
 @payments.post('/')
 @login_required
-@role_required("customer")  # TODO: make this support more roles
+@permission_required(Permission.make_payments)
 def new_payment_transaction(current_user):
     payload = request.get_json(force=True)
     schema = InitTransactionSchema()
