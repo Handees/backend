@@ -41,7 +41,8 @@ def create_booking(current_user):
     schema = BookingSchema()
     try:
         new_order: Booking = schema.load(data)
-    except Exception:
+    except Exception as e:
+        logger.exception(e)
         db.session.rollback()
         return error_response(
             400,

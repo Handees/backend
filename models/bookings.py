@@ -112,13 +112,19 @@ class Booking(TimestampMixin, db.Model):
     contract_type = db.Column("contract_type", db.Boolean, default=False)
     artisan_rating = db.Column(db.Integer)
     customer_rating = db.Column(db.Integer)
-    settlement_type = db.Column(db.Enum(
-        SettlementEnum
-    ), nullable=True)
+    settlement_type = db.Column(
+        db.Enum(
+            SettlementEnum
+        ), nullable=True
+    )
     details_confirmed = db.Column(db.Boolean, default=False)
     date_of_booking = db.Column(db.Date, default=dt.utcnow())
     payment_method = db.Column(db.Enum(BookingPaymentMethod))
-    booking_contract = db.relationship('BookingContract', backref='booking', uselist=False)
+    booking_contract = db.relationship(
+        'BookingContract',
+        backref='booking',
+        uselist=False
+    )
 
     def update_start_time(self):
         self.start_time = dt.utcnow()

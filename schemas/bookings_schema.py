@@ -1,15 +1,25 @@
-from .base import BaseSQLAlchemyAutoSchema
-from core import (
-    ma, db
-)
-from models.bookings import (Booking, BookingContractDurationEnum)
-from marshmallow import pre_load, post_load
 from marshmallow import fields
 from geoalchemy2.types import Geometry as GeometryType
 from marshmallow_sqlalchemy import ModelConverter
+
+from .base import BaseSQLAlchemyAutoSchema
+from core import (
+    ma,
+    db
+)
+from models.bookings import (
+    Booking,
+    BookingContractDurationEnum,
+    BookingPaymentMethod
+)
+from marshmallow import (
+    pre_load,
+    post_load
+)
 from core.exc import DataValidationError
 from schemas.utils import v_float
 
+from loguru import logger
 
 class BookingModelConverter(ModelConverter):
     """Helps to serialize geometry column types"""
@@ -45,21 +55,28 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
     job_category = fields.Str(required=True, load_only=True)
     lat = fields.Float(required=True, load_only=True, validate=v_float)
     lon = fields.Float(required=True, load_only=True, validate=v_float)
+    payment_method  = fields.Enum(BookingPaymentMethod)
 
     @pre_load
     def format(self, data, *args, **kwargs):
         if data:
-            data['payment_method'] = data['payment_method'].upper()
+            curr_method = data['payment_method']
+            if curr_method.lower().strip() == 'card':
+                data['payment_method'] = 'CARD'
+            else:
+                data['payment_method'] = 'CASH'
         return data
 
-    # def load(self, *args, **kwargs):
+    # def load(self, data, *args, **kwargs):
     #     try:
-    #         super().load(*args, **kwargs)
+    #         super().load(data, *args, **kwargs)
     #     except Exception as e:
-    #         err = parse_error(e)
-    #         error = DataValidationError(
-    #             msg=""
-    #         )
+    #         logger.exception(e)
+    #         raise e
+    #         # err = parse_error(e)
+    #         # error = DataValidationError(
+    #         #     msg=""
+    #         # )
 
     @pre_load
     def edit_payload(self, data, **kwargs):
