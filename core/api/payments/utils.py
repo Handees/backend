@@ -73,8 +73,75 @@ class PaystackClient:
                 json=payload,
                 headers=self.headers
             )
-        except Exception:
-            raise Exception
+        except Exception as e:
+            logger.error(
+                'The following error occurred whilst trying to send request'
+            )
+            raise e
+        else:
+            return req
+
+    def list_banks(self):
+        """ list banks """
+        endpoint = '/bank?currency=NGN'
+        logger.info("Fetching list of banks...")
+
+        try:
+            req = requests.get(
+                url=PaystackClient.BASE_URL + endpoint,
+                headers=self.headers
+            )
+        except Exception as e:
+            logger.error(
+                'The following error occurred whilst trying to send request'
+            )
+            raise e
+        else:
+            return req
+
+    def resolve_account_number(self, payload):
+        """ resolve account number entered from front end """
+        endpoint = '/bank/resolve?account_number={}&bank_code={}'
+        account_number = payload['account_number']
+        bank_code = payload['bank_code']
+        logger.info(
+            f'verifying account number: {account_number} '
+            f'with bank code {bank_code}'
+        )
+        try:
+            req = requests.get(
+                url=PaystackClient.BASE_URL + endpoint.format(
+                    account_number, bank_code
+                ),
+                headers=self.headers
+            )
+        except Exception as e:
+            logger.error(
+                'The following error occurred whilst trying to send request'
+            )
+            raise e
+        else:
+            return req
+
+    def create_transfer_recipient(self, payload):
+        endpoint = '/transferrecipient'
+        account_number = payload['account_number']
+        bank_code = payload['bank_code']
+        logger.info(
+            f'adding new recipient account number: {account_number} '
+            f'with bank code {bank_code}'
+        )
+        try:
+            req = requests.post(
+                url=PaystackClient.BASE_URL + endpoint,
+                json=payload,
+                headers=self.headers
+            )
+        except Exception as e:
+            logger.error(
+                'The following error occurred whilst trying to send request'
+            )
+            raise e
         else:
             return req
 

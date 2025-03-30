@@ -21,14 +21,14 @@ kycstatusenum = postgresql.ENUM(
     'UNINITIALIZED',
     'IN_PROGRESS',
     'COMPLETED',
-    name='kycstatusenum',
+    name='kyc_status_enum',
     create_type=True
 )
+
 
 def upgrade():
     # create the enum type
     kycstatusenum.create(op.get_bind())
-    
     # set column
     op.add_column(
         'artisan',  # table name
@@ -40,8 +40,20 @@ def upgrade():
         )
     )
 
+    with op.batch_alter_table('payment', schema=None) as batch_op:
+        batch_op.add_column(
+            sa.Column('transaction_reference', sa.String(), nullable=True)
+        )
+        batch_op.create_unique_constraint(
+            'payment_transaction_reference_key', ['transaction_reference']
+        )
+
 
 def downgrade():
     op.drop_column('artisan', 'kyc_status')
     bind = op.get_bind()
     kycstatusenum.drop(bind, checkfirst=False)
+
+    with op.batch_alter_table('payment', schema=None) as batch_op:
+        batch_op.drop_constraint('payment_transaction_reference_key', type_='unique')
+        batch_op.drop_column('transaction_reference')

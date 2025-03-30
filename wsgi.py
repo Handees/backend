@@ -24,7 +24,8 @@ import firebase_admin
 load_dotenv()
 
 
-app = create_app(os.getenv('APP_ENV') or 'default')
+ENV = os.getenv('APP_ENV', 'DEV')
+app = create_app(ENV.lower() if ENV else 'default')
 cred = firebase_admin.credentials.Certificate(app.config['F_KEY_PATH'])
 firebase_admin.initialize_app(cred)
 

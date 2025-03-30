@@ -191,6 +191,7 @@ def update_location(uid, data):
     # after this truncated geohash
 
     def handle_updates(msg):
+        print("TOPIC IS BEIN ISSUED")
         raw_data: str = msg['data']
         try:
             data = eval(msg['data'])
@@ -204,6 +205,9 @@ def update_location(uid, data):
             namespace='/artisan'
         )
 
+    print("=========ARTISAN HASH=======")
+    print(geo_fence_key)
+    print("=========ARTISAN HASH=======")
     psub.subscribe(**{geo_fence_key: handle_updates})
 
     psub.run_in_thread(sleep_time=.01)

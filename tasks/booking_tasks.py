@@ -58,7 +58,10 @@ def pbq(booking_details):
     # broadcast message to artisans using a redis pub/sub channel
     # the channel is unique to each artisan and its id is synonymous
     # to the artisan's geohash
-    redis_2.publish(g_hash[0][:7], str(booking_details))
+    print("=========CUSTOMER HASH=======")
+    print(g_hash[0][:6])
+    print("=========CUSTOMER HASH=======")
+    redis_2.publish(g_hash[0][:6], str(booking_details))
 
 
 @huey.task()

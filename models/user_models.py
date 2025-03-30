@@ -114,7 +114,7 @@ class User(TimestampMixin, db.Model):
     )
     ratings = db.relationship('Rating', backref='user')
     bookings = db.relationship('Booking', backref='user', lazy='dynamic')
-    role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     cards = db.relationship('CardAuth', backref='user')
     payments = db.relationship('Payment', backref='user')
 
@@ -165,6 +165,7 @@ class Artisan(TimestampMixin, db.Model):
 
     # relationships and f_keys
     ratings = db.relationship('Rating', backref='artisan')
+    bank_accounts = db.relationship('WithdrawalAccounts', backref='artisan')
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     job_category_id = db.Column(
         db.Integer,

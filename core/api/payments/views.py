@@ -2,19 +2,33 @@ import os
 import json
 import uuid
 
+from flask import (
+    request,
+    render_template
+)
+from loguru import logger
+from sqlalchemy.exc import IntegrityError
+
 from . import payments
 from core.extensions import db
 from ..auth.auth_helper import (
     login_required,
     permission_required,
+    role_required,
     paystack_verification
 )
 from schemas.payment import (
     InitTransactionSchema,
-    PaymentSchema
+    PaymentSchema,
+    ResolveAccountNumberSchema,
+    WithdrawalAccountSchema,
+    BankListSchema
 )
 from models.user_models import Permission
-from models.payments import Payment
+from models.payments import (
+    Payment,
+    WithdrawalAccounts
+)
 from utils import (
     error_response,
     gen_response,
@@ -29,12 +43,6 @@ from .messages import (
 )
 from tasks.payments import handlers
 
-from flask import (
-    request,
-    render_template
-)
-from loguru import logger
-
 
 logger.remove()
 setLogger()
@@ -44,6 +52,7 @@ setLogger()
 @login_required
 @permission_required(Permission.make_payments)
 def new_payment_transaction(current_user):
+    ENV = os.getenv('APP_ENV', 'DEV')
     payload = request.get_json(force=True)
     schema = InitTransactionSchema()
     try:
@@ -55,7 +64,9 @@ def new_payment_transaction(current_user):
         )
     else:
         # send request to paystack api
-        client = PaystackClient(os.getenv('PAYSTACK_TEST_SECRET'))
+        client = PaystackClient(
+            os.getenv(f'PAYSTACK_{ENV}_SECRET')
+        )
 
         try:
             req = client.init_transaction(data)
@@ -165,3 +176,131 @@ def test():
     cauth = CardAuth.query.get(9)
     print(FrontEndCardSchema().dump(cauth))
     return {}, 200
+
+
+@payments.get('/banks')
+def get_banks():
+    ENV = os.getenv('ENV', 'DEV')
+    client = PaystackClient(
+        os.getenv(f'PAYSTACK_{ENV}_SECRET')
+    )
+    req = client.list_banks()
+    if req.status_code == 200:
+        body = req.json()
+        if body['status'] is True:
+            banks = body['data']
+            return gen_response(
+                200,
+                data=banks,
+                schema=BankListSchema,
+                many=True
+            )
+        else:
+            logger.exception(body)
+            return error_response(
+                400,
+                message=PAYSTACK_ERROR,
+                data=body['data']
+            )
+    else:
+        logger.exception(req.text)
+        return error_response(
+            req.status_code,
+            message=PAYSTACK_ERROR
+        )
+
+
+@payments.post('/banks/resolve')
+@login_required
+@role_required('artisan')
+def resolve_account(current_user):
+    with db.session() as sess:
+        schema = ResolveAccountNumberSchema()
+        try:
+            data = schema.load(request.get_json(force=True))
+        except Exception as e:
+            return gen_response(400, message=str(e))
+        else:
+            ENV = os.getenv('ENV', 'DEV')
+            client = PaystackClient(
+                os.getenv(f'PAYSTACK_{ENV}_SECRET')
+            )
+            req = client.resolve_account_number(data)
+            if req.status_code == 200:
+                body = req.json()
+                if body['status'] is True:
+                    recipient_data = {
+                        'type': 'nuban',
+                        'name': body['data']['account_name'],
+                        'account_number': body['data']['account_number'],
+                        'bank_code': data['bank_code'],
+                        'currency': 'NGN'
+                    }
+                    nreq = client.create_transfer_recipient(recipient_data)
+                    nbody = nreq.json()
+                    if nreq.status_code not in (200, 201):
+                        logger.exception(nreq.text)
+                        return error_response(
+                            req.status_code,
+                            data=nreq.text,
+                            message=PAYSTACK_ERROR
+                        )
+                    elif nreq.status_code == 200 and \
+                            not nbody['data']['status']:
+                        logger.exception(nbody)
+                        return error_response(
+                            400,
+                            message=PAYSTACK_ERROR,
+                            data=body['data']
+                        )
+
+                    # parse input
+                    recipient_data.pop("type")
+                    recipient_data['account_name'] = \
+                        body['data']['account_name']
+                    recipient_data['bank_name'] = \
+                        nbody['data']['details']['bank_name']
+                    recipient_data.pop('name')
+                    recipient_data.pop('currency')
+
+                    # store dets
+                    new_account = WithdrawalAccounts(
+                        **recipient_data,
+                        recipient_code=nbody['data']['recipient_code']
+                    )
+                    new_account.artisan = current_user.artisan_profile
+                    sess.add(new_account)
+                    resp = gen_response(
+                        200, data=new_account,
+                        schema=WithdrawalAccountSchema
+                    )
+                    try:
+                        sess.commit()
+                    except IntegrityError as e:
+                        logger.error(e)
+                        return error_response(
+                            status_code=400,
+                            message="Likely, possibly, you're trying to add "
+                            "data that already exists"
+                        )
+                    except Exception as e:
+                        logger.error(e)
+                        sess.rollback()
+                        return error_response(
+                            status_code=400,
+                            message=str(e)
+                        )
+                    return resp
+                else:
+                    logger.exception(body)
+                    return error_response(
+                        400,
+                        message=PAYSTACK_ERROR,
+                        data=body['data']
+                    )
+            else:
+                logger.exception(req.text)
+                return error_response(
+                    req.status_code,
+                    message=PAYSTACK_ERROR
+                )

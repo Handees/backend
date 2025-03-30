@@ -72,3 +72,21 @@ class CardAuth(BaseModelPR, TimestampMixin, db.Model):
                 signature=signature
             ).first()
         return cls.query.filter_by(signature=signature).first()
+
+
+class WithdrawalAccounts(BaseModelPR, TimestampMixin, db.Model):
+    __tableargs__ = db.UniqueConstraint(
+        'account_number', 'user_id',
+        'bank_code'
+    )
+    account_name = db.Column(db.String, nullable=False)
+    bank_code = db.Column(db.String, nullable=False)
+    account_number = db.Column(db.String, nullable=False)
+    bank_name = db.Column(db.String, nullable=False)
+    recipient_code = db.Column(db.String, unique=True, nullable=False)
+
+    # foreign keys
+    artisan_id = db.Column(
+        db.String, db.ForeignKey('artisan.artisan_id'),
+        nullable=False
+    )

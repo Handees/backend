@@ -1,7 +1,7 @@
 """added payment_method column to bookings table
 
 Revision ID: 641cd5fa9fca
-Revises: 3a94e2bd07c0
+Revises: e7100729ae9b
 Create Date: 2024-06-03 01:50:40.108222
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '641cd5fa9fca'
-down_revision = '3a94e2bd07c0'
+down_revision = 'e7100729ae9b'
 branch_labels = None
 depends_on = None
 

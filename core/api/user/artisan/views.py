@@ -10,10 +10,12 @@ from models.user_models import (
     Role
 )
 from models.bookings import BookingCategory
+from models.payments import WithdrawalAccounts
 from core.api.bookings import messages
 from schemas import (
     ArtisanSchema,
     AddArtisanSchema,
+    WithdrawalAccountSchema,
     KYC
     # KYCToStore
 )
@@ -189,4 +191,21 @@ def init_kyc_process(current_user):
         return error_response(
             500,
             message=messages.INTERNAL_SERVER_ERROR
+        )
+
+
+@artisan.get('/bank_accounts')
+@login_required
+@role_required("artisan")
+def list_artisan_banks(current_user):
+    with db.session() as sess:
+        artisan: Artisan = current_user.artisan_profile
+        accounts = sess.query(WithdrawalAccounts).filter_by(
+            artisan_id=artisan.artisan_id
+        ).all()
+        return gen_response(
+            200,
+            data=accounts,
+            many=True,
+            schema=WithdrawalAccountSchema
         )

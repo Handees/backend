@@ -14,7 +14,7 @@ ma = Marshmallow()
 redis_pass = os.getenv('REDIS_PASS')
 redis_port = os.getenv('REDIS_PORT', 6378)
 
-socketio = SocketIO(
+socketio: SocketIO = SocketIO(
     cors_allowed_origins=[
         'http://127.0.0.1:5020', 'http://127.0.0.1:5500',
         'https://www.piesocket.com'

@@ -4,7 +4,8 @@ from .base import (
 )
 from models.payments import (
     Payment,
-    CardAuth
+    CardAuth,
+    WithdrawalAccounts
 )
 from core import (
     db,
@@ -73,3 +74,20 @@ class PaymentEventSchema(BaseSchema):
 class InitTransactionSchema(BaseSchema):
     amount = ma.Float(required=True)
     email = ma.Email(required=True)
+
+
+class BankListSchema(BaseSchema):
+    name = ma.String(required=True)
+    code = ma.String(required=True)
+
+
+class ResolveAccountNumberSchema(BaseSchema):
+    bank_code = ma.String(required=True)
+    account_number = ma.String(required=True)
+
+
+class WithdrawalAccountSchema(BaseSQLAlchemyAutoSchema):
+    recipient_code = ma.String(load_only=True)
+
+    class Meta:
+        model = WithdrawalAccounts

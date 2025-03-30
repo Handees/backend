@@ -2,6 +2,8 @@ from core import ma
 from core.exc import DataValidationError
 from marshmallow import pre_load
 
+from loguru import logger
+
 
 def _parse_error(error, data, **kwargs):
     msg = ""
@@ -20,7 +22,11 @@ class BaseSQLAlchemyAutoSchema(ma.SQLAlchemyAutoSchema):
         """Log and raise error when de-serialization fails. """
         message = _parse_error(error, data, **kwargs)
         self.error_messages = message
-        raise DataValidationError(msg=message, errors=error.messages, data=data)
+        raise DataValidationError(
+            msg=message,
+            errors=error.messages,
+            data=data
+        )
 
     @pre_load
     def remove_skip_values(self, data, many, partial):
@@ -37,9 +43,15 @@ class BaseSQLAlchemyAutoSchema(ma.SQLAlchemyAutoSchema):
 class BaseSchema(ma.Schema):
     def handle_error(self, error, data, **kwargs):
         """Log and raise error when de-serialization fails. """
+        logger.error("ORIGINAL ERROR:")
+        logger.error(error)
         message = _parse_error(error, data, **kwargs)
         self.error_messages = message
-        raise DataValidationError(msg=message, errors=error.messages, data=data)
+        raise DataValidationError(
+            msg=message,
+            errors=error.messages,
+            data=data
+        )
 
     @pre_load
     def remove_skip_values(self, data, many, partial):

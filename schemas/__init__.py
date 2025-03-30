@@ -11,6 +11,8 @@ from .payment import (
     CardAuthSchema,
     PaymentEventSchema,
     PaymentSchema,
+    WithdrawalAccountSchema,
+    ResolveAccountNumberSchema,
     InitTransactionSchema
 )
 from .artisan import (

@@ -53,12 +53,12 @@ def configure_logging(app: Flask):
     # reduce noise from noisy libraries
     if os.getenv('APP_ENV').lower() not in ('dev', 'development', ):
         pass
-    logging.getLogger("urllib3").setLevel('INFO')
-    logging.getLogger("cachecontrol").setLevel('INFO')
-    logging.getLogger("socketio").setLevel('WARNING')
-    logging.getLogger("engineio").setLevel('WARNING')
-    logging.getLogger("engineio.server").setLevel('WARNING')
-    logging.getLogger("google.auth").setLevel('WARNING')
+    # logging.getLogger("urllib3").setLevel('INFO')
+    # logging.getLogger("cachecontrol").setLevel('INFO')
+    logging.getLogger("socketio").setLevel('DEBUG')
+    # logging.getLogger("engineio").setLevel('WARNING')
+    # logging.getLogger("engineio.server").setLevel('WARNING')
+    # logging.getLogger("google.auth").setLevel('WARNING')
 
 
 def config_error_handlers(app):
