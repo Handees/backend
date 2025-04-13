@@ -15,7 +15,7 @@ from google.cloud import secretmanager
 from google import auth
 import click
 import os
-import pipes
+import shlex
 import sys
 import base64
 import firebase_admin
@@ -136,7 +136,7 @@ def load_config_variables():
     """fetches secrets from GCP secret manager and loads them into .env"""
     def gen_pairs(obj):
         val = base64.b64decode(obj['payload']['data']).decode('utf-8')
-        yield f"{pipes.quote(obj['name'].split('/')[-3])}={pipes.quote(val)}"
+        yield f"{shlex.quote(obj['name'].split('/')[-3])}={shlex.quote(val)}"
 
     access_token = None
     keys = load_env(gen_pairs)

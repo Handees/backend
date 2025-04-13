@@ -1,0 +1,53 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Set timezone and install essentials
+RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    apt-get update && \
+    apt-get install -y software-properties-common curl gnupg2 ca-certificates lsb-release build-essential nginx sudo git
+
+# Install Python 3.13 from deadsnakes
+RUN add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.13 python3.13-venv python3.13-dev && \
+    ln -s /usr/bin/python3.13 /usr/local/bin/python && \
+    ln -s /usr/bin/python3.13 /usr/local/bin/python3
+
+# Install pip
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13
+
+# Create a system user
+RUN groupadd -r handeesofficial && useradd -r -g handeesofficial -m handeesofficial
+
+# Set work directory
+WORKDIR /home/handeesofficial/backend
+
+# Copy Nginx config
+COPY nginx/server.conf /etc/nginx/sites-available/
+RUN ln -s /etc/nginx/sites-available/server.conf /etc/nginx/sites-enabled/server.conf
+
+# Set up virtual environment
+RUN python3 -m venv env
+ENV PATH="/home/handeesofficial/backend/env/bin:$PATH"
+
+# Install Python dependencies
+COPY requirements.txt ./
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt && \
+    pip install gunicorn supervisor
+
+# Copy project files
+COPY . .
+
+# Fake Linux service for Nginx
+COPY nginx/nginx.service /etc/systemd/system/nginx.service
+
+# Make sure entrypoint is executable
+RUN chmod +x entrypoints/main_point.sh
+
+EXPOSE 5000 5001
+
+CMD ["/bin/sh", "entrypoints/main_point.sh"]

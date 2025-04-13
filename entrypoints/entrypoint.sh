@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
+#/usr/bin/sh
 
-python3 wsgi.py --host=0.0.0.0 --port=5000
-
+python3 wsgi.py
