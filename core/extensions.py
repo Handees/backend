@@ -1,14 +1,24 @@
+import os
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
 from flask_cors import CORS
 from flask_session import Session
-# from core.sqlalchemy_ext import RouteSQLAlchemy
-import os
+from dotenv import load_dotenv
 
 
-db = SQLAlchemy()
+load_dotenv()
+
+db = SQLAlchemy(
+    engine_options={
+        'connect_args': {
+            'sslmode': "verify-full",
+            'sslrootcert': os.getenv('DB_CERT_PATH')
+        }
+    }
+)
 ma = Marshmallow()
 
 redis_pass = os.getenv('REDIS_PASS')
@@ -20,10 +30,19 @@ socketio: SocketIO = SocketIO(
         'https://www.piesocket.com'
     ],
     async_mode='eventlet',
-    message_queue=f"redis://:{redis_pass}@127.0.0.1:{redis_port}/2",
+    message_queue=f"redis://:{redis_pass}@{os.getenv('REDIS_HOST')}:{redis_port}/7",
     logger=True,
     engineio_logger=True
 )
 sess = Session()
 migrate = Migrate(include_schemas=True)
 cors = CORS()
+
+
+def init_app(app):
+    socketio.init_app(app)
+    db.init_app(app)
+    ma.init_app(app)
+    migrate.init_app(app, db)
+    sess.init_app(app)
+    cors.init_app(app, resources={r"/*": {"origins": "*"}})

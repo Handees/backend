@@ -1,13 +1,22 @@
 FROM python:3.13-bullseye
 
+ARG COCKROACH_DB_CERT_URL
+ARG DATABASE_CERT_PATH
+ARG DATABASE_CERT_DIR_PATH
+
 # Create a group and user
 RUN groupadd -r handeesofficial && useradd -r -g handeesofficial handeesofficial
 
 WORKDIR /home/handeesofficial/backend
 
-RUN apt update && apt install nginx -y
+RUN apt update && apt install nginx -y && apt install less -y && apt install vim -y
 COPY nginx/server.conf /etc/nginx/sites-available
-RUN ln -s /etc/nginx/sites-available/server.conf /etc/nginx/sites-enabled/server.conf
+RUN ln -s /etc/nginx/sites-available/server.conf /etc/nginx/sites-enabled/server.conf && rm /etc/nginx/sites-enabled/default
+
+# install cert for cockroachDB
+RUN curl --create-dirs -o ${DATABASE_CERT_PATH} ${COCKROACH_DB_CERT_URL}
+RUN chown handeesofficial:handeesofficial ${DATABASE_CERT_PATH}
+RUN chown handeesofficial:handeesofficial ${DATABASE_CERT_DIR_PATH}
 
 
 # set environment variables
@@ -26,14 +35,9 @@ RUN pip install -r requirements.txt
 RUN echo "[Before requirements] pip path:" && which pip && pip --version && echo $PATH
 RUN pip install gunicorn
 RUN pip install supervisor
+RUN pip install sqlalchemy-cockroachdb
 
 COPY . .
 
-EXPOSE 5000 5001
 
-# CMD [ "/usr/local/bin/supervisord", "-c", "supervisord-dev.conf"]
-# RUN [ "env/bin/supervisord", "-c", "supervisord-dev.conf"]
-# CMD ["/usr/bin/bash", "-c", "sleep 3600"]
-
-# CMD [ "env/bin/supervisorctl", "start", "nginx", "-c", "supervisord-dev.conf"]
-CMD ["/bin/sh", "entrypoints/main_point.sh"]
+CMD [ "env/bin/supervisord", "-c", "supervisord-dev.conf"]

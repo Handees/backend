@@ -34,7 +34,7 @@ class BaseConfig:
 class DevConfig(BaseConfig):
     DB_NAME = f"{os.getenv('DATABASE_HOST')}/{os.getenv('DATABASE_NAME')}"
     URI = f"{BaseConfig.DB_USERNAME}:{BaseConfig.DB_PASSPHRASE}@{DB_NAME}"
-    SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{URI}"
+    SQLALCHEMY_DATABASE_URI = f"cockroachdb+psycopg2://{URI}"
     FLASK_COVERAGE = True
     SESSION_REDIS = redis.Redis(
         host=BaseConfig.REDIS_HOST,
@@ -42,6 +42,12 @@ class DevConfig(BaseConfig):
         password=BaseConfig.REDIS_PASS,
         db=5
     )
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'connect_args': {
+            'sslmode': "verify-full",
+            'sslrootcert': os.getenv('DB_CERT_PATH')
+        }
+    }
 
 
 class StagingConfig(BaseConfig):

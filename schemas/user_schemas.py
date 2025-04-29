@@ -5,9 +5,7 @@ from .base import (
     BaseSchema
 )
 from core import ma
-from marshmallow import (
-    fields, post_dump
-)
+from marshmallow import fields
 from . import CardAuthSchema
 
 

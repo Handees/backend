@@ -15,3 +15,4 @@ postgres_data/
 data/
 *.pem
 redis/
+*.crt

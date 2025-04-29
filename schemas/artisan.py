@@ -3,7 +3,7 @@ from models.user_models import (
     Kyc
 )
 from core import ma
-from models.bookings import categories
+from models.bookings import BookingCategory
 from .base import (
     BaseSQLAlchemyAutoSchema,
     BaseSchema
@@ -46,13 +46,6 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     def preformat_data(self, data, *args, **kwargs):
         if data:
             del data['job_category']
-        return data
-
-    @post_dump
-    def append_job_category(self, data, *args, **kwargs):
-        if data:
-            data['job_category'] = categories[data['job_category_id']-1]
-            del data['job_category_id']
         return data
 
 

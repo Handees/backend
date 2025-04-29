@@ -50,7 +50,11 @@ def role_required(role):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if not args[0].role == Role.get_by_name(role):
+            print(args, role)
+            print(args[0].role.name, Role.get_by_name(role).name)
+            print(type(Role.get_by_name(role)), type(args[0].role))
+            print(args[0].role != Role.get_by_name(role))
+            if args[0].role != Role.get_by_name(role):
                 logger.debug('User role not allowed')
                 resp = make_response(
                     {

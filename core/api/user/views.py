@@ -20,6 +20,7 @@ from schemas.user_schemas import (
     AddNewUserSchema,
     UserSchema
 )
+from schemas.bookings_schema import BookingSchema
 from schemas.payment import FrontEndCardSchema
 from .messages import (
     USER_CREATED,

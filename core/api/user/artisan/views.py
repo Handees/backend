@@ -47,65 +47,67 @@ setLogger()
 @login_required
 @role_required("customer")
 def add_new_artisan(current_user):
-    """create new artisan"""
-    data = request.get_json(force=True)
-    user = current_user
-    schema = AddArtisanSchema()
+    with db.session() as sess:
+        """create new artisan"""
+        data = request.get_json(force=True)
+        user = current_user
+        schema = AddArtisanSchema()
 
-    try:
-        data = schema.load(data)
-    except Exception:
-        return error_response(
-            400,
-            message=schema.error_messages
+        try:
+            data = schema.load(data)
+        except Exception:
+            return error_response(
+                400,
+                message=schema.error_messages
+            )
+
+        # add category rel
+        category = BookingCategory.get_by_name(data['job_category'])
+        if not category:
+            return error_response(404, message=messages.dynamic_msg(
+                messages.CATEGORY_NOT_FOUND, data['job_category']
+            ))
+
+        new_artisan = Artisan(
+            job_title=data['job_title'],
+            hourly_rate=data['hourly_rate']
         )
 
-    # add category rel
-    category = BookingCategory.get_by_name(data['job_category'])
-    if not category:
-        return error_response(404, message=messages.dynamic_msg(
-            messages.CATEGORY_NOT_FOUND, data['job_category']
-        ))
+        if user.is_artisan or user.role == Role.get_by_name("artisan"):
+            sess.rollback()
+            return error_response(
+                400,
+                message=USER_HAS_ARTISAN_PROFILE
+            )
 
-    new_artisan = Artisan(
-        job_title=data['job_title'],
-        hourly_rate=data['hourly_rate']
-    )
+        # ascend user role
+        user.upgrade_to_artisan()
+        user.is_artisan = 1
+        new_artisan.user_profile = user
 
-    if user.is_artisan or user.role == Role.get_by_name("artisan"):
-        db.session.rollback()
-        return error_response(
-            400,
-            message=USER_HAS_ARTISAN_PROFILE
+        # add other props
+        new_artisan.artisan_id = uuid4().hex
+        new_artisan.booking_category = category
+
+        logger.info("Attempting to create new artisan")
+        try:
+            sess.add(new_artisan)
+            sess.commit()
+            resp = ArtisanSchema().dump(new_artisan)
+            resp['job_category'] = category.name
+        except Exception as e:
+            logger.exception(e)
+            sess.rollback()
+            return error_response(
+                500,
+                message=messages.INTERNAL_SERVER_ERROR,
+                data="An error occurred while trying to create a new artisan"
+            )
+        return gen_response(
+            201,
+            data=resp,
+            message=ARTISAN_CREATED
         )
-
-    # ascend user role
-    user.upgrade_to_artisan()
-    user.is_artisan = 1
-    new_artisan.user_profile = user
-
-    # add other props
-    new_artisan.artisan_id = uuid4().hex
-    new_artisan.booking_category = category
-
-    logger.info("Attempting to create new artisan")
-    try:
-        db.session.add(new_artisan)
-        db.session.commit()
-
-        resp = ArtisanSchema().dump(new_artisan)
-    except Exception as e:
-        db.session.rollback()
-        logger.error("Error occurred while attempting to create new artisan")
-        logger.error(e)
-    finally:
-        db.session.close()
-
-    return gen_response(
-        201,
-        data=resp,
-        message=ARTISAN_CREATED
-    )
 
 
 @artisan.patch('/')
