@@ -39,13 +39,20 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     created_at = ma.String(dump_only=True, data_key="became_artisan_on")
     user_profile = fields.Nested("UserSchema", exclude=(
         'artisan_profile', 'role_id',
-        'bookings', 'payments'
+        'bookings', 'payments', 'cards',
+        'addresses'
     ))
 
     @pre_load
     def preformat_data(self, data, *args, **kwargs):
         if data:
             del data['job_category']
+        return data
+
+    @post_dump
+    def edit_dump(self, data, *args, **kwargs):
+        cat = BookingCategory.query.get(data['job_category_id'])
+        data['job_category'] = cat.name
         return data
 
 

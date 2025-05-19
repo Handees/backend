@@ -1,20 +1,20 @@
 # from redis import StrictRedis
+import os
 from typing import Optional, Dict
-from flask_sqlalchemy import SQLAlchemy
+
 from walrus import *  # noqa: F403
 from dotenv import load_dotenv
-import os
+from flask_sqlalchemy import SQLAlchemy
+from huey import (
+    RedisExpireHuey, RedisHuey,
+    FileHuey, MemoryHuey, SqliteHuey,
+    PriorityRedisExpireHuey, PriorityRedisHuey
+)
 
 load_dotenv()
 
 
 class HueyTemplate:
-    from huey import (
-        RedisExpireHuey, RedisHuey,
-        PriorityRedisExpireHuey, PriorityRedisHuey,
-        FileHuey, MemoryHuey, SqliteHuey
-    )
-
     _types = {
         'default': RedisHuey,
         'redis': RedisHuey,
@@ -34,12 +34,12 @@ class HueyTemplate:
 
     def get_flask_app(self, config: Optional[Dict] = None):
         from flask import Flask
-
         app = Flask("huey_app")
         if config:
             app.config.from_object(config)
-        self.huey_db = SQLAlchemy()
-        self.huey_db.init_app(app)
+        _db = SQLAlchemy()
+        _db.init_app(app)
+        self.huey_db = _db
 
         return app
 
@@ -54,7 +54,6 @@ class RedCache:
         self.client = Walrus(  # noqa: F405
             os.getenv('REDIS_HOST', '127.0.0.1'),
             os.getenv('REDIS_PORT', 6378),
-            charset='utf-8',
             decode_responses=True,
             password=os.getenv('REDIS_PASS'),
             db=db

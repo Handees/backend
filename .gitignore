@@ -16,3 +16,6 @@ data/
 *.pem
 redis/
 *.crt
+
+venv/
+env/

@@ -206,8 +206,7 @@ def login_required(f):
 def auth_param_required(f):
     @functools.wraps(f)
     def wrapped(*args, **kwargs):
-        print(args)
-        if len(args) < 1 or 'access_token' not in args[0]:
+        if not args or (len(args) < 1 or 'access_token' not in args[0]):
             logger.error("TOKEN NOT SENT ON CONNECT")
             socketio.emit(
                 "msg",

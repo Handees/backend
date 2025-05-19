@@ -55,7 +55,7 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
     job_category = fields.Str(required=True, load_only=True)
     lat = fields.Float(required=True, load_only=True, validate=v_float)
     lon = fields.Float(required=True, load_only=True, validate=v_float)
-    payment_method  = fields.Enum(BookingPaymentMethod)
+    payment_method = fields.Enum(BookingPaymentMethod)
 
     @pre_load
     def format(self, data, *args, **kwargs):

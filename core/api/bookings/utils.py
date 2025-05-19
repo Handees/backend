@@ -1,10 +1,14 @@
-from schemas.bookings_schema import BookingSchema
-from extensions import (
-    redis_, redis_5
-)
+import json
+import requests
 
 from flask import jsonify
-import json
+from loguru import logger
+from dotenv import load_dotenv
+
+from extensions import redis_, redis_5
+from schemas.bookings_schema import BookingSchema
+
+load_dotenv()
 
 
 def is_serializable(obj):
@@ -52,3 +56,23 @@ def count_nearby_artisans():
         results[key] = redis_5.zcard(key)
 
     return results
+
+
+class DistanceAPIClient:
+    BASE_URL = "https://api-v2.distancematrix.ai/maps/api"
+
+    def __init__(self, secret):
+        self._key = secret
+
+    def get_route_info(self, source, destination):
+        endpoint = "/distancematrix/json"
+        query = f"origins={source}&destinations={destination}"
+        logger.error(f"{self.BASE_URL}{endpoint}?{query}&key={self._key}")
+        try:
+            req = requests.post(
+                url=f"{self.BASE_URL}{endpoint}?{query}&key={self._key}"
+            )
+        except Exception:
+            raise Exception
+        else:
+            return req

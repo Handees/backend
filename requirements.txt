@@ -237,3 +237,4 @@ zipp
     # via
     #   importlib-metadata
     #   importlib-resources
+sqlalchemy-cockroachdb

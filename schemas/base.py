@@ -29,7 +29,7 @@ class BaseSQLAlchemyAutoSchema(ma.SQLAlchemyAutoSchema):
         )
 
     @pre_load
-    def remove_skip_values(self, data, many, partial):
+    def remove_skip_values(self, data, **kwargs):
         """Treat nulls & empty strings as undefined
         As per these guidelines: https://google.github.io/styleguide/jsoncstyleguide.xml#Empty/Null_Property_Values
         """

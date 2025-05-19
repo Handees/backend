@@ -11,14 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-db = SQLAlchemy(
-    engine_options={
-        'connect_args': {
-            'sslmode': "verify-full",
-            'sslrootcert': os.getenv('DB_CERT_PATH')
-        }
-    }
-)
+db = SQLAlchemy()
 ma = Marshmallow()
 
 redis_pass = os.getenv('REDIS_PASS')
@@ -26,7 +19,7 @@ redis_port = os.getenv('REDIS_PORT', 6378)
 
 socketio: SocketIO = SocketIO(
     cors_allowed_origins=[
-        'http://127.0.0.1:5020', 'http://127.0.0.1:5500',
+        'http://127.0.0.1:5020', 'http://127.0.0.1:5501',
         'https://www.piesocket.com'
     ],
     async_mode='eventlet',

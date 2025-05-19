@@ -26,3 +26,12 @@ from .user_schemas import (
     AddNewUserSchema
 )
 from .address import AddressSchema
+from .events import (
+    AvailableArtisanSchema,
+    CoordsSchema,
+    BookingAcceptedSchema,
+    BookingUserDetailSchema,
+    NewBookingRequestSchema,
+    BookingLocationDetailSchema,
+    AvailableArtisanLocationSchema
+)

@@ -1,18 +1,31 @@
-from core import (
-    socketio,
-    db
+import os
+import sys
+import json
+
+
+from flask import (
+    request,
+    session
+)
+from loguru import logger
+from flask_socketio import (
+    emit,
+    join_room,
+    ConnectionRefusedError
+)
+from dotenv import load_dotenv
+
+from utils import (
+    LOG_FORMAT, _level
+)
+from models import (
+    Artisan,
+    Booking
 )
 from .utils import (
     error_response,
-    gen_response,
     update_nearby_count
 )
-from core.api.auth.auth_helper import (
-    auth_param_required,
-    valid_auth_required
-)
-from tasks.booking_tasks import update_booking_status
-from tasks.events import send_event
 from extensions import (
     redis_2,
     redis_,
@@ -20,47 +33,46 @@ from extensions import (
     redis_5,
     redis_6
 )
-from utils import (
-    LOG_FORMAT, _level
-)
+from .. import messages
+from core import socketio, db
 from core.exc import (
     DataValidationError,
     InvalidBookingTransaction
 )
-from core.api.auth.auth_helper import verify_token
-from core.api.bookings.events.utils import parse_event_data
-from schemas.bookings_schema import BookingStartSchema
-from schemas.artisan import ArtisanSchema
-from models import (
-    Artisan,
-    Booking
+from ..utils import DistanceAPIClient
+from core.api.auth.auth_helper import (
+    auth_param_required,
+    valid_auth_required
 )
+from schemas import (
+    CoordsSchema,
+    BookingAcceptedSchema,
+    NewBookingRequestSchema,
+    AvailableArtisanLocationSchema
+)
+from tasks.events import send_event
 from models.bookings import categories
+from schemas.artisan import ArtisanSchema
 from models.bookings import BookingStatusEnum
-from .. import messages
-
-from flask import (
-    request,
-    session
-)
-from flask_socketio import (
-    emit,
-    join_room,
-    ConnectionRefusedError
-)
-from loguru import logger
-import sys
-import json
+from core.api.auth.auth_helper import verify_token
+from tasks.booking_tasks import update_booking_status
+from schemas.bookings_schema import BookingStartSchema
+from core.api.bookings.events.utils import parse_event_data
 
 
 # configure local logger
 logger.remove()
-
 logger.add(
     sys.stderr,
     format=LOG_FORMAT,
     colorize=True,
     level=_level
+)
+load_dotenv()
+
+# create client for distance matrix api
+matrix_client = DistanceAPIClient(
+    secret=os.getenv('DISTANCE_MATRIX_KEY')
 )
 
 
@@ -102,7 +114,8 @@ def on_connect(auth):
 
 
 @socketio.on('disconnect', namespace='/artisan')
-def on_disconnect():
+def on_disconnect(arg):
+    print(f"==== {arg} ====")
     if redis_4.exists(request.sid):
         redis_4.delete(request.sid)
     sid_all = redis_4.hgetall("sid_to_user")
@@ -191,13 +204,23 @@ def update_location(uid, data):
     # after this truncated geohash
 
     def handle_updates(msg):
-        print("TOPIC IS BEIN ISSUED")
         raw_data: str = msg['data']
         try:
             data = eval(msg['data'])
         except Exception:
             data = raw_data.replace("'", '"')
             data = json.loads(data)
+
+        schema = NewBookingRequestSchema()
+        customer = data.pop('user')
+        logger.error("===========CUSTOMER==========")
+        logger.error(customer)
+        data = schema.load(
+            {
+                **data,
+                'userDetails': customer
+            }
+        )
         socketio.emit(
             'new_offer',
             data,
@@ -205,9 +228,6 @@ def update_location(uid, data):
             namespace='/artisan'
         )
 
-    print("=========ARTISAN HASH=======")
-    print(geo_fence_key)
-    print("=========ARTISAN HASH=======")
     psub.subscribe(**{geo_fence_key: handle_updates})
 
     psub.run_in_thread(sleep_time=.01)
@@ -239,19 +259,41 @@ def get_updates(uid, data):
             return
 
         # send updates to user
-        artisan = ArtisanSchema().dump(Artisan.get_by_user_id(uid))
-        print("## THIS IS THE THING")
-        print(data)
-        print(Artisan.get_by_user_id(uid))
-        print("## THIS IS THE THING")
-        print(artisan)
-        data['artisan'] = artisan
-        del data['uid']
+        artisan = ArtisanSchema(
+            exclude=(
+                'bank_accounts',
+                'booking_category',
+                'kyc_attempts'
+            )
+        ).dump(
+            Artisan.get_by_user_id(uid)
+        )
+        lat, lon = redis_5.geopos(
+            artisan['job_category'],
+            uid
+        )[0]
+        coords = {'lat': lat, 'lon': lon}
+        query = matrix_client.get_route_info(
+            source=f"{lat},{lon}",
+            destination=f"{data.get('lat')},{data.get('lon')}"
+        )
+        route_dets = query.json()
+        logger.error(route_dets)
+        route_dets = route_dets['rows'][0]['elements'][0]
+        data = BookingAcceptedSchema().load(
+            {
+                'artisanInfo': artisan,
+                'location': {
+                    'arrivalTime': route_dets['duration'],
+                    'coordinates': coords
+                }
+            }
+        )
         payload = {
             'payload': data,
             'recipient': redis_4.hget(
                 'booking_id_to_uid',
-                data['booking_id']
+                room
             )
         }
         try:

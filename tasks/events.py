@@ -1,11 +1,15 @@
+import os
+import logging
+import functools
+
+from loguru import logger
+from dotenv import load_dotenv
+
 from extensions import redis_4
 from .booking_tasks import huey
 from core.exc import ClientNotConnected
 
-from loguru import logger
-import functools
-import logging
-import os
+load_dotenv()
 
 # config
 logging.basicConfig(level=logging.DEBUG)
@@ -59,10 +63,10 @@ def send_event(event, data, namespace):
 
     sock = SocketIO(
         cors_allowed_origins=[
-            'http://127.0.0.1:5020', 'http://127.0.0.1:5500',
+            'http://127.0.0.1:5020', 'http://127.0.0.1:5501',
             'https://www.piesocket.com'
         ],
-        message_queue=f"redis://:{redis_pass}@localhost:{redis_port}/2",
+        message_queue=f"redis://:{redis_pass}@{os.getenv('REDIS_HOST')}:{redis_port}/7",
         async_mode='eventlet',
         logger=True,
         engineio_logger=True

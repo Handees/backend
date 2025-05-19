@@ -45,7 +45,7 @@ class DevConfig(BaseConfig):
     SQLALCHEMY_ENGINE_OPTIONS = {
         'connect_args': {
             'sslmode': "verify-full",
-            'sslrootcert': os.getenv('DB_CERT_PATH')
+            'sslrootcert': os.getenv('DATABASE_CERT_PATH')
         }
     }
 

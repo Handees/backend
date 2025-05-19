@@ -1,3 +1,5 @@
+import os
+
 from extensions import (
     HueyTemplate,
     redis_,
@@ -58,15 +60,17 @@ def pbq(booking_details):
     # broadcast message to artisans using a redis pub/sub channel
     # the channel is unique to each artisan and its id is synonymous
     # to the artisan's geohash
-    print("=========CUSTOMER HASH=======")
-    print(g_hash[0][:6])
-    print("=========CUSTOMER HASH=======")
+
     redis_2.publish(g_hash[0][:6], str(booking_details))
 
 
 @huey.task()
 def assign_artisan_to_booking(data):
     """Assign artisan to booking instance"""
+    # import psycopg2
+    # from psycopg2.errors import SerializationFailure
+    # import psycopg2.extras
+    # from dotenv import load_dotenv
     # from models import db
     _huey = HueyTemplate()
     app = _huey.get_flask_app(config_options['development'])
@@ -103,6 +107,20 @@ def assign_artisan_to_booking(data):
             data['booking_id'],
             str(resp)
         )
+
+    # conn = psycopg2.connect(
+    #     'postgresql://handees_admin:5JynGFGk0d3Zaeb2fEi7gQ@handees-db-cluster-5872.jxf.gcp-europe-west3.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full',
+    #     application_name="$ docs_simplecrud_psycopg2",
+    #     cursor_factory=RealDictCursor,
+    #     **{
+    #         "sslmode": "verify-full",
+    #         "sslrootcert": "/home/handeesofficial/.postgresql/root.crt"
+    #     }
+    # )
+    # with conn.cursor() as cur:
+    #     cur.execute(
+    #         "select * from user"
+    #     )
 
 
 @huey.task()
