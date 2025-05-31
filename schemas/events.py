@@ -42,7 +42,7 @@ class BookingAcceptedSchema(BaseSchema):
 
 
 class BookingLocationDetailSchema(BaseSchema):
-    address = fields.Str()
+    address = fields.Str(load_default='')
     distance = fields.Float()
     duration = fields.Float()
 
@@ -51,10 +51,10 @@ class BookingUserDetailSchema(BaseSchema):
     class Meta:
         unknown = 'include'
 
-    image = fields.Str()
+    image = fields.Str(load_default='')
     name = fields.Str(data_key='user_name')
     phoneNumber = fields.Str(data_key='telephone')
-    rating = fields.Float()
+    rating = fields.Float(load_default=0.0)
 
     @pre_load
     def parse(self, data, **kwargs):
@@ -86,6 +86,11 @@ class NewBookingRequestSchema(BaseSchema):
     serviceDuration = fields.Float()
     userDetails = fields.Nested(BookingUserDetailSchema)
     locationDetails = fields.Nested(BookingLocationDetailSchema)
+
+    @post_load
+    def cleanup(self, data, **kwargs):
+        data.pop('location')
+        return data
 
 # interface CoordsI {
 #   lon: number;

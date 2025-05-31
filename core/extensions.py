@@ -19,8 +19,9 @@ redis_port = os.getenv('REDIS_PORT', 6378)
 
 socketio: SocketIO = SocketIO(
     cors_allowed_origins=[
-        'http://127.0.0.1:5020', 'http://127.0.0.1:5501',
-        'https://www.piesocket.com'
+        'http://127.0.0.1:5020',
+        'https://www.piesocket.com',
+        'http://127.0.0.1:5501'
     ],
     async_mode='eventlet',
     message_queue=f"redis://:{redis_pass}@{os.getenv('REDIS_HOST')}:{redis_port}/7",

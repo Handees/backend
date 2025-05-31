@@ -138,16 +138,23 @@ def fetch_bookings_for_user(current_user):
 @login_required
 def update_user_profile(current_user):
     payload = request.get_json(force=True)
-    schema = UserSchema()
-
+    schema = UserSchema(load_instance=True)
     try:
-        user = schema.load(payload, instance=current_user)
+        schema.load(
+            payload,
+            instance=current_user,
+            partial=True
+        )
         db.session.commit()
     except Exception as e:
         logger.error(e)
-
-    return gen_response(
-        200,
-        data=schema.dump(user),
-        message=USER_PROFILE_UPDATED
-    )
+        return error_response(
+            500,
+            message="Unexpected Error occurred whilst updating user profile💀"
+        )
+    else:
+        return gen_response(
+            200,
+            data=schema.dump(current_user),
+            message=USER_PROFILE_UPDATED
+        )

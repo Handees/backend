@@ -39,6 +39,7 @@ from core.exc import (
     DataValidationError,
     InvalidBookingTransaction
 )
+from ..utils import parse_str_data
 from ..utils import DistanceAPIClient
 from core.api.auth.auth_helper import (
     auth_param_required,
@@ -204,21 +205,28 @@ def update_location(uid, data):
     # after this truncated geohash
 
     def handle_updates(msg):
-        raw_data: str = msg['data']
-        try:
-            data = eval(msg['data'])
-        except Exception:
-            data = raw_data.replace("'", '"')
-            data = json.loads(data)
+        data = parse_str_data(msg['data'])
 
         schema = NewBookingRequestSchema()
         customer = data.pop('user')
-        logger.error("===========CUSTOMER==========")
-        logger.error(customer)
+        lon, lat = redis_5.geopos(
+            data['job_category'],
+            uid
+        )[0]
+        query = matrix_client.get_route_info(
+            source=f"{lat},{lon}",
+            destination=f"{data.get('lat')},{data.get('lon')}"
+        )
+        route_dets = query.json()
+        route_dets = route_dets['rows'][0]['elements'][0]
         data = schema.load(
             {
                 **data,
-                'userDetails': customer
+                'userDetails': customer,
+                'locationDetails': {
+                    'duration': float(route_dets['duration']['value']),
+                    'distance': float(route_dets['distance']['value']),
+                }
             }
         )
         socketio.emit(
@@ -241,6 +249,8 @@ def get_updates(uid, data):
     from tasks.booking_tasks import assign_artisan_to_booking
 
     room = data['booking_id']
+    bk_info = parse_str_data(redis_.get(room))
+    logger.error(bk_info)
     data['uid'] = uid
     if redis_.exists(room):
         # remove from queue
@@ -268,14 +278,14 @@ def get_updates(uid, data):
         ).dump(
             Artisan.get_by_user_id(uid)
         )
-        lat, lon = redis_5.geopos(
+        lon, lat = redis_5.geopos(
             artisan['job_category'],
             uid
         )[0]
         coords = {'lat': lat, 'lon': lon}
         query = matrix_client.get_route_info(
             source=f"{lat},{lon}",
-            destination=f"{data.get('lat')},{data.get('lon')}"
+            destination=f"{bk_info.get('lat')},{bk_info.get('lon')}"
         )
         route_dets = query.json()
         logger.error(route_dets)
@@ -284,7 +294,7 @@ def get_updates(uid, data):
             {
                 'artisanInfo': artisan,
                 'location': {
-                    'arrivalTime': route_dets['duration'],
+                    'arrivalTime': float(route_dets['duration']['value']),
                     'coordinates': coords
                 }
             }

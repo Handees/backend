@@ -45,8 +45,14 @@ def exit_cache(id):
     return redis_.get(id)
 
 
-def parse_data(data):
-    pass
+def parse_str_data(str_data):
+    raw_data: str = str_data
+    try:
+        data = eval(str_data)
+    except Exception:
+        data = raw_data.replace("'", '"')
+        data = json.loads(data)
+    return data
 
 
 def count_nearby_artisans():
@@ -67,7 +73,6 @@ class DistanceAPIClient:
     def get_route_info(self, source, destination):
         endpoint = "/distancematrix/json"
         query = f"origins={source}&destinations={destination}"
-        logger.error(f"{self.BASE_URL}{endpoint}?{query}&key={self._key}")
         try:
             req = requests.post(
                 url=f"{self.BASE_URL}{endpoint}?{query}&key={self._key}"
