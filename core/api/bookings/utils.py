@@ -2,7 +2,6 @@ import json
 import requests
 
 from flask import jsonify
-from loguru import logger
 from dotenv import load_dotenv
 
 from extensions import redis_, redis_5

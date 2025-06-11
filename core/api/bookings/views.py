@@ -3,7 +3,6 @@ from loguru import logger
 
 from models.bookings import (
     Booking, BookingCategory,
-    BookingPaymentMethod
 )
 from schemas import (
     BookingSchema,
@@ -26,6 +25,7 @@ from utils import (
 from tasks.booking_tasks import pbq
 from extensions import redis_4
 from . import messages as messages
+from schemas.bookings_schema import UploadImagesSchema, BookingImageSchema
 
 
 logger.remove()
@@ -36,50 +36,67 @@ setLogger()
 @login_required
 @permission_required(Permission.service_request)
 def create_booking(current_user):
-    data = request.get_json(force=True)
+    with db.session() as sess:
+        data = request.get_json(force=True)
+        images = data.pop('images', None)
 
-    schema = BookingSchema()
-    try:
-        new_order: Booking = schema.load(data)
-    except Exception as e:
-        logger.exception(e)
-        db.session.rollback()
-        return error_response(
-            400,
-            message=schema.error_messages
+        schema = BookingSchema()
+        try:
+            new_order: Booking = schema.load(data)
+            if images:
+                images = UploadImagesSchema().load(images)
+        except Exception as e:
+            logger.exception(e)
+            sess.rollback()
+            return error_response(
+                400,
+                message=schema.error_messages
+            )
+
+        new_order.booking_id = uuid4().hex
+        category = BookingCategory.get_by_name(data['job_category'])
+
+        if not category:
+            sess.rollback()
+            return error_response(404, message=messages.dynamic_msg(
+                messages.CATEGORY_NOT_FOUND, data['job_category']
+            ))
+        new_order.booking_category = category
+        new_order.user = current_user
+        sess.add(new_order)
+        sess.flush()
+
+        # add images
+        if images:
+            _base_img = {
+                'user_id': current_user.user_id,
+                'booking_id': new_order.booking_id
+            }
+            to_be_uploaded = [{**_base_img, **img} for img in images['files']]
+            images_schema = BookingImageSchema(many=True)
+            images = images_schema.load(to_be_uploaded)
+
+            sess.add_all(images)
+        sess.commit()
+
+        data['booking_id'] = new_order.booking_id
+        redis_4.hset(
+            'booking_id_to_uid',
+            mapping={new_order.booking_id: current_user.user_id}
         )
+        data['user'] = UserSchema().dump(current_user)
+        init_task = pbq(data)
 
-    new_order.booking_id = uuid4().hex
-    category = BookingCategory.get_by_name(data['job_category'])
+        payload = {
+            'task_id': init_task.id,
+            'booking': BookingSchema(only=('booking_id', 'images')).dump(new_order)
+        }
 
-    if not category:
-        db.session.rollback()
-        return error_response(404, message=messages.dynamic_msg(
-            messages.CATEGORY_NOT_FOUND, data['job_category']
-        ))
-    new_order.booking_category = category
-    new_order.user = current_user
-    db.session.add(new_order)
-    db.session.commit()
-
-    data['booking_id'] = new_order.booking_id
-    redis_4.hset(
-        'booking_id_to_uid',
-        mapping={new_order.booking_id: current_user.user_id}
-    )
-    data['user'] = UserSchema().dump(current_user)
-    init_task = pbq(data)
-
-    payload = {
-        'task_id': init_task.id,
-        'booking_id': new_order.booking_id
-    }
-
-    return gen_response(
-        201,
-        payload,
-        message=messages.BOOKING_MADE
-    )
+        return gen_response(
+            201,
+            payload,
+            message=messages.BOOKING_MADE
+        )
 
 
 @bookings.get('/')
@@ -128,6 +145,40 @@ def delete_booking(current_user, booking_id):
     msg = f'Deleted booking with id {booking_id}'
 
     return gen_response(200, message=msg)
+
+
+@bookings.post('<booking_id>/upload')
+@login_required
+@permission_required(Permission.service_request)
+def request_presigned_urls(current_user, booking_id):
+    _base_img = {
+        'user_id': current_user.user_id,
+        'booking_id': booking_id
+    }
+    with db.session() as sess:
+        data = request.get_json(force=True)
+        try:
+            images = UploadImagesSchema().load(data)
+        except Exception as e:
+            return error_response(
+                status_code=400,
+                message=str(e)
+            )
+        to_be_uploaded = [{**_base_img, **img} for img in images['files']]
+        images_schema = BookingImageSchema(many=True)
+        images = images_schema.load(to_be_uploaded)
+
+        sess.add_all(images)
+        sess.commit()
+
+        resp = BookingImageSchema(
+            many=True,
+            only=('filename', 'url')
+        ).dump(images)
+        return gen_response(
+            200,
+            data=resp
+        )
 
 
 @bookings.route('/see')

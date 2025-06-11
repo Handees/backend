@@ -1,6 +1,6 @@
 from marshmallow import fields
 from geoalchemy2.types import Geometry as GeometryType
-from marshmallow_sqlalchemy import ModelConverter
+from marshmallow_sqlalchemy import ModelConverter, field_for
 
 from .base import BaseSQLAlchemyAutoSchema
 from core import (
@@ -10,7 +10,8 @@ from core import (
 from models.bookings import (
     Booking,
     BookingContractDurationEnum,
-    BookingPaymentMethod
+    BookingPaymentMethod,
+    BookingImages
 )
 from marshmallow import (
     pre_load,
@@ -20,6 +21,28 @@ from core.exc import DataValidationError
 from schemas.utils import v_float
 
 from loguru import logger
+
+
+class ImageFileSchema(ma.Schema):
+    filename = fields.Str(required=True)
+    content_type = fields.Str()
+
+
+class UploadImagesSchema(ma.Schema):
+    files = fields.Nested(ImageFileSchema, many=True)
+
+
+class BookingImageSchema(BaseSQLAlchemyAutoSchema):
+    class Meta:
+        model = BookingImages
+        load_instance = True
+        sqla_session = db.session
+        include_fk = True
+    url = fields.Method(serialize="get_url", dump_only=True)
+
+    def get_url(self, obj):
+        return obj.upload_url
+
 
 class BookingModelConverter(ModelConverter):
     """Helps to serialize geometry column types"""
@@ -56,6 +79,13 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
     lat = fields.Float(required=True, load_only=True, validate=v_float)
     lon = fields.Float(required=True, load_only=True, validate=v_float)
     payment_method = fields.Enum(BookingPaymentMethod)
+    images = fields.Method(serialize='show_upload_url')
+
+    def show_upload_url(self, obj):
+        return BookingImageSchema(
+            many=True,
+            only=('url', 'filename', 'content_type')
+        ).dump(obj.images)
 
     @pre_load
     def format(self, data, *args, **kwargs):

@@ -105,7 +105,7 @@ class User(TimestampMixin, db.Model):
     email = db.Column(db.String(100), unique=True, index=True)
     is_artisan = db.Column(db.Boolean, default=False)
     is_email_verified = db.Column(db.Boolean, default=False)
-    addresses = db.relationship('Address', backref='user')
+    address = db.Column(db.String(500))
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     profile_picture = db.Column(db.String())
     artisan_profile = db.relationship(

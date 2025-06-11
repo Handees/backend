@@ -1,14 +1,18 @@
-from schemas.bookings_schema import BookingSchema
-from core import db
-
-from flask import jsonify
-from werkzeug.http import HTTP_STATUS_CODES
-from loguru import logger
 import json
 import os
-import requests
-import subprocess
 import pprint
+import requests
+import datetime
+import subprocess
+
+from loguru import logger
+from flask import jsonify
+from google.cloud import storage
+from google.oauth2 import service_account
+from werkzeug.http import HTTP_STATUS_CODES
+
+from core import db
+from schemas.bookings_schema import BookingSchema
 
 
 def is_serializable(obj):
@@ -183,6 +187,33 @@ def load_env(gpair):
         raise Exception("Error generating token")
 
     return keys
+
+
+def generate_presigned_url(
+    bucket_name,
+    object_name,
+    action="upload",
+    eta=15
+):
+    cred = service_account.Credentials.from_service_account_file(
+        os.getenv('F_KEY')
+    )
+    storage_client = storage.Client(credentials=cred)
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(object_name)
+
+    _method = "GET" if action == 'download' else 'PUT'
+    kwargs = {
+        'version': 'v4',
+        'expiration': datetime.timedelta(minutes=eta),
+        'method': _method
+    }
+    if _method == "PUT":
+        kwargs['content_type'] = "application/octet-stream"
+
+    url = blob.generate_signed_url(**kwargs)
+
+    return url
 
 
 # def load_env(client, environment, gpair):
