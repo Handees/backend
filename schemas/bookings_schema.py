@@ -1,6 +1,6 @@
 from marshmallow import fields
 from geoalchemy2.types import Geometry as GeometryType
-from marshmallow_sqlalchemy import ModelConverter, field_for
+from marshmallow_sqlalchemy import ModelConverter
 
 from .base import BaseSQLAlchemyAutoSchema
 from core import (
@@ -10,8 +10,7 @@ from core import (
 from models.bookings import (
     Booking,
     BookingContractDurationEnum,
-    BookingPaymentMethod,
-    BookingImages
+    BookingPaymentMethod
 )
 from marshmallow import (
     pre_load,
@@ -19,29 +18,11 @@ from marshmallow import (
 )
 from core.exc import DataValidationError
 from schemas.utils import v_float
-
-from loguru import logger
-
-
-class ImageFileSchema(ma.Schema):
-    filename = fields.Str(required=True)
-    content_type = fields.Str()
+from schemas.generic import BlobSchema
 
 
 class UploadImagesSchema(ma.Schema):
-    files = fields.Nested(ImageFileSchema, many=True)
-
-
-class BookingImageSchema(BaseSQLAlchemyAutoSchema):
-    class Meta:
-        model = BookingImages
-        load_instance = True
-        sqla_session = db.session
-        include_fk = True
-    url = fields.Method(serialize="get_url", dump_only=True)
-
-    def get_url(self, obj):
-        return obj.upload_url
+    files = fields.Nested('ImageFileSchema', many=True)
 
 
 class BookingModelConverter(ModelConverter):
@@ -82,7 +63,7 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
     images = fields.Method(serialize='show_upload_url')
 
     def show_upload_url(self, obj):
-        return BookingImageSchema(
+        return BlobSchema(
             many=True,
             only=('url', 'filename', 'content_type')
         ).dump(obj.images)
@@ -90,6 +71,10 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
     @pre_load
     def format(self, data, *args, **kwargs):
         if data:
+            if 'payment_method' not in data:
+                raise DataValidationError(
+                    'Required Field payment_method missing'
+                )
             curr_method = data['payment_method']
             if curr_method.lower().strip() == 'card':
                 data['payment_method'] = 'CARD'
@@ -111,6 +96,14 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
     @pre_load
     def edit_payload(self, data, **kwargs):
         if data:
+            if 'lat' not in data:
+                raise DataValidationError(
+                    "Required Field 'lat' missing"
+                )
+            if 'lon' not in data:
+                raise DataValidationError(
+                    "Required Field 'lon' missing"
+                )
             data['location'] = f"SRID=4326;POINT({data['lat']} {data['lon']})"
         return data
 

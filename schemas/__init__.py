@@ -35,3 +35,4 @@ from .events import (
     BookingLocationDetailSchema,
     AvailableArtisanLocationSchema
 )
+from .generic import ImageFileSchema, BlobSchema

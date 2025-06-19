@@ -130,7 +130,7 @@ class Booking(TimestampMixin, db.Model):
         backref='booking',
         uselist=False
     )
-    images = db.relationship('BookingImages', backref='booking')
+    images = db.relationship('Blob', backref='booking')
 
     def update_start_time(self):
         self.start_time = dt.utcnow()
@@ -155,21 +155,3 @@ class Booking(TimestampMixin, db.Model):
             res = self.artisan.hourly_rate * hrs_spent
 
         return res
-
-
-class BookingImages(TimestampMixin, BaseModelPR, db.Model):
-    filename = db.Column(db.String)
-    content_type = db.Column(db.String)
-    image_url = db.Column(db.String())
-    user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
-    booking_id = db.Column(db.String, db.ForeignKey('booking.booking_id'))
-    # uplodaded = db.Column(db.Boolean, default=False)
-
-    @property
-    def upload_url(self):
-        from utils import generate_presigned_url
-        return generate_presigned_url(
-            bucket_name=os.getenv('BUCKET_NAME'),
-            object_name=self.filename,
-            action='upload'
-        )

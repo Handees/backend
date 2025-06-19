@@ -16,3 +16,5 @@ api.register_blueprint(payments)
 api.register_blueprint(security)
 api.register_blueprint(user)
 api.register_blueprint(ratings)
+
+from . import views

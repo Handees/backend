@@ -1,8 +1,10 @@
-import json
+
 import os
+import json
 import pprint
-import requests
 import datetime
+import requests
+import mimetypes
 import subprocess
 
 from loguru import logger
@@ -208,8 +210,11 @@ def generate_presigned_url(
         'expiration': datetime.timedelta(minutes=eta),
         'method': _method
     }
+    content_type, _ = mimetypes.guess_type(object_name)
+    if not content_type:
+        content_type = 'application/octet-stream'
     if _method == "PUT":
-        kwargs['content_type'] = "application/octet-stream"
+        kwargs['content_type'] = content_type
 
     url = blob.generate_signed_url(**kwargs)
 

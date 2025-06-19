@@ -1,3 +1,5 @@
+import uuid
+
 from flask import request, render_template
 from loguru import logger
 
@@ -7,7 +9,8 @@ from models.bookings import (
 from schemas import (
     BookingSchema,
     ListBookingsSchema,
-    UserSchema
+    UserSchema,
+    BlobSchema
 )
 from models.user_models import Permission
 from uuid import uuid4
@@ -25,7 +28,7 @@ from utils import (
 from tasks.booking_tasks import pbq
 from extensions import redis_4
 from . import messages as messages
-from schemas.bookings_schema import UploadImagesSchema, BookingImageSchema
+from schemas.bookings_schema import UploadImagesSchema
 
 
 logger.remove()
@@ -50,7 +53,8 @@ def create_booking(current_user):
             sess.rollback()
             return error_response(
                 400,
-                message=schema.error_messages
+                message=str(e),
+                data=schema.error_messages
             )
 
         new_order.booking_id = uuid4().hex
@@ -73,8 +77,10 @@ def create_booking(current_user):
                 'booking_id': new_order.booking_id
             }
             to_be_uploaded = [{**_base_img, **img} for img in images['files']]
-            images_schema = BookingImageSchema(many=True)
+            images_schema = BlobSchema(many=True)
             images = images_schema.load(to_be_uploaded)
+            for img in images:
+                img.blob_id = uuid.uuid4().hex
 
             sess.add_all(images)
         sess.commit()
@@ -89,7 +95,9 @@ def create_booking(current_user):
 
         payload = {
             'task_id': init_task.id,
-            'booking': BookingSchema(only=('booking_id', 'images')).dump(new_order)
+            'booking': BookingSchema(
+                only=('booking_id', 'images')
+            ).dump(new_order)
         }
 
         return gen_response(
@@ -145,40 +153,6 @@ def delete_booking(current_user, booking_id):
     msg = f'Deleted booking with id {booking_id}'
 
     return gen_response(200, message=msg)
-
-
-@bookings.post('<booking_id>/upload')
-@login_required
-@permission_required(Permission.service_request)
-def request_presigned_urls(current_user, booking_id):
-    _base_img = {
-        'user_id': current_user.user_id,
-        'booking_id': booking_id
-    }
-    with db.session() as sess:
-        data = request.get_json(force=True)
-        try:
-            images = UploadImagesSchema().load(data)
-        except Exception as e:
-            return error_response(
-                status_code=400,
-                message=str(e)
-            )
-        to_be_uploaded = [{**_base_img, **img} for img in images['files']]
-        images_schema = BookingImageSchema(many=True)
-        images = images_schema.load(to_be_uploaded)
-
-        sess.add_all(images)
-        sess.commit()
-
-        resp = BookingImageSchema(
-            many=True,
-            only=('filename', 'url')
-        ).dump(images)
-        return gen_response(
-            200,
-            data=resp
-        )
 
 
 @bookings.route('/see')
