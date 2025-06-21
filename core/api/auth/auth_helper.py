@@ -109,7 +109,7 @@ def paystack_verification(f):
             logger.info('Missing header from paystack -- aborted requested')
         else:
             event = json.dumps(request.get_json(force=True), separators=(',', ':'))
-            hmac_hash = gen_hmac_hash(event, os.getenv('PAYSTACK_TEST_SECRET'))
+            hmac_hash = gen_hmac_hash(event, os.getenv('PAYSTACK_DEV_SECRET'))
             if hmac_hash != request.headers['x-paystack-signature']:
                 print("HERE3")
                 resp = make_response({

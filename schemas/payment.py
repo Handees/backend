@@ -7,10 +7,7 @@ from models.payments import (
     CardAuth,
     WithdrawalAccounts
 )
-from core import (
-    db,
-    ma
-)
+from core import ma
 
 from marshmallow import pre_load
 
@@ -72,7 +69,7 @@ class PaymentEventSchema(BaseSchema):
 
 
 class InitTransactionSchema(BaseSchema):
-    amount = ma.Float(required=True)
+    amount = ma.Int(required=False, load_default=5000)
     email = ma.Email(required=True)
 
 
