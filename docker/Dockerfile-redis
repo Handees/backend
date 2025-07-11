@@ -1,0 +1,19 @@
+FROM redis:latest
+
+RUN apt update && apt install iproute2 -y
+
+# Declare an argument for the password
+ARG REDIS_PASSWORD
+
+# Set the password using an environment variable
+ENV REDIS_PASSWORD=$REDIS_PASSWORD
+
+# Copy a redis.conf template
+COPY redis/redis.conf /usr/local/etc/redis/redis.conf
+
+# Replace the requirepass directive
+RUN sed -i "s/requirepass deyplay/requirepass $REDIS_PASSWORD/g" /usr/local/etc/redis/redis.conf
+
+RUN cat /usr/local/etc/redis/redis.conf
+
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf", "--port", "6379"]

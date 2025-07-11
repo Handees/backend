@@ -1,0 +1,117 @@
+import time
+from functools import wraps
+
+from loguru import logger
+from flask_socketio import emit
+
+from extensions import (
+    redis_4,
+    redis_6,
+    redis_
+)
+from utils import setLogger
+from core.exc import ClientNotConnected
+
+
+setLogger()
+
+
+def send_event(fn):
+    @wraps(fn)
+    def decorated(*args, delay=2, backoff=1.15, retries=3, **kwargs):
+        # check if receiver is connected
+        try:
+            if 'data' in kwargs:
+                data = kwargs['data']
+                user_sid = redis_4.hget("user_to_sid", data['recipient'])
+                if not redis_4.exists(user_sid):
+                    print(data['recipient'])
+                    raise ClientNotConnected("Client no longer connected")
+        except ClientNotConnected:
+            logger.info('Retrying event since client not connected')
+            while retries:
+                time.sleep(delay)
+                delay *= backoff
+                retries -= 1
+                emit(
+                    kwargs['event'],
+                    data['payload'],
+                    to=data['recipient'],
+                    namespace=kwargs['namespace']
+                )
+        return fn(*args, delay=2, backoff=1.15, retries=3, **kwargs)
+    return decorated
+
+
+def customer_event_ack(ack):
+    print(ack)
+
+
+def parse_event_data(fn):
+    @wraps(fn)
+    def decorated(*args):
+        import json
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        print(args[0])
+        if os.getenv('P_ENV') == 'local' or 'local' in args[0]:
+            data, *other_args = args
+            data = json.loads(data)
+            data = eval(data) if data != "" else data
+            if 'local' in data:
+                del data['local']
+            return fn(data, *other_args)
+        return fn(*args)
+    return decorated
+
+
+def error_response(msg, uid):
+    return {
+        'payload': {'msg': msg},
+        'recipient': uid
+    }
+
+
+def gen_response(uid, msg=None, data=None):
+    return {
+        'payload': {'msg': msg, 'data': data},
+        'recipient': uid
+    }
+
+
+def update_nearby_count(uid, category, prev_hash=None, curr_hash=None, decr=False):
+    if decr:
+        if not prev_hash:
+            raise ValueError('Must pass prev_hash if decr==False')
+        prev = redis_.hget(
+            'ghash_to_artisan_count',
+            prev_hash
+        )
+        prev = eval(prev)
+        redis_6.hdel(category+'+'+prev_hash, uid)
+        prev[category] -= 1
+
+        redis_.hset(
+            'ghash_to_artisan_count',
+            prev_hash,
+            str(prev)
+        )
+    else:
+        prev = None
+        if not curr_hash:
+            raise ValueError('Must pass curr_hash if decr==True')
+        else:
+            curr = redis_.hget(
+                'ghash_to_artisan_count',
+                curr_hash
+            )
+            curr = eval(curr)
+            curr[category] += 1
+            data = curr
+
+        redis_.hset(
+            'ghash_to_artisan_count',
+            curr_hash,
+            str(data)
+        )

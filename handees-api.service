@@ -1,0 +1,20 @@
+[Unit]
+Description=Service for Handees
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+WorkingDirectory=/home/azureuser/backend
+Environment=COMPOSE_HTTP_TIMEOUT=600
+ExecStart=sudo /usr/local/bin/docker-compose up -d
+ExecStop=sudo /usr/local/bin/docker-compose stop
+StandardOutput=syslog
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
+StandardOutput=append:/var/log/handees-api/stdout.log
+StandardError=append:/var/log/handees-api/error.log
