@@ -26,4 +26,3 @@ class BlobSchema(BaseSQLAlchemyAutoSchema):
 
     def get_url(self, obj):
         return obj.upload_url
-

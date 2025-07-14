@@ -123,13 +123,27 @@ def fetch_bookings_for_user(current_user):
     """ fetch all bookings made by a user """
     bookings = current_user.bookings.order_by(
         Booking.date_of_booking
-    ).limit(10).all()
+    ).all()
 
     msg = 'fetched top recent bookings successfully'
+    schema = BookingSchema(
+        only=(
+            'booking_id',
+            'created_at',
+            'booking_category',
+            'status',
+            'artisan',
+            'artisan.user_profile.profile_picture',
+            'artisan.user_profile.first_name',
+            'artisan.user_profile.last_name',
+            'artisan.artisan_id'
+        ),
+        many=True
+    )
 
     return gen_response(
         200,
-        data=BookingSchema(many=True).dump(bookings),
+        data=schema.dump(bookings),
         message=msg
     )
 

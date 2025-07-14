@@ -41,20 +41,15 @@ class BookingAcceptedSchema(BaseSchema):
     location = fields.Nested(AvailableArtisanLocationSchema)
 
 
-class BookingLocationDetailSchema(BaseSchema):
-    address = fields.Str(load_default='')
-    distance = fields.Float()
-    duration = fields.Float()
-
-
 class BookingUserDetailSchema(BaseSchema):
     class Meta:
         unknown = 'include'
 
-    image = fields.Str(load_default='')
+    image = fields.Str(load_default='', data_key='profile_picture')
     name = fields.Str(data_key='user_name')
     phoneNumber = fields.Str(data_key='telephone')
     rating = fields.Float(load_default=0.0)
+    address = fields.Str()
 
     @pre_load
     def parse(self, data, **kwargs):
@@ -85,7 +80,7 @@ class NewBookingRequestSchema(BaseSchema):
     paymentMethod = fields.Str(data_key='payment_method')
     serviceDuration = fields.Float()
     userDetails = fields.Nested(BookingUserDetailSchema)
-    locationDetails = fields.Nested(BookingLocationDetailSchema)
+    coordinates = fields.Nested(CoordsSchema)
 
     @post_load
     def cleanup(self, data, **kwargs):

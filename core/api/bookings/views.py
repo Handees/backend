@@ -8,7 +8,6 @@ from models.bookings import (
 )
 from schemas import (
     BookingSchema,
-    ListBookingsSchema,
     UserSchema,
     BlobSchema
 )
@@ -119,7 +118,7 @@ def view_bookings(current_user):
         return gen_response(
             200,
             bookings,
-            schema=ListBookingsSchema,
+            schema=BookingSchema,
             many=True
         )
 

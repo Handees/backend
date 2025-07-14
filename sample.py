@@ -216,25 +216,26 @@ def upload_file_with_presigned_url(presigned_url: str, file_path: str):
     # It's best practice to include this when generating the pre-signed URL
     # and match it when uploading.
     content_type, _ = mimetypes.guess_type(file_path)
+    file_size = os.path.getsize(file_path)
+    print("file size is::", file_size)
     if content_type is None:
-        content_type = 'application/octet-stream' # Default if type can't be guessed
-
-    print(f"Uploading {file_path} with Content-Type: {content_type}")
-    # print(f"To pre-signed URL: {presigned_url}")
+        content_type = 'application/octet-stream'
 
     try:
         with open(file_path, 'rb') as f:
-            # Use requests.put for uploading.
-            # The 'data' parameter takes the file-like object.
-            # The 'headers' must include 'Content-Type'.
             response = requests.put(presigned_url, data=f, headers={
-                'Content-Type': content_type
+                'Content-Type': content_type,
+                'Content-Length': str(file_size)
             })
 
-        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()
 
         print(f"File '{file_path}' uploaded successfully!")
         print(f"GCS Response Status: {response.status_code}")
+        print(response.text)
+        print(f"GCS Response Content-Length header: {response.headers.get('Content-Length')}")
+        print(f"GCS Response Content-Type header: {response.headers.get('Content-Type')}")
+        # print(response.json())
 
     except requests.exceptions.HTTPError as errh:
         print(f"HTTP Error: {errh}")
@@ -245,21 +246,16 @@ def upload_file_with_presigned_url(presigned_url: str, file_path: str):
         print(f"Timeout Error: {errt}")
     except requests.exceptions.RequestException as err:
         print(f"An unexpected error occurred: {err}")
+        print(err)
     except Exception as e:
         print(f"An error occurred: {e}")
 
-# --- How to use it ---
 
 if __name__ == "__main__":
-    # 1. Replace with an actual pre-signed URL obtained from your backend
-    # This URL would typically come from an API call to your server.
-    # For a quick test, you might generate one manually or via gcloud CLI if permitted.
-    # Example (replace with your actual URL):
-    # This URL is just a placeholder example, it won't work.
-    test_presigned_url = "https://storage.googleapis.com/handees_service_request_images_dev/test.css?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40handees-dev.iam.gserviceaccount.com%2F20250619%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20250619T011858Z&X-Goog-Expires=900&X-Goog-SignedHeaders=content-type%3Bhost&X-Goog-Signature=0828bcfecde60ace19b2c2179e9a12f2811976726e648a568bfe31de37f8018eae06b70f8329b125f16b14ca6b9f35372eb9eded1c4ad0baa651ade069db6948a437bc78e2d8291529386d138e6f8ce8ae214877de8e89554acbedb579be2fde04df86859d2cb434b1707163cbc533cded4604bf17eeb39e88ab3931e0b34d53a585cb07c238c0a00831ac989a0692fba36fba4986c2bf10d37f11d908b5aa661b93e2c450628c84cadeb9f2dae129837a67e8025d3b88ba854c72b84a987c6b3f25e83e46b50b4af5b21c8ffe06ece05b8554314748fc3a6fe69433f5c15217231b19df0fd0d76ffb75fdb41bfcfbe33b490763094735372d3fb06d094948a4"
+    test_presigned_url = "https://storage.googleapis.com/handees_service_request_images_dev/cat.png?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40handees-dev.iam.gserviceaccount.com%2F20250708%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20250708T005612Z&X-Goog-Expires=900&X-Goog-SignedHeaders=content-type%3Bhost&X-Goog-Signature=44eb06c9dba5738fab7051745607992b80bbb13ca3a88dce37170f97427e9f1cb732417e84d6e79526b6d98b3d417d568410753f04436f128adf4acafaac19e1e21bb3d915cd308de5dcc24c4df30b52d4ca2fcab624d8617de79b5cb2e45e9050d3765e44d3616ce83efe6e839a79caead86e9276ba67bc83fd84c586056ece38f24b60bfb92ac7ff9dcecae0ba683a312ba60440dc91d7a4d378570e1c73613c6174f5545056b2c64ed2f6fe456cc8f6f3fcc1162689c085e5827448366c40fa07d811de318b73b1e39001b5ab41f60fd1d6478bee2c9691c6fa99e736c91a539035f76588db9cbebff5d5c10ff4091a82f6c0b3f75b16d4b4e8e058df3fdc"
 
     # 2. Replace with the path to a local file you want to upload
-    test_file_path = "test.css" # Make sure this file exists!
+    test_file_path = "cat.png"
 
     # Create a dummy file for testing if it doesn't exist
     if not os.path.exists(test_file_path):

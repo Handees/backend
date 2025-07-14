@@ -2,7 +2,6 @@
 
 from .bookings_schema import (
     BookingSchema,
-    ListBookingsSchema,
     BookingSettlementSchema,
     BookingStartSchema,
     CancelBookingSchema
@@ -32,7 +31,6 @@ from .events import (
     BookingAcceptedSchema,
     BookingUserDetailSchema,
     NewBookingRequestSchema,
-    BookingLocationDetailSchema,
     AvailableArtisanLocationSchema
 )
 from .generic import ImageFileSchema, BlobSchema

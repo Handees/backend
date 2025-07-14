@@ -57,16 +57,21 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
         load_instance = True
 
     job_category = fields.Str(required=True, load_only=True)
+    booking_category = fields.Method(serialize='show_category')
     lat = fields.Float(required=True, load_only=True, validate=v_float)
     lon = fields.Float(required=True, load_only=True, validate=v_float)
     payment_method = fields.Enum(BookingPaymentMethod)
     images = fields.Method(serialize='show_upload_url')
+    artisan = fields.Nested('ArtisanSchema')
 
     def show_upload_url(self, obj):
         return BlobSchema(
             many=True,
             only=('url', 'filename', 'content_type')
         ).dump(obj.images)
+
+    def show_category(self, obj):
+        return obj.booking_category.name
 
     @pre_load
     def format(self, data, *args, **kwargs):
@@ -106,19 +111,6 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
                 )
             data['location'] = f"SRID=4326;POINT({data['lat']} {data['lon']})"
         return data
-
-
-class ListBookingsSchema(BaseSQLAlchemyAutoSchema):
-    class Meta:
-        model = Booking
-        dump_only = (
-            'booking_id',
-            'created_at', 'settlement_type',
-            'status', 'contract_type',
-            'artisan_rating', 'customer_rating'
-        )
-        include_fk = True
-        model_converter = BookingModelConverter
 
 
 class CancelBookingSchema(ma.Schema):

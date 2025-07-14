@@ -209,23 +209,14 @@ def update_location(uid, data):
 
         schema = NewBookingRequestSchema()
         customer = data.pop('user')
-        lon, lat = redis_5.geopos(
-            data['job_category'],
-            uid
-        )[0]
-        query = matrix_client.get_route_info(
-            source=f"{lat},{lon}",
-            destination=f"{data.get('lat')},{data.get('lon')}"
-        )
-        route_dets = query.json()
-        route_dets = route_dets['rows'][0]['elements'][0]
+        lat, lon = data.pop('lat'), data.pop('lon')
         data = schema.load(
             {
                 **data,
                 'userDetails': customer,
-                'locationDetails': {
-                    'duration': float(route_dets['duration']['value']),
-                    'distance': float(route_dets['distance']['value']),
+                'coordinates': {
+                    'lat': lat,
+                    'lon': lon
                 }
             }
         )

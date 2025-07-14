@@ -71,7 +71,7 @@ class BookingCategory(BaseModelPR, db.Model):
     __tablename__ = 'bookingcategory'
     name = db.Column(db.String(150), unique=True, nullable=False, index=True)
     bookings = db.relationship('Booking', backref='booking_category')
-    artisan = db.relationship('Artisan', backref='booking_category')
+    artisans = db.relationship('Artisan', backref='booking_category')
 
     @classmethod
     def create_categories(cls):

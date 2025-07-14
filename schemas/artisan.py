@@ -51,8 +51,9 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
 
     @post_dump
     def edit_dump(self, data, *args, **kwargs):
-        cat = BookingCategory.query.get(data['job_category_id'])
-        data['job_category'] = cat.name
+        if 'job_category_id' in data:
+            cat = BookingCategory.query.get(data['job_category_id'])
+            data['job_category'] = cat.name
         return data
 
 
