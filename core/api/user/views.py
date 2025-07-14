@@ -1,4 +1,5 @@
 from flask import request
+from sqlalchemy import desc
 from sqlalchemy.exc import IntegrityError
 from loguru import logger
 import sys
@@ -122,7 +123,7 @@ def fetch_user(current_user):
 def fetch_bookings_for_user(current_user):
     """ fetch all bookings made by a user """
     bookings = current_user.bookings.order_by(
-        Booking.date_of_booking
+        desc(Booking.created_at)
     ).all()
 
     msg = 'fetched top recent bookings successfully'

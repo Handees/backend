@@ -123,7 +123,6 @@ class Booking(TimestampMixin, db.Model):
         ), nullable=True
     )
     details_confirmed = db.Column(db.Boolean, default=False)
-    date_of_booking = db.Column(db.Date, default=dt.utcnow())
     payment_method = db.Column(db.Enum(BookingPaymentMethod))
     booking_contract = db.relationship(
         'BookingContract',
