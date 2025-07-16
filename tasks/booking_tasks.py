@@ -60,8 +60,12 @@ def pbq(booking_details):
     # broadcast message to artisans using a redis pub/sub channel
     # the channel is unique to each artisan and its id is synonymous
     # to the artisan's geohash
+    print(g_hash[0][:5], "customer loc ghash")
 
-    redis_2.publish(g_hash[0][:6], str(booking_details))
+    # TODO: filter neighbouring points here to address boundary problem
+    #  and also properly cast to desired radius.
+
+    redis_2.publish(g_hash[0][:5], str(booking_details))
 
 
 @huey.task()

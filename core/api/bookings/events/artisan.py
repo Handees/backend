@@ -150,7 +150,8 @@ def update_location(uid, data):
     )
     g_hash = g_hash[0]
     # store the count in a g_hash
-    geo_fence_key = g_hash[:6]
+    geo_fence_key = g_hash[:5]
+    print(geo_fence_key, "artisan loc ghash")
 
     category = data['job_category']
     cat_hash_key = f'{category}+{geo_fence_key}'
