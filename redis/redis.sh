@@ -1,7 +1,4 @@
-#!/bin/bash
-
 docker run --name redis -d -p 6379:6379/tcp \
     --restart unless-stopped \
-    -v %cd%/redis:/usr/local/etc/redis \
+    -v "$(pwd)/redis:/usr/local/etc/redis" \
     redis redis-server /usr/local/etc/redis/redis.conf
-
