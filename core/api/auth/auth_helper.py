@@ -175,6 +175,8 @@ def login_required(f):
             RevokedIdTokenError,
         )
         if 'access-token' not in request.headers:
+            logger.error("TOken not in headers, aborting...")
+            print(request.headers)
             resp = make_response({
                 'status': 'error',
                 'msg': 'Missing token'
@@ -187,6 +189,8 @@ def login_required(f):
             logger.debug("user with data: {} still has access".format(uid))
             user = User.query.filter_by(user_id=uid).first()
         except (Exception or Exception in excs or auth.ExpiredIdTokenError) as e:
+            logger.error("Token invalid/Expired aborting...")
+            print(request.headers)
             logger.error(e)
             resp = make_response({
                 'msg': 'Expired/Invalid token'

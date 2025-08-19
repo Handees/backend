@@ -39,4 +39,4 @@ def init_app(app):
     ma.init_app(app)
     migrate.init_app(app, db)
     sess.init_app(app)
-    cors.init_app(app, resources={r"/*": {"origins": "*"}})
+    cors.init_app(app, resources={r"/*": {"origins": ['http://127.0.0.1:5501']}})

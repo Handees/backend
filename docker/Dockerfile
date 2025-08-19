@@ -14,9 +14,11 @@ COPY nginx/server.conf /etc/nginx/sites-available
 RUN ln -s /etc/nginx/sites-available/server.conf /etc/nginx/sites-enabled/server.conf && rm /etc/nginx/sites-enabled/default
 
 # install cert for cockroachDB
-RUN curl --create-dirs -o ${DATABASE_CERT_PATH} ${COCKROACH_DB_CERT_URL}
-RUN chown handeesofficial:handeesofficial ${DATABASE_CERT_PATH}
-RUN chown handeesofficial:handeesofficial ${DATABASE_CERT_DIR_PATH}
+RUN mkdir $DATABASE_CERT_DIR_PATH
+RUN echo $DATABASE_CERT_PATH
+RUN curl --create-dirs -o $DATABASE_CERT_PATH $COCKROACH_DB_CERT_URL
+RUN chown handeesofficial:handeesofficial $DATABASE_CERT_PATH
+RUN chown handeesofficial:handeesofficial $DATABASE_CERT_DIR_PATH
 
 
 # set environment variables

@@ -90,3 +90,7 @@ class WithdrawalAccounts(BaseModelPR, TimestampMixin, db.Model):
         db.String, db.ForeignKey('artisan.artisan_id'),
         nullable=False
     )
+
+
+class Wallet:
+    pass

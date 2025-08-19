@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/sh
 
 DOCKER_BUILDKIT=0 docker build \
     --build-arg DATABASE_CERT_PATH=$DATABASE_CERT_PATH \

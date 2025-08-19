@@ -1,5 +1,5 @@
 from flask import request
-from sqlalchemy import desc
+from sqlalchemy import desc, select
 from sqlalchemy.exc import IntegrityError
 from loguru import logger
 import sys
@@ -173,3 +173,63 @@ def update_user_profile(current_user):
             data=schema.dump(current_user),
             message=USER_PROFILE_UPDATED
         )
+
+
+@user.get('/cards')
+@login_required
+def fetch_cards(current_user):
+    with db.session() as sess:
+        q = select(CardAuth).where(
+            CardAuth.user_id == current_user.user_id
+        )
+        cards = sess.scalars(q)
+        return gen_response(
+            200,
+            cards,
+            schema=FrontEndCardSchema,
+            many=True
+        )
+
+
+@user.get('/cards/<card_sig>')
+@login_required
+def fetch_card(current_user, card_sig):
+    with db.session() as sess:
+        q = select(CardAuth).where(
+            CardAuth.signature == card_sig
+        )
+        card = sess.scalar(q)
+        if not card:
+            logger.error(f"Card with signature {card_sig} not found")
+            return error_response(
+                404,
+                message="Card not found"
+            )
+        return gen_response(
+            200,
+            data=FrontEndCardSchema().dump(card)
+        )
+
+
+@user.delete('/cards/<card_sig>')
+@login_required
+def delete_card(current_user, card_sig):
+    with db.session() as sess:
+        q = select(CardAuth).where(
+            CardAuth.signature == card_sig
+        )
+        card = sess.scalar(q)
+        if not card:
+            logger.error(f"Card with signature {card_sig} not found")
+            return error_response(
+                404,
+                message="Card not found"
+            )
+        sess.delete(card)
+        try:
+            sess.commit()
+        except Exception as e:
+            logger.exception(e)
+            sess.rollback()
+            return error_response(500, message=str(e))
+        return gen_response(200, message="Delete card operation successful")

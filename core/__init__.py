@@ -1,7 +1,7 @@
 # flake8: noqa F403
 
 from flask import Flask
-from werkzeug.middleware.profiler import ProfilerMiddleware
+# from werkzeug.middleware.profiler import ProfilerMiddleware
 from config import config_options
 from .extensions import (
     db, ma,
@@ -86,11 +86,11 @@ def config_error_handlers(app):
 def create_app(config_name):
     app = Flask(__name__)
 
-    PROFILE_DIR = './profiling_data'
-    if not os.path.exists(PROFILE_DIR):
-        os.makedirs(PROFILE_DIR)
+    # PROFILE_DIR = './profiling_data'
+    # if not os.path.exists(PROFILE_DIR):
+    #     os.makedirs(PROFILE_DIR)
 
-    app.config['PROFILE'] = True
+    # app.config['PROFILE'] = True
     # configure application
     app.config.from_object(config_options[config_name])
 
