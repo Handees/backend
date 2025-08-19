@@ -91,7 +91,11 @@ def enter_chat_room(data):
 @socketio.on_error('/artisan')
 def default_error_handler(e):
     logger.exception(e)
-    socketio.emit(str(e), to=request.sid, )
+    socketio.emit(
+        'error',
+        {'error': str(e)},
+        to=request.sid
+    )
 
 
 @socketio.on('connect', namespace='/artisan')
@@ -241,11 +245,10 @@ def get_updates(uid, data):
     from tasks.booking_tasks import assign_artisan_to_booking
 
     room = data['booking_id']
-    bk_info = parse_str_data(redis_.get(room))
-    logger.error(bk_info)
     data['uid'] = uid
     if redis_.exists(room):
-        # remove from queue
+        # read and remove from queue
+        bk_info = parse_str_data(redis_.get(room))
         redis_.delete(room)
 
         # assign artisan to booking
@@ -264,8 +267,8 @@ def get_updates(uid, data):
         artisan = ArtisanSchema(
             exclude=(
                 'bank_accounts',
-                'booking_category',
-                'kyc_attempts'
+                'kyc_attempts',
+                'reviews'
             )
         ).dump(
             Artisan.get_by_user_id(uid)
@@ -284,9 +287,10 @@ def get_updates(uid, data):
         route_dets = route_dets['rows'][0]['elements'][0]
         data = BookingAcceptedSchema().load(
             {
+                'booking_id': data['booking_id'],
                 'artisanInfo': artisan,
-                'location': {
-                    'arrivalTime': float(route_dets['duration']['value']),
+                'transit_details': {
+                    'time_remaining': float(route_dets['duration']['value']),
                     'coordinates': coords
                 }
             }

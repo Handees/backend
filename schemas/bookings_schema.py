@@ -42,7 +42,6 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
         include_fk = True
         include_relationships = True
         transient = True
-        sqla_session = db.session
         dump_only = (
             'booking_id',
             'created_at', 'settlement_type',

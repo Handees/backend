@@ -40,10 +40,9 @@ def exp_backoff_task(retries, retry_backoff):
     return deco
 
 
-@exp_backoff_task(retries=5, retry_backoff=1.5)
+@exp_backoff_task(retries=3, retry_backoff=1.5)
 def send_event(event, data, namespace):
-    logger.error(f"THE PROBLEMATIC EVENT IS: {event}")
-    logger.error(f"NA THE ISSUE BE DIS:: {data}")
+    logger.info(f"ATTEMPTING TO SEND EVENT: {event}")
     from flask_socketio import SocketIO
 
     if not data or not data['recipient']:
@@ -61,12 +60,13 @@ def send_event(event, data, namespace):
         logger.warning("client not connected: retrying...")
         raise ClientNotConnected("Client no longer connected")
 
+    mq = f"redis://:{redis_pass}@{os.getenv('REDIS_HOST')}:{redis_port}/7"
     sock = SocketIO(
         cors_allowed_origins=[
             'http://127.0.0.1:5020', 'http://127.0.0.1:5501',
             'https://www.piesocket.com'
         ],
-        message_queue=f"redis://:{redis_pass}@{os.getenv('REDIS_HOST')}:{redis_port}/7",
+        message_queue=mq,
         async_mode='eventlet',
         logger=True,
         engineio_logger=True
@@ -77,4 +77,4 @@ def send_event(event, data, namespace):
         to=user_sid,
         namespace=namespace
     )
-    print(resp)
+    print("SEND EVENT RESPONSE:: ", resp)

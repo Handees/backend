@@ -32,13 +32,14 @@ class CoordsSchema(BaseSchema):
 
 
 class AvailableArtisanLocationSchema(BaseSchema):
-    arrivalTime = fields.Float()
+    time_remaining = fields.Float()
     coordinates = fields.Nested(CoordsSchema)
 
 
 class BookingAcceptedSchema(BaseSchema):
+    booking_id = fields.Str()
     artisanInfo = fields.Nested(AvailableArtisanSchema)
-    location = fields.Nested(AvailableArtisanLocationSchema)
+    transit_details = fields.Nested(AvailableArtisanLocationSchema)
 
 
 class BookingUserDetailSchema(BaseSchema):

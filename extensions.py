@@ -31,16 +31,14 @@ class HueyTemplate:
                 self.huey = HueyTemplate._types[type_name](**config)
             else:
                 self.huey = HueyTemplate._types['default'](**config)
+        self.db = SQLAlchemy()
 
     def get_flask_app(self, config: Optional[Dict] = None):
         from flask import Flask
         app = Flask("huey_app")
         if config:
             app.config.from_object(config)
-        _db = SQLAlchemy()
-        _db.init_app(app)
-        self.huey_db = _db
-
+        self.db.init_app(app)
         return app
 
 

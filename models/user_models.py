@@ -165,7 +165,8 @@ class Artisan(TimestampMixin, db.Model):
     )
 
     # relationships and f_keys
-    ratings = db.relationship('Rating', backref='artisan')
+    rating = db.Column(db.Float, nullable=False, default=0.0)
+    reviews = db.relationship('Rating', backref='artisan')
     bank_accounts = db.relationship('WithdrawalAccounts', backref='artisan')
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     job_category_id = db.Column(

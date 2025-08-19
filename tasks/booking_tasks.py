@@ -78,39 +78,43 @@ def assign_artisan_to_booking(data):
     # from models import db
     _huey = HueyTemplate()
     app = _huey.get_flask_app(config_options['development'])
-    db = _huey.huey_db
+    db = _huey.db
 
     with app.app_context():
-        # find artisan
-        artisan = Artisan.query.with_session(db.session()).filter_by(
-            user_id=data['uid']
-        ).first()
-        booking = Booking.query.with_session(db.session()).get(
-            data['booking_id']
-        )
+        with db.session() as sess:
+            # find artisan
+            artisan = Artisan.query.with_session(sess).filter_by(
+                user_id=data['uid']
+            ).first()
+            booking = Booking.query.with_session(sess).get(
+                data['booking_id']
+            )
 
-        booking.artisan = artisan
-        redis_4.hset(
-            'booking_id_to_artisan',
-            mapping={booking.booking_id: artisan.user_id}
-        )
-        redis_4.hset(
-            'artisan_to_booking_id',
-            mapping={artisan.user_id: booking.booking_id}
-        )
-        try:
-            db.session.commit()
-        except Exception as e:
-            logger.exception(e)
-            db.session.rollback()
-        finally:
-            resp = BookingSchema().dump(booking)
-            db.session.close()
+            booking.artisan = artisan
+            redis_4.hset(
+                'booking_id_to_artisan',
+                mapping={booking.booking_id: artisan.user_id}
+            )
+            redis_4.hset(
+                'artisan_to_booking_id',
+                mapping={artisan.user_id: booking.booking_id}
+            )
+            try:
+                sess.commit()
+            except Exception as e:
+                logger.exception(e)
+                sess.rollback()
 
-        redis_.set(
-            data['booking_id'],
-            str(resp)
-        )
+            # TODO: find a way to avoid session required calls
+            resp = BookingSchema(
+                exclude=('artisan',),
+                session=sess
+            ).dump(booking)
+
+            redis_.set(
+                data['booking_id'],
+                str(resp)
+            )
 
     # conn = psycopg2.connect(
     #     'postgresql://handees_admin:5JynGFGk0d3Zaeb2fEi7gQ@handees-db-cluster-5872.jxf.gcp-europe-west3.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full',
@@ -132,7 +136,7 @@ def update_booking_status(data):
     """ updates status of booking """
     _huey = HueyTemplate()
     app = _huey.get_flask_app(config_options['development'])
-    db = _huey.huey_db
+    db = _huey.db
 
     with app.app_context():
         # find booking
@@ -167,7 +171,7 @@ def confirm_job_details(data):
 
     _huey = HueyTemplate()
     app = _huey.get_flask_app(config_options['development'])
-    db = _huey.huey_db
+    db = _huey.db
 
     with app.app_context():
         # find booking
@@ -258,7 +262,7 @@ def job_end(data):
 
     _huey = HueyTemplate()
     app = _huey.get_flask_app(config_options['development'])
-    db = _huey.huey_db
+    db = _huey.db
     customer_rid = redis_4.hget(
         'booking_id_to_uid',
         data['booking_id']
