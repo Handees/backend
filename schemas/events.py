@@ -8,12 +8,12 @@ class AvailableArtisanSchema(BaseSchema):
     class Meta:
         unknown = 'include'
 
-    artisanId = fields.Str(data_key='artisan_id')
+    artisan_id = fields.Str(data_key='artisan_id')
     category = fields.Str(data_key='job_category')
-    hourlyRate = fields.Float(data_key='hourly_rate')
+    hourly_rate = fields.Float(data_key='hourly_rate')
     name = fields.Str(data_key='user_name')
-    phoneNumber = fields.Str(data_key='user_profile.telephone')
-    profileImage = fields.Str()
+    phone_number = fields.Str(data_key='user_profile.telephone')
+    profile_picture = fields.Str(data_key='user_profile.profile_picture')
     rating = fields.Float()
 
     @pre_load
@@ -22,7 +22,7 @@ class AvailableArtisanSchema(BaseSchema):
         last_name = data['user_profile'].pop('last_name')
         data['user_name'] = f'{first_name} {last_name}'
 
-        data.pop('user_profile', None)
+        # data.pop('user_profile', None)
         return data
 
 
@@ -38,7 +38,7 @@ class AvailableArtisanLocationSchema(BaseSchema):
 
 class BookingAcceptedSchema(BaseSchema):
     booking_id = fields.Str()
-    artisanInfo = fields.Nested(AvailableArtisanSchema)
+    artisan_info = fields.Nested(AvailableArtisanSchema)
     transit_details = fields.Nested(AvailableArtisanLocationSchema)
 
 

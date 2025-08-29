@@ -22,7 +22,8 @@ from schemas.generic import BlobSchema
 
 
 class UploadImagesSchema(ma.Schema):
-    files = fields.Nested('ImageFileSchema', many=True)
+    files = fields.Nested('UnitImageFileSchema', many=True)
+    #TODO: verify blob type
 
 
 class BookingModelConverter(ModelConverter):

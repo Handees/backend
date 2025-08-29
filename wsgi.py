@@ -1,7 +1,4 @@
 # flake8: noqa
-import eventlet
-eventlet.monkey_patch() # https://stackoverflow.com/questions/63026435/maximum-recursion-depth-exceeded-on-sslcontext-eventlet-flask-flask-socketio
-
 from json import load
 from core import create_app, socketio, db
 from dotenv import load_dotenv
@@ -154,6 +151,8 @@ def load_config_variables():
     else:
         raise Exception("Something went wrong while trying to fetch secrets")
 if __name__ == "__main__":
+    import eventlet
+    eventlet.monkey_patch()
     socketio.run(
         app,
         host="0.0.0.0",

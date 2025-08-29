@@ -12,6 +12,7 @@ from marshmallow import (
     fields,
     pre_load,
     post_load,
+    pre_dump,
     validate,
     post_dump,
     INCLUDE
@@ -37,11 +38,11 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
 
         # additional field
     created_at = ma.String(dump_only=True, data_key="became_artisan_on")
-    user_profile = fields.Nested("UserSchema", exclude=(
-        'artisan_profile', 'role_id',
-        'bookings', 'payments', 'cards',
-        'addresses'
+    user_profile = fields.Nested("UserSchema", only=(
+        'telephone', 'rating', 'reviews',
+        'first_name', 'last_name'
     ))
+    job_category = fields.Method(serialize='show_category')
 
     @pre_load
     def preformat_data(self, data, *args, **kwargs):
@@ -49,13 +50,8 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
             del data['job_category']
         return data
 
-    @post_dump
-    def edit_dump(self, data, *args, **kwargs):
-        # TODO: remove this and fix parsing from on-set
-        if 'job_category_id' in data:
-            cat = BookingCategory.query.get(data['job_category_id'])
-            data['job_category'] = cat.name
-        return data
+    def show_category(self, obj):
+        return obj.booking_category.name
 
 
 class AddArtisanSchema(BaseSchema):

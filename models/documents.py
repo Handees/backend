@@ -63,3 +63,12 @@ class Blob(TimestampMixin, db.Model):
             object_name=self.filename,
             action='upload'
         )
+
+    @property
+    def download_url(self):
+        from utils import generate_presigned_url
+        return generate_presigned_url(
+            bucket_name=os.getenv('BUCKET_NAME'),
+            object_name=self.filename,
+            action='download'
+        )

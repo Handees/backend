@@ -113,7 +113,8 @@ class User(TimestampMixin, db.Model):
         backref='user_profile',
         uselist=False
     )
-    ratings = db.relationship('Rating', backref='user')
+    rating = db.Column(db.Float, nullable=False, default=0.0)
+    reviews = db.relationship('Rating', backref='user')
     bookings = db.relationship('Booking', backref='user', lazy='dynamic')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     cards = db.relationship('CardAuth', backref='user')

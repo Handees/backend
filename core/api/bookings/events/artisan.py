@@ -94,7 +94,8 @@ def default_error_handler(e):
     socketio.emit(
         'error',
         {'error': str(e)},
-        to=request.sid
+        to=request.sid,
+        namespace='/artisan'
     )
 
 
@@ -265,10 +266,12 @@ def get_updates(uid, data):
 
         # send updates to user
         artisan = ArtisanSchema(
-            exclude=(
-                'bank_accounts',
-                'kyc_attempts',
-                'reviews'
+            only=(
+                'created_at',
+                'user_profile',
+                'rating',
+                'job_category',
+                'hourly_rate'
             )
         ).dump(
             Artisan.get_by_user_id(uid)
@@ -288,7 +291,7 @@ def get_updates(uid, data):
         data = BookingAcceptedSchema().load(
             {
                 'booking_id': data['booking_id'],
-                'artisanInfo': artisan,
+                'artisan_info': artisan,
                 'transit_details': {
                     'time_remaining': float(route_dets['duration']['value']),
                     'coordinates': coords

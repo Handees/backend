@@ -1,4 +1,6 @@
 # flake8: noqa
+import eventlet
+eventlet.monkey_patch()
 
 from .address import (
     Address, Addresstypes, db

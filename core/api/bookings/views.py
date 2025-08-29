@@ -40,7 +40,7 @@ setLogger()
 def create_booking(current_user):
     with db.session() as sess:
         data = request.get_json(force=True)
-        images = data.pop('images', None)
+        images = data.pop('images', [])
 
         schema = BookingSchema()
         try:
@@ -85,6 +85,7 @@ def create_booking(current_user):
         sess.commit()
 
         data['booking_id'] = new_order.booking_id
+        data['images'] = [img.download_url for img in images]
         redis_4.hset(
             'booking_id_to_uid',
             mapping={new_order.booking_id: current_user.user_id}

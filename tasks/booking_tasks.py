@@ -111,11 +111,6 @@ def assign_artisan_to_booking(data):
                 session=sess
             ).dump(booking)
 
-            redis_.set(
-                data['booking_id'],
-                str(resp)
-            )
-
     # conn = psycopg2.connect(
     #     'postgresql://handees_admin:5JynGFGk0d3Zaeb2fEi7gQ@handees-db-cluster-5872.jxf.gcp-europe-west3.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full',
     #     application_name="$ docs_simplecrud_psycopg2",
