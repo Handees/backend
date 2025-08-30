@@ -1,7 +1,10 @@
+import os
+
 from loguru import logger
 from marshmallow import fields, pre_load, post_load
 
 from .base import BaseSchema
+import utils
 
 
 class AvailableArtisanSchema(BaseSchema):
@@ -23,6 +26,18 @@ class AvailableArtisanSchema(BaseSchema):
         data['user_name'] = f'{first_name} {last_name}'
 
         # data.pop('user_profile', None)
+        return data
+
+    @post_load
+    def add_data(self, data, *args, **kwargs):
+        if 'profile_picture' in data:
+            fname = data['profile_picture'].split('/')[-1]
+            url = utils.generate_presigned_url(
+                bucket_name=os.getenv('BUCKET_NAME'),
+                object_name=fname,
+                action='download'
+            )
+            data['profile_picture'] = url
         return data
 
 

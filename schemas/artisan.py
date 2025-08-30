@@ -40,7 +40,7 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     created_at = ma.String(dump_only=True, data_key="became_artisan_on")
     user_profile = fields.Nested("UserSchema", only=(
         'telephone', 'rating', 'reviews',
-        'first_name', 'last_name'
+        'first_name', 'last_name', 'profile_picture'
     ))
     job_category = fields.Method(serialize='show_category')
 

@@ -76,6 +76,39 @@ def create_new_user():
         db.session.close()
 
 
+@user.patch('/')
+@login_required
+def edit_user(current_user):
+    data = request.get_json(force=True)
+    schema = UserSchema(
+        uid=(
+            current_user.user_id,
+            current_user.id
+        )
+    )
+
+    with db.session() as sess:
+        try:
+            user_data = schema.load(
+                data,
+                instance=current_user,
+                session=sess,
+                partial=True
+            )
+            sess.commit()
+            return gen_response(
+                200,
+                data=schema.dump(user_data)
+            )
+        except Exception as e:
+            logger.exception(e)
+            sess.rollback()
+            return error_response(
+                400,
+                message=str(e)
+            )
+
+
 @user.get('/cards')
 @login_required
 def view_cards(current_user):

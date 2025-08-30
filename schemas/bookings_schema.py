@@ -17,12 +17,12 @@ from marshmallow import (
     post_load
 )
 from core.exc import DataValidationError
-from schemas.utils import v_float
+from schemas.schema_utils import v_float
 from schemas.generic import BlobSchema
 
 
 class UploadImagesSchema(ma.Schema):
-    files = fields.Nested('UnitImageFileSchema', many=True)
+    files = fields.Nested('UnitUploadImageFileSchema', many=True)
     #TODO: verify blob type
 
 

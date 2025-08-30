@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import event
 from flask import current_app
 from loguru import logger
 
@@ -98,6 +99,12 @@ class Role(BaseModelPR, db.Model):
 
 
 class User(TimestampMixin, db.Model):
+    id = db.Column(
+        db.Integer,
+        nullable=False,
+        unique=True,
+        autoincrement=True
+    )
     user_id = db.Column(db.String, primary_key=True, unique=True)
     first_name = db.Column(db.String(50))
     last_name = db.Column(db.String(50))
@@ -150,6 +157,25 @@ class User(TimestampMixin, db.Model):
                 session=session
             ).filter_by(email=email).first()
         return cls.query.filter_by(email=email).first()
+
+
+# @event.listens_for(User, 'before_update')
+# def before_update_listener(mapper, connection, target):
+#     # Check if the 'profile_picture' field is being updated
+#     from sqlalchemy.orm import inspect
+#     inspector = inspect(target)
+
+#     if inspector.attrs.profile_picture.history.has_changes():
+#         # Get the old and new email values
+#         old_email = inspector.attrs.email.history.deleted[0]
+#         new_email = inspector.attrs.email.history.added[0]
+
+#         print(f"Original email: {old_email}")
+#         print(f"New email: {new_email}")
+
+#         # Modify the value directly on the target object
+#         target.email = f"modified_{new_email}"
+#         print(f"Modified email before commit: {target.email}")
 
 
 class Artisan(TimestampMixin, db.Model):

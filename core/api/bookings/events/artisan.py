@@ -276,6 +276,7 @@ def get_updates(uid, data):
         ).dump(
             Artisan.get_by_user_id(uid)
         )
+        print(artisan)
         lon, lat = redis_5.geopos(
             artisan['job_category'],
             uid
@@ -288,6 +289,7 @@ def get_updates(uid, data):
         route_dets = query.json()
         logger.error(route_dets)
         route_dets = route_dets['rows'][0]['elements'][0]
+        print(artisan, "===afe===")
         data = BookingAcceptedSchema().load(
             {
                 'booking_id': data['booking_id'],

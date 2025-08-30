@@ -1,6 +1,7 @@
 import os
 import json
 import pprint
+import zlib
 import datetime
 import requests
 import mimetypes
@@ -13,7 +14,6 @@ from google.oauth2 import service_account
 from werkzeug.http import HTTP_STATUS_CODES
 
 from core import db
-from schemas.bookings_schema import BookingSchema
 
 
 def is_serializable(obj):
@@ -25,6 +25,7 @@ def is_serializable(obj):
 
 
 def load_data(user_obj, many=False):
+    from schemas.bookings_schema import BookingSchema
     if user_obj:
         data = BookingSchema(many=many)
 
@@ -219,6 +220,120 @@ def generate_presigned_url(
 
     return url
 
+
+CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+BASE = len(CHARS)
+
+
+# def base62_encode(num):
+#     if num == 0:
+#         return '0'
+#     base62 = ''
+#     while num > 0:
+#         num, rem = divmod(num, 62)
+#         base62 = CHARS[rem] + base62
+#     return base62
+def base62_encode(n: int) -> str:
+    """Encodes a positive integer into a Base62 string."""
+    if n == 0:
+        return "0"
+    if n < 0:
+        raise ValueError("Cannot encode negative numbers.")
+
+    encoded = ""
+    while n > 0:
+        remainder = n % BASE
+        encoded = CHARS[remainder] + encoded
+        n //= BASE
+    return encoded
+
+
+def generate_unique_file_id(
+    user_id: int,
+    filename: str,
+    blob_type: int
+) -> str:
+    """
+    Generates a unique, fixed-length Base62 identifier for a file.
+
+    The ID is composed of:
+    - User ID (a numeric integer)
+    - Filename hash (CRC32 converted to a 32-bit integer)
+    - Blob type (Mapped to a small integer)
+
+    Args:
+        user_id (int): A numeric user ID.
+        filename (str): The original filename string.
+        blob_type (str): The blob type from the defined map.
+
+    Returns:
+        str: A fixed-length Base62 encoded string.
+    """
+    user_id_int = user_id
+
+    # 2. Hash the filename using CRC32 to get a fixed-size integer (32 bits)
+    filename_hash = zlib.crc32(filename.encode('utf-8'))
+    blob_type_int = blob_type
+
+    # 4. Combine all integers into a single, large integer for encoding
+    # We use bitwise shifts to combine them:
+    # 40 = 32 (CRC32) + 8 (blob_type)
+    combined_int = (user_id_int << 40) | (filename_hash << 8) | blob_type_int
+
+    # 5. Base62 encode the combined integer
+    encoded_id = base62_encode(combined_int)
+
+    # Pad the string to a fixed length (18 characters for 104 bits)
+    return encoded_id.zfill(18)
+
+
+def decode_file_id(encoded_id: str):
+    """
+    Decodes the unique file ID to retrieve the original data.
+
+    Args:
+        encoded_id (str): The Base62 encoded file ID string.
+
+    Returns:
+        A tuple containing (user_id_int, blob_type_string).
+        The filename hash is also returned as a hex string.
+    """
+    # Decode Base62 to the combined integer
+    decoded_num = base62_decode_number(encoded_id)
+
+    # Use bitmasking and shifting to extract the original integers
+    # The mask for the blob type is 2^8 - 1 = 255
+    blob_type_int = decoded_num & 0xFF  # Extract the last 8 bits
+    
+    # The hash and UUID are shifted down
+    hash_and_user_id = decoded_num >> 8
+    
+    # The mask for the hash is 2^32 - 1
+    filename_hash_int = hash_and_user_id & ((1 << 32) - 1)
+    user_id_int = hash_and_user_id >> 32
+    
+    # Convert extracted integers back to their original types
+    decoded_blob_type = REVERSE_BLOB_TYPE_MAP.get(blob_type_int)
+    
+    # The hash itself is not reversible, but we can return its hex string
+    decoded_hash_hex = hex(filename_hash_int)[2:].zfill(8)
+    
+    return user_id_int, decoded_blob_type, decoded_hash_hex
+
+
+# --- Example Usage ---
+my_number = 1000000000
+encoded_number = base62_encode(my_number)
+print(f"Original Number: {my_number}")
+print(f"Base62 Encoded:  {encoded_number}")
+
+# res = generate_unique_file_id()
+x = generate_unique_file_id(
+    2,
+    "cat.png",
+    2
+)
+print(x)
 
 # def load_env(client, environment, gpair):
 #     from google_crc32c import Checksum

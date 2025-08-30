@@ -96,7 +96,7 @@ def enter_customer_artisan_chat(data):
 @socketio.on('cancel_offer', namespace='/customer')
 @parse_event_data
 def cancel_offer(data):
-    room = data['artisan_id']
+    room = data['booking_id']
 
     # update state of offer in cache
     try:
@@ -111,7 +111,10 @@ def cancel_offer(data):
         'offer_cancelled',
         "Client cancelled offer",
         namespace='/artisan',
-        to=room
+        to=redis_4.hget(
+            'booking_id_to_uid',
+            room
+        )
     )
 
 

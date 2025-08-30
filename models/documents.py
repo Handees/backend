@@ -2,6 +2,9 @@ import os
 from uuid import uuid4
 from datetime import datetime
 
+from sqlalchemy import UniqueConstraint
+
+import utils
 from core import db
 from .base import TimestampMixin, BaseModelPR, SerializableEnum
 
@@ -38,6 +41,14 @@ class Document_category(TimestampMixin, BaseModelPR, db.Model):
 
 
 class Blob(TimestampMixin, db.Model):
+    __table_args__ = (
+        UniqueConstraint(
+            'user_id',
+            'blob_type',
+            'filename',
+            name='uix_user_blob_type_filename'
+        ),
+    )
     blob_id = db.Column(db.String, primary_key=True)
     filename = db.Column(db.String, nullable=False, index=True)
     content_type = db.Column(db.String, nullable=False, index=True)
@@ -54,6 +65,14 @@ class Blob(TimestampMixin, db.Model):
         db.ForeignKey('booking.booking_id'),
         index=True
     )
+    img_id = db.Column(db.String, nullable=False, unique=True)
+
+    def set_url_id(self, uid):
+        self.img_id = utils.generate_unique_file_id(
+            user_id=uid,
+            filename=self.filename,
+            blob_type=int(self.blob_type.value)
+        )
 
     @property
     def upload_url(self):
