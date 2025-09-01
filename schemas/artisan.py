@@ -43,6 +43,14 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         'first_name', 'last_name', 'profile_picture'
     ))
     job_category = fields.Method(serialize='show_category')
+    bank_accounts = fields.Nested(
+        'WithdrawalAccountSchema',
+        only=(
+            'account_name', 'account_number',
+            'bank_name', 'bank_code'
+        ),
+        many=True
+    )
 
     @pre_load
     def preformat_data(self, data, *args, **kwargs):

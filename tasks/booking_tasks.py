@@ -140,7 +140,7 @@ def update_booking_status(data):
         ).get(data['booking_id'])
 
         # update status to artisan_arrived state
-        bk.update_status('1')
+        bk.update_status(data['status'])
 
         try:
             db.session.commit()
@@ -151,10 +151,14 @@ def update_booking_status(data):
         finally:
             db.session.close()
 
-        redis_.set(
-            data['booking_id'],
-            str(resp)
-        )
+        if data['status'] not in [
+            BookingStatusEnum.ARTISAN_CANCELLED,
+            BookingStatusEnum.CUSTOMER_CANCELLED
+        ]:
+            redis_.set(
+                data['booking_id'],
+                str(resp)
+            )
 
 
 @huey.task()

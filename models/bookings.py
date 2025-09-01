@@ -30,9 +30,10 @@ categories = [
 
 
 class BookingStatusEnum(SerializableEnum):
-    IN_PROGRESS = 8
-    COMPLETED = 4
-    CANCELLED = 2
+    IN_PROGRESS = 16
+    COMPLETED = 8
+    ARTISAN_CANCELLED = 4
+    CUSTOMER_CANCELLED = 2
     ARTISAN_ARRIVED = 1
 
 
@@ -101,25 +102,43 @@ class Booking(TimestampMixin, db.Model):
 
     # Table Columns
     booking_id = db.Column(db.String, primary_key=True, unique=True)
-    customer_id = db.Column(db.String, db.ForeignKey('user.user_id'))
-    category_id = db.Column(db.Integer, db.ForeignKey('bookingcategory.id'))
-    artisan_id = db.Column(db.String, db.ForeignKey('artisan.artisan_id'))
+    customer_id = db.Column(
+        db.String, db.ForeignKey('user.user_id'),
+        index=True
+    )
+    category_id = db.Column(
+        db.Integer, db.ForeignKey('bookingcategory.id'),
+        index=True
+    )
+    artisan_id = db.Column(
+        db.String, db.ForeignKey('artisan.artisan_id'),
+        index=True
+    )
     start_time = db.Column(db.Date)
     end_time = db.Column(db.Date)
     location = db.Column(Geometry(geometry_type='POINT', srid='4326'))
     description = db.Column(db.Text())
     status = db.Column(db.Enum(BookingStatusEnum))
     payment_id = db.Column(db.String, db.ForeignKey('payment.payment_id'))
-    contract_type = db.Column("contract_type", db.Boolean, default=False)
+    contract_type = db.Column(
+        "contract_type",
+        db.Boolean,
+        default=False,
+        index=True
+    )
     artisan_rating = db.Column(db.Integer)
     customer_rating = db.Column(db.Integer)
     settlement_type = db.Column(
         db.Enum(
             SettlementEnum
-        ), nullable=True
+        ), nullable=True,
+        index=True
     )
     details_confirmed = db.Column(db.Boolean, default=False)
-    payment_method = db.Column(db.Enum(BookingPaymentMethod))
+    payment_method = db.Column(
+        db.Enum(BookingPaymentMethod),
+        index=True
+    )
     booking_contract = db.relationship(
         'BookingContract',
         backref='booking',

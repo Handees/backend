@@ -1,4 +1,7 @@
 # flake8: noqa
+import eventlet
+eventlet.monkey_patch()
+
 from json import load
 from core import create_app, socketio, db
 from dotenv import load_dotenv
@@ -151,8 +154,6 @@ def load_config_variables():
     else:
         raise Exception("Something went wrong while trying to fetch secrets")
 if __name__ == "__main__":
-    import eventlet
-    eventlet.monkey_patch()
     socketio.run(
         app,
         host="0.0.0.0",

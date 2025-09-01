@@ -241,7 +241,7 @@ def update_location(uid, data):
 @socketio.on('accept_offer', namespace='/artisan')
 @parse_event_data
 @valid_auth_required
-def get_updates(uid, data):
+def accept_offer(uid, data):
     """ triggered when artisan accepts offer """
     from tasks.booking_tasks import assign_artisan_to_booking
 
@@ -276,7 +276,6 @@ def get_updates(uid, data):
         ).dump(
             Artisan.get_by_user_id(uid)
         )
-        print(artisan)
         lon, lat = redis_5.geopos(
             artisan['job_category'],
             uid
@@ -289,7 +288,6 @@ def get_updates(uid, data):
         route_dets = query.json()
         logger.error(route_dets)
         route_dets = route_dets['rows'][0]['elements'][0]
-        print(artisan, "===afe===")
         data = BookingAcceptedSchema().load(
             {
                 'booking_id': data['booking_id'],
@@ -344,12 +342,31 @@ def cancel_offer_artisan(uid, data):
         data = schema.load(data)
     except Exception as e:
         raise DataValidationError(messages.SCHEMA_ERROR, errors=e)
-
     room = data['booking_id']
+
+    matched_artisan = redis_4.hget('booking_id_to_artisan', room)
+    current_artisan = Artisan.get_by_user_id(uid)
+    if not redis_.exists(room):
+        emit(
+            'error',
+            error_response(messages.BOOKING_UNAVAILABLE, uid)
+        )
+        return
+    if matched_artisan != current_artisan.user_id:
+        emit(
+            'error',
+            error_response(messages.INVALID_A_CANCEL_OFFER, uid)
+        )
+        return
 
     # update status of booking
     try:
-        update_booking_status(data)
+        update_booking_status(
+            {
+                'status': BookingStatusEnum.ARTISAN_CANCELLED,
+                **data
+            }
+        )
     except Exception as e:
         logger.exception(e)
         send_event(
@@ -359,12 +376,21 @@ def cancel_offer_artisan(uid, data):
         )
 
     # remove from queue once canceled
+    # TODO: check which dbs are for what
     redis_2.delete(room)
+    redis_.delete(room)
 
-    socketio.emit(
+    payload = {
+        'payload': messages.dynamic_msg(messages.BOOKING_CANCELLED, "artisan"),
+        'recipient': redis_4.hget(
+            'booking_id_to_uid',
+            room
+        )
+    }
+    send_event(
         'offer_cancelled',
-        messages.dynamic_msg(messages.BOOKING_CANCELLED, "artisan"),
-        to=room
+        payload,
+        '/customer'
     )
 
 

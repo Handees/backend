@@ -4,17 +4,20 @@ from extensions import (
     redis_2,
     redis_4
 )
+from models.bookings import BookingStatusEnum
 from core.api.auth.auth_helper import (
     auth_param_required,
     valid_auth_required
 )
 from tasks.events import send_event
+from tasks.booking_tasks import update_booking_status
 from core.exc import DataValidationError
 from core.api.bookings.events.utils import parse_event_data
 from schemas.bookings_schema import BookingStartSchema
 from core.api.auth.auth_helper import verify_token
 from tasks.booking_tasks import confirm_job_details
 from .. import messages
+from .utils import error_response
 
 from loguru import logger
 from flask_socketio import emit, join_room
@@ -88,14 +91,16 @@ def booking_upate(data):
 
 @socketio.on('join_chat', namespace='/chat')
 @parse_event_data
-def enter_customer_artisan_chat(data):
+@valid_auth_required
+def enter_customer_artisan_chat(uid, data):
     room = data['booking_id']
     join_room(room, namespace='/chat')
 
 
 @socketio.on('cancel_offer', namespace='/customer')
 @parse_event_data
-def cancel_offer(data):
+@valid_auth_required
+def cancel_offer(uid, data):
     room = data['booking_id']
 
     # update state of offer in cache
@@ -107,15 +112,39 @@ def cancel_offer(data):
     logger.info('Client canceled; removing booking with id: {} from cache'.format(
         data['booking_id']
     ))
-    socketio.emit(
-        'offer_cancelled',
-        "Client cancelled offer",
-        namespace='/artisan',
-        to=redis_4.hget(
-            'booking_id_to_uid',
+    customer_id = redis_4.hget('booking_id_to_uid', room)
+    if not redis_.exists(room):
+        emit(
+            'error',
+            error_response(messages.BOOKING_UNAVAILABLE, uid)
+        )
+        return
+    if customer_id != uid:
+        emit(
+            'error',
+            error_response(messages.INVALID_CANCEL_OFFER, uid)
+        )
+        return
+    payload = {
+        'payload': "Client cancelled offer",
+        'recipient': redis_4.hget(
+            'booking_id_to_artisan',
             room
         )
+    }
+    send_event(
+        'offer_cancelled',
+        payload,
+        '/artisan'
     )
+    # update status of booking
+    update_booking_status(
+        {
+            'status': BookingStatusEnum.CUSTOMER_CANCELLED,
+            **data
+        }
+    )
+    redis_.delete(room)
 
 
 @socketio.on('msg', namespace='/chat')

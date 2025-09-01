@@ -76,7 +76,7 @@ def create_booking(current_user):
                 'booking_id': new_order.booking_id
             }
             to_be_uploaded = [{**_base_img, **img} for img in images['files']]
-            images_schema = BlobSchema(many=True)
+            images_schema = BlobSchema(uid=current_user.id, many=True)
             images = images_schema.load(to_be_uploaded)
             for img in images:
                 img.blob_id = uuid.uuid4().hex
