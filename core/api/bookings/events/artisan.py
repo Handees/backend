@@ -31,7 +31,8 @@ from extensions import (
     redis_,
     redis_4,
     redis_5,
-    redis_6
+    redis_6,
+    redis_7
 )
 from .. import messages
 from core import socketio, db
@@ -198,14 +199,18 @@ def update_location(uid, data):
     if redis_4.hexists('artisan_to_booking_id', uid):
         bk_id = redis_4.hget('artisan_to_booking_id', uid)
         print(bk_id)
-        payload = {
-            'payload': data,
-            'recipient': redis_4.hget(
-                'booking_id_to_uid',
-                bk_id
-            )
-        }
-        send_event('artisan_location_update', payload, '/customer')
+        if redis_7.exists(bk_id):
+            payload = {
+                'payload': data,
+                'recipient': redis_4.hget(
+                    'booking_id_to_uid',
+                    bk_id
+                )
+            }
+            send_event('artisan_location_update', payload, '/customer')
+        else:
+            # stale record - remove!
+            redis_7.delete(bk_id)
     # reduce geohash length to 6 characters
     # subscribe user to a topic named
     # after this truncated geohash
@@ -377,8 +382,9 @@ def cancel_offer_artisan(uid, data):
 
     # remove from queue once canceled
     # TODO: check which dbs are for what
-    redis_2.delete(room)
-    redis_.delete(room)
+    redis_7.delete(room)
+    # remove artisan from booking assignment
+    redis_4.hdel('artisan_to_booking_id', uid)
 
     payload = {
         'payload': messages.dynamic_msg(messages.BOOKING_CANCELLED, "artisan"),
@@ -503,6 +509,9 @@ def handle_job_end(uid, data):
     try:
         data['uid'] = uid
         job_end(data)
+        # TODO: remove caches once job_end task completes
+        # redis_7.delete(room)
+        # redis_4.hdel('artisan_to_booking_id', uid)
     except Exception as e:
         logger.exception(e)
         send_event(

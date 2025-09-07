@@ -2,7 +2,8 @@ from core import socketio
 from extensions import (
     redis_,
     redis_2,
-    redis_4
+    redis_4,
+    redis_7
 )
 from models.bookings import BookingStatusEnum
 from core.api.auth.auth_helper import (
@@ -144,7 +145,10 @@ def cancel_offer(uid, data):
             **data
         }
     )
+    # if still in unmatched state
     redis_.delete(room)
+    # if already matched
+    redis_7.delete(room)
 
 
 @socketio.on('msg', namespace='/chat')

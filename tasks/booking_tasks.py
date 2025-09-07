@@ -4,7 +4,8 @@ from extensions import (
     HueyTemplate,
     redis_,
     redis_2,
-    redis_4
+    redis_4,
+    redis_7
 )
 from core.exc import BookingHasContract
 # from core.extensions import db
@@ -110,6 +111,9 @@ def assign_artisan_to_booking(data):
                 exclude=('artisan',),
                 session=sess
             ).dump(booking)
+
+        # TODO: add expiration for stale bk requests
+        redis_7.set(data['booking_id'], 1)
 
     # conn = psycopg2.connect(
     #     'postgresql://handees_admin:5JynGFGk0d3Zaeb2fEi7gQ@handees-db-cluster-5872.jxf.gcp-europe-west3.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full',

@@ -75,3 +75,4 @@ customer_pos_store = redis_2 = RedCache(2).client
 socket_id_store = redis_4 = RedCache(4).client
 cat_geo_store = redis_5 = RedCache(5).client
 artisan_cat_geo_store = redis_6 = RedCache(6).client
+unmatched_bookings = redis_7 = RedCache(7).client
