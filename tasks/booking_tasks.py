@@ -1,6 +1,6 @@
 import os
 
-from extensions import (
+from add_extensions import (
     HueyTemplate,
     redis_,
     redis_2,
@@ -270,6 +270,10 @@ def job_end(data):
         'booking_id_to_uid',
         data['booking_id']
     )
+    artisan_id = redis_4.hget(
+        'booking_id_to_artisan',
+        data['booking_id']
+    )
 
     with app.app_context():
         # find booking
@@ -331,7 +335,8 @@ def job_end(data):
                     },
                     'customer_info': {
                         'user_rid': customer_rid
-                    }
+                    },
+                    'artisan_id': artisan_id
                 }
                 initiate_charge(charge_obj)
 

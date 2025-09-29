@@ -66,7 +66,8 @@ def create_new_user():
             data=schema.dump(new_user),
             message=USER_CREATED
         )
-    except IntegrityError:
+    except IntegrityError as e:
+        logger.exception(e)
         db.session.rollback()
         return error_response(
             400,

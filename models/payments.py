@@ -1,3 +1,5 @@
+import uuid
+
 from .base import (
     TimestampMixin,
     BaseModelPR
@@ -92,5 +94,50 @@ class WithdrawalAccounts(BaseModelPR, TimestampMixin, db.Model):
     )
 
 
-class Wallet:
-    pass
+class Wallet(BaseModelPR, TimestampMixin, db.Model):
+    balance = db.Column(db.Float, server_default="0.0")
+    pin = db.Column(db.String)
+    artisan_id = db.Column(
+        db.String, db.ForeignKey('artisan.artisan_id'),
+        nullable=False
+    )
+
+
+class WalletTransactionEnum(SerializableEnum):
+    WITHDRAWAL = 1
+    DEPOSIT = 2
+
+
+class TransactionStatusEnum(SerializableEnum):
+    SUCCESS = 1
+    FAILED = 2
+    REVERSED = 4
+    DISPUTE = 8
+    ERROR = 16
+    PENDING = 32
+
+
+class WalletTransaction(BaseModelPR, TimestampMixin, db.Model):
+    wallet_id = db.Column(
+        db.Integer, db.ForeignKey('wallet.id'),
+        nullable=False
+    )
+    transaction_type = db.Column(
+        db.Enum(WalletTransactionEnum),
+        nullable=False,
+        index=True
+    )
+    amount = db.Column(db.Float, nullable=False)
+    transaction_id = db.Column(db.String)
+    status = db.Column(db.Enum(TransactionStatusEnum))
+
+
+class Withdrawals(TimestampMixin, db.Model):
+    withdrawal_id = db.Column(
+        db.String,
+        primary_key=True,
+        default=uuid.uuid4().hex
+    )
+    reference = db.Column(db.String, unique=True)
+    transfer_code = db.Column(db.String, unique=True)
+    artisan_id = db.Column(db.String, db.ForeignKey('Artisan.artisan_id'))

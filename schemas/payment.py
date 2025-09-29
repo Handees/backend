@@ -5,7 +5,10 @@ from .base import (
 from models.payments import (
     Payment,
     CardAuth,
-    WithdrawalAccounts
+    WithdrawalAccounts,
+    WalletTransaction,
+    WalletTransactionEnum,
+    Wallet
 )
 from core import ma
 
@@ -88,3 +91,15 @@ class WithdrawalAccountSchema(BaseSQLAlchemyAutoSchema):
 
     class Meta:
         model = WithdrawalAccounts
+
+
+class WalletSchema(BaseSQLAlchemyAutoSchema):
+    class Meta:
+        model = Wallet
+        exclude = ('pin', )
+
+
+class WalletWithdrawalSchema(BaseSQLAlchemyAutoSchema):
+    pin = ma.String(required=True)
+    amount = ma.Float(required=True)
+    withdrawal_account_id = ma.Int(required=True)

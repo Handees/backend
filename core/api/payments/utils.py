@@ -146,6 +146,27 @@ class PaystackClient:
         else:
             return req
 
+    def initiate_transfer(self, payload):
+        endpoint = '/transfer'
+        payload = {
+            'source': 'balance',
+            'reason': 'HANDEEMAN PAYMENT',
+            **payload
+        }
+        logger.info("Initiating transfer request!")
+        try:
+            req = requests.post(
+                url=PaystackClient.BASE_URL + endpoint,
+                json=payload,
+                headers=self.headers
+            )
+        except Exception as e:
+            logger.error(
+                'The following error occurred whilst trying to send request'
+            )
+            raise e
+        else:
+            return req
 
 def gen_hmac_hash(payload, secret):
     """ paystack requires that we verify a header by comparing a hash signature

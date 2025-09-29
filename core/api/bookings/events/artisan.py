@@ -26,7 +26,7 @@ from .utils import (
     error_response,
     update_nearby_count
 )
-from extensions import (
+from add_extensions import (
     redis_2,
     redis_,
     redis_4,
@@ -276,8 +276,10 @@ def accept_offer(uid, data):
                 'user_profile',
                 'rating',
                 'job_category',
+                'jobs_completed',
                 'hourly_rate'
-            )
+            ),
+            exclude=('user_profile.reviews', 'user_profile.rating')
         ).dump(
             Artisan.get_by_user_id(uid)
         )

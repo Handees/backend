@@ -4,7 +4,7 @@ import requests
 from flask import jsonify
 from dotenv import load_dotenv
 
-from extensions import redis_, redis_5
+from add_extensions import redis_, redis_5
 from schemas.bookings_schema import BookingSchema
 
 load_dotenv()

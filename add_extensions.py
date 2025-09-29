@@ -5,6 +5,7 @@ from typing import Optional, Dict
 from walrus import *  # noqa: F403
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
+from passlib.context import CryptContext
 from huey import (
     RedisExpireHuey, RedisHuey,
     FileHuey, MemoryHuey, SqliteHuey,
@@ -69,6 +70,8 @@ class RedCache:
     # def get(self, id):
     #     return self.client.get(id)
 
+
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 
 data_store = redis_ = RedCache().client
 customer_pos_store = redis_2 = RedCache(2).client

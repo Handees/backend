@@ -5,7 +5,7 @@ import functools
 from loguru import logger
 from dotenv import load_dotenv
 
-from extensions import redis_4
+from add_extensions import redis_4
 from .booking_tasks import huey
 from core.exc import ClientNotConnected
 

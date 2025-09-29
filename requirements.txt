@@ -238,3 +238,4 @@ zipp
     #   importlib-metadata
     #   importlib-resources
 sqlalchemy-cockroachdb
+passlib[argon2]

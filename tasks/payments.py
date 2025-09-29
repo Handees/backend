@@ -1,10 +1,21 @@
+import os
+import uuid
+
+from loguru import logger
+from sqlalchemy import select
+
 from .booking_tasks import huey
 from .events import send_event
 from models.payments import (
     Payment,
-    CardAuth
+    CardAuth,
+    WithdrawalAccounts,
+    WalletTransaction,
+    Withdrawals,
+    WalletTransactionEnum,
+    TransactionStatusEnum
 )
-from models.user_models import User
+from models.user_models import User, Artisan
 from models.payments import PaymentStatusEnum
 from core.exc import DataValidationError
 from schemas.payment import (
@@ -12,15 +23,11 @@ from schemas.payment import (
     FrontEndCardSchema
 )
 from config import config_options
-from extensions import (
+from add_extensions import (
     HueyTemplate,
     redis_4
 )
 from utils import setLogger
-
-import uuid
-import os
-from loguru import logger
 
 logger.remove()
 setLogger()
@@ -118,6 +125,7 @@ def charge_sucess(data):
 
 @huey.task()
 def initiate_charge(charge_data):
+    # TODO: to consider is this should happen synchronously
     from core.api.payments.utils import PaystackClient
     from tasks.events import send_event
 
@@ -132,13 +140,6 @@ def initiate_charge(charge_data):
             req = client.init_charge(charge_data['charge_info'])
 
             if req.status_code != 200 or not req.json()['status']:
-                logger.error(
-                    f"""
-                        PAYSTACK_ERROR: The following error occurred while trying
-                        to charge the card with auth id
-                        {charge_data['charge_info']['authorization_code']}: \n
-                    """
-                )
                 logger.error(f"PAYSTACK_ERROR: {req.text}")
                 send_event(
                     'paystack_charge_error',
@@ -150,7 +151,7 @@ def initiate_charge(charge_data):
                         }
                     }
                 )
-
+                return
             # checks if charge is being challenged
             req = req.json()
             req = req['data']
@@ -177,6 +178,81 @@ def initiate_charge(charge_data):
             db.session.rollback()
             logger.exception(e)
 
+
+@huey.task()
+def initiate_withdrawal(payload):
+    from core.api.payments.utils import PaystackClient
+    _huey = HueyTemplate()
+    app = _huey.get_flask_app(config_options['development'])
+    db = _huey.db
+    client = PaystackClient(os.getenv('PAYSTACK_TEST_SECRET'))
+    status_map = {
+        'success': TransactionStatusEnum.SUCCESS,
+        'pending': TransactionStatusEnum.PENDING,
+        'reversed': TransactionStatusEnum.REVERSED,
+        'failed': TransactionStatusEnum.FAILED
+    }
+
+    with app.app_context():
+        with db.session() as sess:
+            account = sess.scalar(
+                select(WithdrawalAccounts).where(
+                    id=payload['account_id']
+                )
+            )
+            query = select(WalletTransaction).where(
+                id=payload['wallet_transaction_id']
+            )
+            wallet_transaction = sess.scalar(query)
+            transfer_code = None
+
+            # initiate transfer
+            reference = f"handees_trf_{uuid.uuid4().hex}"
+            try:
+                req = client.initiate_transfer(
+                    payload={
+                        'amount': payload['amount'],
+                        'reference': reference,
+                        'recipient': account.recipient_code
+                    }
+                )
+                if req.status_code != 200 or not req.json()['status']:
+                    logger.error(f"PAYSTACK_ERROR: {req.text}")
+                    wallet_transaction.status = TransactionStatusEnum.ERROR
+                    sess.commit()
+                    return
+                req = req.json()['data']
+                wallet_transaction.status = status_map.get(
+                    req['status'],
+                    TransactionStatusEnum.FAILED
+                )
+                if req['status'].lower() != 'pending':
+                    logger.error('An error occurred during transfer.. retry')
+                transfer_code = req['transfer_code']
+            except Exception as e:
+                logger.exception(e)
+                wallet_transaction.status = TransactionStatusEnum.ERROR
+                sess.commit()
+            finally:
+                if transfer_code:
+                    withdrawal = Withdrawals(
+                        reference=reference,
+                        transfer_code=transfer_code,
+                        artisan_id=payload['artisan_id']
+                    )
+                    sess.add(withdrawal)
+                    sess.commit()
+
+                # send final transfer status to client
+                send_event(
+                    'withdrawal_status',
+                    {
+                        'recipient': payload['user_id'],
+                        'payload': {
+                            'status': wallet_transaction.name
+                        }
+                    }
+                )
 
 handlers = {
     'charge.success': charge_sucess

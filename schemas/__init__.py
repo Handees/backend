@@ -11,6 +11,8 @@ from .payment import (
     PaymentEventSchema,
     PaymentSchema,
     WithdrawalAccountSchema,
+    WalletSchema,
+    WalletWithdrawalSchema,
     ResolveAccountNumberSchema,
     InitTransactionSchema
 )

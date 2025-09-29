@@ -25,7 +25,7 @@ from utils import (
     setLogger
 )
 from tasks.booking_tasks import pbq
-from extensions import redis_4
+from add_extensions import redis_4
 from . import messages as messages
 from schemas.bookings_schema import UploadImagesSchema
 

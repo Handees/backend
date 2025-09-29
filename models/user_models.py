@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import event
+from sqlalchemy import text
 from flask import current_app
 from loguru import logger
 
@@ -103,7 +103,8 @@ class User(TimestampMixin, db.Model):
         db.Integer,
         nullable=False,
         unique=True,
-        autoincrement=True
+        autoincrement=True,
+        server_default=text("nextval('user_id_seq')")
     )
     user_id = db.Column(db.String, primary_key=True, unique=True)
     first_name = db.Column(db.String(50))
@@ -202,6 +203,7 @@ class Artisan(TimestampMixin, db.Model):
     )
     booking = db.relationship('Booking', backref='artisan')
     kyc_attempts = db.relationship('Kyc', backref='artisan')
+    wallet = db.relationship('Wallet', backref='artisan', uselist=False)
 
     @property
     def bookings(self):

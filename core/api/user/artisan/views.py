@@ -10,12 +10,17 @@ from models.user_models import (
     Role
 )
 from models.bookings import BookingCategory
-from models.payments import WithdrawalAccounts
+from models.payments import (
+    WithdrawalAccounts, Wallet,
+    WalletTransaction, WalletTransactionEnum
+)
 from core.api.bookings import messages
 from schemas import (
     ArtisanSchema,
     AddArtisanSchema,
     WithdrawalAccountSchema,
+    WalletWithdrawalSchema,
+    WalletSchema,
     KYC
     # KYCToStore
 )
@@ -36,7 +41,9 @@ from ...auth.auth_helper import (
     login_required,
     role_required
 )
+from tasks import initiate_withdrawal
 from .utils import send_verification_request
+from add_extensions import pwd_context
 
 
 # config logging
@@ -88,6 +95,7 @@ def add_new_artisan(current_user):
         # add other props
         new_artisan.artisan_id = uuid4().hex
         new_artisan.booking_category = category
+        new_artisan.wallet = Wallet()
 
         logger.info("Attempting to create new artisan")
         try:
@@ -211,3 +219,78 @@ def list_artisan_banks(current_user):
             many=True,
             schema=WithdrawalAccountSchema
         )
+
+
+@artisan.patch('/wallet_pin')
+@login_required
+@role_required('artisan')
+def update_wallet_pin(current_user):
+    with db.session() as sess:
+        payload = request.get_json(force=True)
+        pin = payload.get('pin', None)
+        if not pin:
+            return error_response(
+                400,
+                message="Missing required field 'pin'"
+                " or no value was set/sent"
+            )
+        pin_hash = pwd_context.hash(str(pin))
+        artisan: Artisan = current_user.artisan_profile
+        wallet: Wallet = artisan.wallet
+        wallet.pin = pin_hash
+
+        sess.commit()
+        return gen_response(
+            200,
+            data=WalletSchema().dump(wallet)
+        )
+
+
+@artisan.post('/withdraw')
+@login_required
+@role_required('artisan')
+def withdraw(current_user):
+    with db.session() as sess:
+        payload = request.get_json(force=True)
+        schema = WalletWithdrawalSchema()
+        try:
+            payload = schema.load(payload)
+        except Exception as e:
+            return error_response(400, message=str(e))
+
+        wallet = current_user.artisan_profile.wallet
+        if wallet:
+            # verify pin
+            if not pwd_context.verify(payload['pin'], wallet.pin):
+                return error_response(
+                    400, message="Wrong wallet pin specified"
+                )
+            if wallet.balance < payload['amount']:
+                return error_response(
+                    400,
+                    message="~Insufficient funds~ Dude you're broke! - 💀"
+                )
+            new_wallet_transaction = WalletTransaction(
+                amount=payload['amount'],
+                transaction_type=WalletTransactionEnum.WITHDRAWAL
+            )
+            sess.add(new_wallet_transaction)
+            sess.commit()
+
+            # schedule transfer job
+            job_payload = {
+                'wallet_transaction_id': new_wallet_transaction.id,
+                'amount': payload['amount'],
+                'account_id': payload['withdrawal_account_id'],
+                'artisan_id': current_user.artisan_profile.artisan_id,
+                'user_id': current_user.user_id
+            }
+            initiate_withdrawal(job_payload)
+            return gen_response(
+                200, message="Withdrawal Initiated successfully"
+            )
+        else:
+            logger.error(
+                f"Weird! - User with id {current_user.user_id}"
+                " has no wallet"
+            )

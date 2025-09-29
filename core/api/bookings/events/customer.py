@@ -1,5 +1,5 @@
 from core import socketio
-from extensions import (
+from add_extensions import (
     redis_,
     redis_2,
     redis_4,
