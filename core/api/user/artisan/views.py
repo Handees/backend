@@ -222,7 +222,7 @@ def list_artisan_banks(current_user):
         )
 
 
-@artisan.patch('/wallet_pin')
+@artisan.patch('/wallet')
 @login_required
 @role_required('artisan')
 def update_wallet_pin(current_user):
@@ -241,6 +241,18 @@ def update_wallet_pin(current_user):
         wallet.pin = pin_hash
 
         sess.commit()
+        return gen_response(
+            200,
+            data=WalletSchema().dump(wallet)
+        )
+
+
+@artisan.get('/wallet')
+@login_required
+@role_required('artisan')
+def get_wallet_dets(current_user):
+    with db.session():
+        wallet = current_user.artisan_profile.wallet
         return gen_response(
             200,
             data=WalletSchema().dump(wallet)
