@@ -140,4 +140,4 @@ class Withdrawals(TimestampMixin, db.Model):
     )
     reference = db.Column(db.String, unique=True)
     transfer_code = db.Column(db.String, unique=True)
-    artisan_id = db.Column(db.String, db.ForeignKey('Artisan.artisan_id'))
+    artisan_id = db.Column(db.String, db.ForeignKey('artisan.artisan_id'))

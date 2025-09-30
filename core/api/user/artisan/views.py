@@ -12,7 +12,8 @@ from models.user_models import (
 from models.bookings import BookingCategory
 from models.payments import (
     WithdrawalAccounts, Wallet,
-    WalletTransaction, WalletTransactionEnum
+    WalletTransaction, WalletTransactionEnum,
+    TransactionStatusEnum
 )
 from core.api.bookings import messages
 from schemas import (
@@ -272,7 +273,9 @@ def withdraw(current_user):
                 )
             new_wallet_transaction = WalletTransaction(
                 amount=payload['amount'],
-                transaction_type=WalletTransactionEnum.WITHDRAWAL
+                wallet_id=wallet.id,
+                transaction_type=WalletTransactionEnum.WITHDRAWAL,
+                status=TransactionStatusEnum.PENDING
             )
             sess.add(new_wallet_transaction)
             sess.commit()

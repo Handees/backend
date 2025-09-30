@@ -185,7 +185,7 @@ def initiate_withdrawal(payload):
     _huey = HueyTemplate()
     app = _huey.get_flask_app(config_options['development'])
     db = _huey.db
-    client = PaystackClient(os.getenv('PAYSTACK_TEST_SECRET'))
+    client = PaystackClient(os.getenv('PAYSTACK_DEV_SECRET'))
     status_map = {
         'success': TransactionStatusEnum.SUCCESS,
         'pending': TransactionStatusEnum.PENDING,
@@ -197,16 +197,17 @@ def initiate_withdrawal(payload):
         with db.session() as sess:
             account = sess.scalar(
                 select(WithdrawalAccounts).where(
-                    id=payload['account_id']
+                    WithdrawalAccounts.id == payload['account_id']
                 )
             )
             query = select(WalletTransaction).where(
-                id=payload['wallet_transaction_id']
+                WalletTransaction.id == payload['wallet_transaction_id']
             )
             wallet_transaction = sess.scalar(query)
             transfer_code = None
 
             # initiate transfer
+            print(account.recipient_code)
             reference = f"handees_trf_{uuid.uuid4().hex}"
             try:
                 req = client.initiate_transfer(
@@ -249,11 +250,14 @@ def initiate_withdrawal(payload):
                     {
                         'recipient': payload['user_id'],
                         'payload': {
-                            'status': wallet_transaction.name
+                            'status': wallet_transaction.status.name
                         }
-                    }
+                    },
+                    '/artisan'
                 )
 
+
 handlers = {
-    'charge.success': charge_sucess
+    'charge.success': charge_sucess,
+    # 'transfer.success': transfer_success
 }

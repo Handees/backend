@@ -178,7 +178,7 @@ def test():
     return {}, 200
 
 
-@payments.get('/banks')
+@payments.get('/banks/')
 def get_banks():
     ENV = os.getenv('ENV', 'DEV')
     client = PaystackClient(
