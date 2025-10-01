@@ -46,7 +46,7 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     bank_accounts = fields.Nested(
         'WithdrawalAccountSchema',
         only=(
-            'account_name', 'account_number',
+            'id', 'account_name', 'account_number',
             'bank_name', 'bank_code'
         ),
         many=True
