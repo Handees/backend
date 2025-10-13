@@ -79,11 +79,14 @@ matrix_client = DistanceAPIClient(
 
 
 @socketio.on('connect', namespace='/chat')
+@auth_param_required
 def enter_chat_namespace(data):
-    emit('msg', 'welcome to chat')
+    emit('message', 'welcome to chat')
 
 
 @socketio.on('join_chat', namespace='/chat')
+@parse_event_data
+@valid_auth_required
 def enter_chat_room(data):
     room = data['booking_id']
     join_room(room)
@@ -407,10 +410,25 @@ def cancel_offer_artisan(uid, data):
 @valid_auth_required
 def handle_location_arrival(uid, data):
     """ triggered when artisan arrives at location """
+    room = data['booking_id']
+
+    matched_artisan = redis_4.hget('booking_id_to_artisan', room)
+    current_artisan = Artisan.get_by_user_id(uid)
+    if matched_artisan != current_artisan.user_id:
+        emit(
+            'error',
+            error_response(messages.ARTISAN_NOT_MATCHED_TO_BOOKING, uid)
+        )
+        return
 
     # update booking status
     try:
-        update_booking_status(data)
+        update_booking_status(
+            {
+                'status': BookingStatusEnum.ARTISAN_ARRIVED,
+                **data
+            }
+        )
     except Exception as e:
         logger.exception(e)
         send_event(
@@ -437,68 +455,95 @@ def handle_location_arrival(uid, data):
 @valid_auth_required
 def handle_job_begin(uid, data):
     """ triggered when artisan begins a job """
-    artisan = Artisan.get_by_user_id(uid)
-    bk = Booking.query.get(data['booking_id'])
+    with db.session() as sess:
+        artisan = Artisan.get_by_user_id(uid)
+        bk = Booking.query.get(data['booking_id'])
 
-    # check if customer has confirmed job
-    if not bk.details_confirmed:
-        logger.error(InvalidBookingTransaction(
-            f"{messages.BOOKING_NOT_CONFIRMED}"
-        ))
-        send_event(
-            'error',
-            error_response(messages.BOOKING_NOT_CONFIRMED, uid),
-            '/artisan'
-        )
-        return
+        room = data['booking_id']
 
-    # initiate job
-    if bk.artisan.artisan_id == artisan.artisan_id:
-        try:
-            if not bk.status == BookingStatusEnum.IN_PROGRESS:
-                bk.update_status('8')
-                try:
-                    db.session.commit()
-                    payload = {
-                        'payload': messages.JOB_STARTED,
-                        'recipient': redis_4.hget(
-                            'booking_id_to_uid',
-                            data['booking_id']
-                        )
-                    }
-                    send_event(
-                        'job_started',
-                        payload,
-                        '/customer'
-                    )
-                except Exception as e:
-                    logger.exception(e)
-                    db.session.rollback()
-                    send_event(
-                        'error',
-                        error_response(messages.INTERNAL_SERVER_ERROR, uid),
-                        '/artisan'
-                    )
-                    raise e
-                finally:
-                    db.session.close()
-        except Exception as e:
-            logger.exception(e)
-            send_event(
+        matched_artisan = redis_4.hget('booking_id_to_artisan', room)
+        current_artisan = Artisan.get_by_user_id(uid)
+        if matched_artisan != current_artisan.user_id:
+            emit(
                 'error',
-                error_response(messages.INTERNAL_SERVER_ERROR, uid),
-                '/artisan'
+                error_response(messages.ARTISAN_NOT_MATCHED_TO_BOOKING, uid)
             )
             return
-    else:
-        logger.error(InvalidBookingTransaction(
-            f"Artisan with id {artisan.artisan_id} has not been assigned this order"
-        ))
-        send_event(
-            'error',
-            error_response(f"Artisan with id {artisan.artisan_id} has not been assigned this order", uid),
-            '/artisan'
-        )
+
+        # check if customer has confirmed job
+        if not bk.details_confirmed:
+            logger.error(InvalidBookingTransaction(
+                f"{messages.BOOKING_NOT_CONFIRMED}"
+            ))
+            emit(
+                'error',
+                error_response(messages.BOOKING_NOT_CONFIRMED, uid)
+            )
+            return
+
+        # initiate job
+        if bk.artisan.artisan_id == artisan.artisan_id:
+            try:
+                if not bk.status == BookingStatusEnum.IN_PROGRESS:
+                    bk.start_booking(sess)
+                    try:
+                        sess.commit()
+                        payload = {
+                            'payload': messages.JOB_STARTED,
+                            'recipient': redis_4.hget(
+                                'booking_id_to_uid',
+                                data['booking_id']
+                            )
+                        }
+                        send_event(
+                            'job_started',
+                            payload,
+                            '/customer'
+                        )
+                        # send clock-in event
+                        payload = {
+                            'payload': messages.ARTISAN_CLOCKED_IN,
+                            'recipient': redis_4.hget(
+                                'booking_id_to_uid',
+                                data['booking_id']
+                            )
+                        }
+                        send_event(
+                            'artisan_clocked_in',
+                            payload,
+                            '/customer'
+                        )
+                    except Exception as e:
+                        logger.exception(e)
+                        db.session.rollback()
+                        send_event(
+                            'error',
+                            error_response(messages.INTERNAL_SERVER_ERROR, uid),
+                            '/artisan'
+                        )
+                        raise e
+                    finally:
+                        db.session.close()
+            except Exception as e:
+                logger.exception(e)
+                send_event(
+                    'error',
+                    error_response(messages.INTERNAL_SERVER_ERROR, uid),
+                    '/artisan'
+                )
+                return
+        else:
+            logger.error(InvalidBookingTransaction(
+                f"Artisan with id {artisan.artisan_id} has not been assigned this order"
+            ))
+            emit(
+                'error',
+                error_response(
+                    f"Artisan with id {artisan.artisan_id} has "
+                    "not been assigned this order",
+                    uid
+                ),
+            )
 
 
 @socketio.on('job_completed', namespace='/artisan')
@@ -516,10 +561,9 @@ def handle_job_end(uid, data):
         # redis_4.hdel('artisan_to_booking_id', uid)
     except Exception as e:
         logger.exception(e)
-        send_event(
+        emit(
             'error',
-            error_response(messages.INTERNAL_SERVER_ERROR, uid),
-            '/artisan'
+            error_response(messages.INTERNAL_SERVER_ERROR, uid)
         )
         return
 
@@ -535,10 +579,9 @@ def customer_approval(uid, data):
     except Exception as e:
         logger.error(messages.SCHEMA_ERROR)
         logger.error(e)
-        send_event(
+        emit(
             'error',
-            error_response(e.messages, uid),
-            '/artisan'
+            error_response(e.messages, uid)
         )
         return
 
@@ -553,11 +596,69 @@ def customer_approval(uid, data):
     send_event('approve_booking_details', payload, '/customer')
 
 
-@socketio.on('msg', namespace='/chat')
+@socketio.on('message', namespace='/chat')
 @parse_event_data
 @valid_auth_required
 def send_chat_msg(uid, data):
     """sends message to chat room"""
     msg = data['msg']
     room = data['booking_id']
-    socketio.emit('msg', msg, to=room, namespace='/chat')
+    socketio.send(msg, to=room, namespace='/chat')
+
+
+@socketio.on('clock_in', namespace='/artisan')
+@parse_event_data
+@valid_auth_required
+def clock_in(uid, data):
+    with db.session() as sess:
+        bk = Booking.query.get(data['booking_id'])
+        if bk.status != BookingStatusEnum.IN_PROGRESS:
+            emit(
+                'error',
+                error_response(messages.INVALID_CLOCK_IN_ATTEMPT, uid)
+            )
+            return
+        bk.add_clock_event(sess)
+
+        # signal customer
+        payload = {
+            'payload': messages.ARTISAN_CLOCKED_IN,
+            'recipient': redis_4.hget(
+                'booking_id_to_uid',
+                data['booking_id']
+            )
+        }
+        send_event(
+            'artisan_clock_in',
+            payload,
+            '/customer'
+        )
+
+
+@socketio.on('clock_out', namespace='/artisan')
+@parse_event_data
+@valid_auth_required
+def clock_out(uid, data):
+    with db.session() as sess:
+        bk = Booking.query.get(data['booking_id'])
+        if bk.status != BookingStatusEnum.IN_PROGRESS:
+            emit(
+                'error',
+                error_response(messages.INVALID_CLOCK_OUT_ATTEMPT, uid)
+            )
+            return
+        bk.add_clock_event(sess, clock_in=False)
+
+        # signal customer
+        payload = {
+            'payload': messages.ARTISAN_CLOCKED_OUT,
+            'recipient': redis_4.hget(
+                'booking_id_to_uid',
+                data['booking_id']
+            )
+        }
+        send_event(
+            'artisan_clock_out',
+            payload,
+            '/customer'
+        )

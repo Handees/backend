@@ -7,6 +7,8 @@ BOOKING_UNAVAILABLE = "booking no longer available or not found"
 ARTISAN_ARRIVES = "artisan has reached client location"
 JOB_STARTED = "new job initiated successfully"
 JOB_COMPLETED = "job completed"
+ARTISAN_CLOCKED_IN = "Artisan clocked in, for work for the day!"
+ARTISAN_CLOCKED_OUT = "Artisan clocked out, of work for the day!"
 UPDATED_JOB_TYPE = "job type updated successfully"
 INTERNAL_SERVER_ERROR = "Omo:: 😬an error occured from the backend while trying to perform this task"
 SCHEMA_ERROR = 'DataValidationError🤡: Client done screwed up check the data you sent abeg'
@@ -19,6 +21,11 @@ BOOKING_DETAILS_ALREADY_CONFIRMED = 'customer has already confirmed this booking
 
 INVALID_A_CANCEL_OFFER = "You can't cancel an offer that was never assigned to you - 🤡"
 INVALID_C_CANCEL_OFFER = "You can't cancel a booking that you didn't request - 🤡"
+
+INVALID_CLOCK_IN_ATTEMPT = "You can't clock in an offer with invalid status"
+INVALID_CLOCK_OUT_ATTEMPT = "You can't clock out an offer with invalid status"
+
+ARTISAN_NOT_MATCHED_TO_BOOKING = "Forbidden! You can't take action on booking you weren't matched to"
 
 
 def dynamic_msg(msg: str, val):

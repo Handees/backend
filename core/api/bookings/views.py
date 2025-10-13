@@ -4,7 +4,7 @@ from flask import request, render_template
 from loguru import logger
 
 from models.bookings import (
-    Booking, BookingCategory,
+    Booking, BookingCategory, BookingStatusEnum
 )
 from schemas import (
     BookingSchema,
@@ -57,6 +57,7 @@ def create_booking(current_user):
             )
 
         new_order.booking_id = uuid4().hex
+        new_order.status = BookingStatusEnum.PENDING
         category = BookingCategory.get_by_name(data['job_category'])
 
         if not category:

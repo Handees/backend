@@ -101,6 +101,7 @@ class Wallet(BaseModelPR, TimestampMixin, db.Model):
         db.String, db.ForeignKey('artisan.artisan_id'),
         nullable=False
     )
+    is_activated = db.Column(db.Boolean, server_default="false")
 
 
 class WalletTransactionEnum(SerializableEnum):

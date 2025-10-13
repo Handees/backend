@@ -66,6 +66,12 @@ def connect(auth):
     logger.debug('new customer {} client connection!'.format(request.sid))
 
 
+@socketio.on('connect', namespace='/chat')
+@auth_param_required
+def enter_chat_namespace(data):
+    emit('message', 'welcome to chat')
+
+
 @socketio.on('disconnect', namespace='/customer')
 def disconnect():
     if redis_4.exists(request.sid):
@@ -151,13 +157,13 @@ def cancel_offer(uid, data):
     redis_7.delete(room)
 
 
-@socketio.on('msg', namespace='/chat')
+@socketio.on('message', namespace='/chat')
 @parse_event_data
 def send_chat_msg(data):
     """sends message to chat room"""
     msg = data['msg']
     room = data['booking_id']
-    socketio.emit('msg', msg, to=room, namespace='/chat')
+    socketio.send(msg, to=room, namespace='/chat')
 
 
 @socketio.on('test', namespace='/customer')

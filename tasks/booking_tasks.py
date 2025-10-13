@@ -92,6 +92,7 @@ def assign_artisan_to_booking(data):
             )
 
             booking.artisan = artisan
+            booking.status = BookingStatusEnum.ARTISAN_MATCHED
             redis_4.hset(
                 'booking_id_to_artisan',
                 mapping={booking.booking_id: artisan.user_id}
@@ -148,21 +149,11 @@ def update_booking_status(data):
 
         try:
             db.session.commit()
-            resp = BookingSchema().dump(bk)
         except Exception as e:
             logger.exception(e)
             db.session.rollback()
         finally:
             db.session.close()
-
-        if data['status'] not in [
-            BookingStatusEnum.ARTISAN_CANCELLED,
-            BookingStatusEnum.CUSTOMER_CANCELLED
-        ]:
-            redis_.set(
-                data['booking_id'],
-                str(resp)
-            )
 
 
 @huey.task()

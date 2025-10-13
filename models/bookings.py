@@ -1,5 +1,7 @@
 import os
 
+import datetime
+from sqlalchemy import select, and_
 from dotenv import load_dotenv
 from geoalchemy2 import Geometry
 from datetime import datetime as dt
@@ -30,11 +32,13 @@ categories = [
 
 
 class BookingStatusEnum(SerializableEnum):
-    IN_PROGRESS = 16
-    COMPLETED = 8
-    ARTISAN_CANCELLED = 4
-    CUSTOMER_CANCELLED = 2
-    ARTISAN_ARRIVED = 1
+    PENDING = 1
+    ARTISAN_MATCHED = 2
+    ARTISAN_ARRIVED = 4
+    IN_PROGRESS = 8
+    COMPLETED = 16
+    ARTISAN_CANCELLED = 32
+    CUSTOMER_CANCELLED = 64
 
 
 class SettlementEnum(SerializableEnum):
@@ -52,9 +56,49 @@ class BookingPaymentMethod(SerializableEnum):
     CARD = 2
 
 
+class BookingWorkDayEnum(SerializableEnum):
+    MONDAY = 1
+    TUESDAY = 2
+    WEDNESDAY = 4
+    THURSDAY = 8
+    FRIDAY = 16
+    SATURDAY = 32
+    SUNDAY = 64
+
+
+class BookingClockEventTypeEnum(SerializableEnum):
+    CLOCK_IN = 1
+    CLOCK_OUT = 2
+
+
+class BookingWorkDay(BaseModelPR, TimestampMixin, db.Model):
+    __tablename__ = 'booking_workday'
+    contract_id = db.Column(
+        db.Integer(),
+        db.ForeignKey('booking_contract.id'),
+        nullable=True
+    )
+    booking_id = db.Column(db.String, db.ForeignKey('booking.booking_id'))
+    name = db.Column(db.Enum(BookingWorkDayEnum), nullable=False)
+    date = db.Column(db.Date)
+
+
+class BookingClockEvent(BaseModelPR, TimestampMixin, db.Model):
+    working_day_id = db.Column(
+        db.Integer,
+        db.ForeignKey('booking_workday.id'),
+        nullable=False
+    )
+    event_type = db.Column(db.Enum(BookingClockEventTypeEnum), nullable=False)
+
+
 class BookingContract(TimestampMixin, BaseModelPR, db.Model):
     booking_id = db.Column(db.String, db.ForeignKey('booking.booking_id'))
-    start_time = db.Column(db.Date, nullable=False, default=dt.utcnow())
+    start_time = db.Column(
+        db.Date,
+        nullable=False,
+        default=dt.now(datetime.timezone.utc)
+    )
     end_time = db.Column(db.Date)
     duration = db.Column(db.Integer, nullable=False)
     duration_unit = db.Column(db.Enum(
@@ -169,3 +213,55 @@ class Booking(TimestampMixin, db.Model):
             res = self.artisan.hourly_rate * hrs_spent
 
         return res
+
+    def start_booking(self, sess):
+        self.status = BookingStatusEnum.IN_PROGRESS
+        current_day = dt.now(datetime.timezone.utc)
+        dow = current_day.strftime("%A")
+        new_work_day = BookingWorkDay(
+            name=BookingWorkDayEnum[dow.upper()],
+            date=current_day.date()
+        )
+        if self.contract_type:
+            contract = self.booking_contract
+            new_work_day.contract_id = contract.id
+
+        sess.add(new_work_day)
+        sess.flush()
+        clock_in = BookingClockEvent(
+            working_day_id=new_work_day.id,
+            event_type=BookingClockEventTypeEnum.CLOCK_IN
+        )
+        sess.add(clock_in)
+        sess.flush()
+
+    def add_clock_event(self, sess, clock_in=True):
+        current_day = dt.now(datetime.timezone.utc)
+        dow = current_day.strftime("%A")
+        # find if working day already exists
+        stmt = select(BookingWorkDay).where(
+            and_(
+                BookingWorkDay.date == current_day.date(),
+                BookingWorkDay.booking_id == self.booking_id
+            )
+        )
+        working_day = sess.scalar(stmt)
+        if not working_day:
+            working_day = BookingWorkDay(
+                name=BookingWorkDayEnum[dow.upper()],
+                date=current_day.date()
+            )
+            if self.contract_type:
+                working_day.contract_id = self.booking_contract.id
+            sess.flush()
+        # add clock-in
+        clock_in = BookingClockEvent(
+            working_day_id=working_day.id
+        )
+        if clock_in:
+            clock_in.event_type = BookingClockEventTypeEnum.CLOCK_IN
+        else:
+            clock_in.event_type = BookingClockEventTypeEnum.CLOCK_OUT
+
+        sess.add(clock_in)
+        sess.flush()
