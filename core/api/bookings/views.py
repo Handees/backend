@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import select, and_
 from flask import request, render_template
 from loguru import logger
 
@@ -9,7 +10,8 @@ from models.bookings import (
 from schemas import (
     BookingSchema,
     UserSchema,
-    BlobSchema
+    BlobSchema,
+    BookingWorkDaySchema
 )
 from models.user_models import Permission
 from uuid import uuid4
@@ -154,6 +156,38 @@ def delete_booking(current_user, booking_id):
     msg = f'Deleted booking with id {booking_id}'
 
     return gen_response(200, message=msg)
+
+
+@bookings.get('/<booking_id>/workingdays')
+@login_required
+@permission_required(Permission.service_request)
+def list_clocks(current_user, booking_id):
+    with db.session() as sess:
+        stmt = select(Booking).where(
+            and_(
+                Booking.customer_id == current_user.user_id,
+                Booking.booking_id == booking_id
+            )
+        )
+        bk = sess.scalar(stmt)
+        if not bk:
+            return error_response(
+                404,
+                "Booking not found, or you didn't request this originally"
+            )
+
+        schema = BookingWorkDaySchema(
+            many=True,
+            only=(
+                'booking_id', 'work_sessions', 'id',
+                'name', 'date',
+            )
+        )
+        working_days = bk.working_days
+        return gen_response(
+            200,
+            data=schema.dump(working_days)
+        )
 
 
 @bookings.route('/see')

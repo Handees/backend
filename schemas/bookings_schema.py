@@ -10,7 +10,9 @@ from core import (
 from models.bookings import (
     Booking,
     BookingContractDurationEnum,
-    BookingPaymentMethod
+    BookingPaymentMethod,
+    BookingWorkSession,
+    BookingWorkDay
 )
 from marshmallow import (
     pre_load,
@@ -160,3 +162,24 @@ class BookingStartSchema(ma.Schema):
                 elif 'amount' in data['settlement'] and not (data['settlement']['amount'] > 500):
                     raise DataValidationError("Invalid settlement amount passed")
         return data
+
+
+class BookingWorkDaySchema(BaseSQLAlchemyAutoSchema):
+    class Meta:
+        model = BookingWorkDay
+        include_fk = True
+        include_relationships = True
+        load_instance = True
+        sqla_session = db.session
+
+    work_sessions = fields.Nested(
+        'BookingWorkSessionSchema',
+        only=('clock_in', 'clock_out',),
+        many=True
+    )
+
+
+class BookingWorkSessionSchema(BaseSQLAlchemyAutoSchema):
+    class Meta:
+        model = BookingWorkSession
+        include_fk = True

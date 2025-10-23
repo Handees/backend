@@ -411,6 +411,18 @@ def cancel_offer_artisan(uid, data):
 def handle_location_arrival(uid, data):
     """ triggered when artisan arrives at location """
     room = data['booking_id']
+    bk = Booking.query.get(data['booking_id'])
+
+    if bk.status != BookingStatusEnum.PENDING:
+        emit(
+            'error',
+            error_response(
+                "Invalid action: Cannot carry out",
+                " action on booking at this stage",
+                uid
+            )
+        )
+        return
 
     matched_artisan = redis_4.hget('booking_id_to_artisan', room)
     current_artisan = Artisan.get_by_user_id(uid)
@@ -458,6 +470,16 @@ def handle_job_begin(uid, data):
     with db.session() as sess:
         artisan = Artisan.get_by_user_id(uid)
         bk = Booking.query.get(data['booking_id'])
+        if bk.status != BookingStatusEnum.ARTISAN_ARRIVED:
+            emit(
+                'error',
+                error_response(
+                    "Invalid action: Cannot carry out",
+                    " action on booking at this stage",
+                    uid
+                )
+            )
+            return
 
         room = data['booking_id']
 
@@ -585,6 +607,16 @@ def customer_approval(uid, data):
         )
         return
 
+    room = data['booking_id']
+    matched_artisan = redis_4.hget('booking_id_to_artisan', room)
+    current_artisan = Artisan.get_by_user_id(uid)
+    if matched_artisan != current_artisan.user_id:
+        emit(
+            'error',
+            error_response(messages.ARTISAN_NOT_MATCHED_TO_BOOKING, uid)
+        )
+        return
+
     # inform customer
     payload = {
         'payload': data,
@@ -618,7 +650,28 @@ def clock_in(uid, data):
                 error_response(messages.INVALID_CLOCK_IN_ATTEMPT, uid)
             )
             return
+        room = data['booking_id']
+        matched_artisan = redis_4.hget('booking_id_to_artisan', room)
+        current_artisan = Artisan.get_by_user_id(uid)
+        if matched_artisan != current_artisan.user_id:
+            emit(
+                'error',
+                error_response(messages.ARTISAN_NOT_MATCHED_TO_BOOKING, uid)
+            )
+            return
+        if bk.clock_in_flag:
+            emit(
+                'error',
+                error_response(
+                    "Invalid action: Already clocked! "
+                    "Clock-out first",
+                    uid
+                )
+            )
+            return
         bk.add_clock_event(sess)
+        bk.clock_in_flag = True
+        sess.commit()
 
         # signal customer
         payload = {
@@ -647,8 +700,28 @@ def clock_out(uid, data):
                 error_response(messages.INVALID_CLOCK_OUT_ATTEMPT, uid)
             )
             return
+        room = data['booking_id']
+        matched_artisan = redis_4.hget('booking_id_to_artisan', room)
+        current_artisan = Artisan.get_by_user_id(uid)
+        if matched_artisan != current_artisan.user_id:
+            emit(
+                'error',
+                error_response(messages.ARTISAN_NOT_MATCHED_TO_BOOKING, uid)
+            )
+            return
+        if not bk.clock_in_flag:
+            emit(
+                'error',
+                error_response(
+                    "Invalid action: Can't clock out without "
+                    "first clocking in",
+                    uid
+                )
+            )
+            return
         bk.add_clock_event(sess, clock_in=False)
-
+        bk.clock_in_flag = False
+        sess.commit()
         # signal customer
         payload = {
             'payload': messages.ARTISAN_CLOCKED_OUT,

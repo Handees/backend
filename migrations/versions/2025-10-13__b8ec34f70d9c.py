@@ -51,25 +51,29 @@ def upgrade():
     """))
 
     op.create_table('booking_workday',
-    sa.Column('contract_id', sa.Integer(), nullable=True),
-    sa.Column('booking_id', sa.String(), nullable=True),
-    sa.Column('name', sa.Enum('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY', name='bookingworkdayenum'), nullable=False),
-    sa.Column('date', sa.Date(), nullable=True),
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['booking_id'], ['booking.booking_id'], ),
-    sa.ForeignKeyConstraint(['contract_id'], ['booking_contract.id'], ),
-    sa.PrimaryKeyConstraint('id')
+        sa.Column('contract_id', sa.Integer(), nullable=True),
+        sa.Column('booking_id', sa.String(), nullable=True),
+        sa.Column('name', sa.Enum('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY', name='bookingworkdayenum'), nullable=False),
+        sa.Column('date', sa.Date(), nullable=True),
+        sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(['booking_id'], ['booking.booking_id'], ),
+        sa.ForeignKeyConstraint(['contract_id'], ['booking_contract.id'], ),
+        sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('booking_clock_event',
-    sa.Column('working_day_id', sa.Integer(), nullable=False),
-    sa.Column('event_type', sa.Enum('CLOCK_IN', 'CLOCK_OUT', name='bookingclockeventtypeenum'), nullable=False),
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['working_day_id'], ['booking_workday.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    op.create_table('booking_work_session',
+        sa.Column('working_day_id', sa.Integer(), nullable=False),
+        sa.Column('clock_in', sa.DateTime(), nullable=True),
+        sa.Column('clock_out', sa.DateTime(), nullable=True),
+        sa.Column('booking_id', sa.String(), nullable=False),
+        # sa.Column('event_type', sa.Enum('CLOCK_IN', 'CLOCK_OUT', name='bookingclockeventtypeenum'), nullable=False),
+        sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(['working_day_id'], ['booking_workday.id'], ),
+        sa.ForeignKeyConstraint(['booking_id'], ['booking.booking_id'], ),
+        sa.PrimaryKeyConstraint('id')
     )
 
     with op.batch_alter_table('wallet', schema=None) as batch_op:
@@ -80,6 +84,28 @@ def upgrade():
             )
         )
 
+    with op.batch_alter_table('booking', schema=None) as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                'clock_in_flag', sa.Boolean(),
+                nullable=True, server_default='false'
+            )
+        )
+        batch_op.add_column(
+            sa.Column(
+                'current_work_session_id',
+                sa.Integer(),
+                nullable=True
+            )
+        )
+    op.execute(
+        """
+        ALTER TABLE booking
+        ADD CONSTRAINT fk_current_work_session_id
+        FOREIGN KEY (current_work_session_id)
+        REFERENCES booking_work_session (id);
+        """
+    )
     # ### end Alembic commands ###
 
 
@@ -99,14 +125,20 @@ def downgrade():
         SET status = CASE
             WHEN status::text = 'IN_PROGRESS' THEN '{old_enum_values[0]}'::{old_enum_name}
             WHEN status::text = 'COMPLETED' THEN '{old_enum_values[1]}'::{old_enum_name}
+            WHEN status::text = 'PENDING' THEN NULL
             ELSE status
         END
     """))
 
     with op.batch_alter_table('wallet', schema=None) as batch_op:
         batch_op.drop_column('is_activated')
-    op.drop_table('booking_clock_event')
+
+    with op.batch_alter_table('booking', schema=None) as batch_op:
+        batch_op.drop_column('clock_in_flag')
+        batch_op.drop_constraint('fk_current_work_session_id')
+        batch_op.drop_column('current_work_session_id')
+
+    op.drop_table('booking_work_session')
     op.drop_table('booking_workday')
     op.execute("DROP TYPE bookingworkdayenum")
-    op.execute("DROP TYPE bookingclockeventtypeenum")
     # ### end Alembic commands ###

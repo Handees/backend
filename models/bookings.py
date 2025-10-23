@@ -78,18 +78,32 @@ class BookingWorkDay(BaseModelPR, TimestampMixin, db.Model):
         db.ForeignKey('booking_contract.id'),
         nullable=True
     )
-    booking_id = db.Column(db.String, db.ForeignKey('booking.booking_id'))
+    booking_id = db.Column(
+        db.String,
+        db.ForeignKey('booking.booking_id'),
+        nullable=False
+    )
     name = db.Column(db.Enum(BookingWorkDayEnum), nullable=False)
     date = db.Column(db.Date)
+    work_sessions = db.relationship(
+        'BookingWorkSession',
+        backref='booking_work_day'
+    )
 
 
-class BookingClockEvent(BaseModelPR, TimestampMixin, db.Model):
+class BookingWorkSession(BaseModelPR, TimestampMixin, db.Model):
     working_day_id = db.Column(
         db.Integer,
         db.ForeignKey('booking_workday.id'),
         nullable=False
     )
-    event_type = db.Column(db.Enum(BookingClockEventTypeEnum), nullable=False)
+    booking_id = db.Column(
+        db.String,
+        db.ForeignKey('booking.booking_id'),
+        nullable=False
+    )
+    clock_in = db.Column(db.DateTime)
+    clock_out = db.Column(db.DateTime)
 
 
 class BookingContract(TimestampMixin, BaseModelPR, db.Model):
@@ -143,7 +157,6 @@ class BookingCategory(BaseModelPR, db.Model):
 
 class Booking(TimestampMixin, db.Model):
     # TODO: Implement activity track/logs
-
     # Table Columns
     booking_id = db.Column(db.String, primary_key=True, unique=True)
     customer_id = db.Column(
@@ -183,12 +196,21 @@ class Booking(TimestampMixin, db.Model):
         db.Enum(BookingPaymentMethod),
         index=True
     )
+    clock_in_flag = db.Column(
+        db.Boolean, server_default='false',
+        default=False
+    )
     booking_contract = db.relationship(
         'BookingContract',
         backref='booking',
         uselist=False
     )
+    current_work_session_id = db.Column(
+        db.Integer,
+        db.ForeignKey('booking_work_session.id')
+    )
     images = db.relationship('Blob', backref='booking')
+    working_days = db.relationship('BookingWorkDay', backref='booking')
 
     def update_start_time(self):
         self.start_time = dt.utcnow()
@@ -228,12 +250,14 @@ class Booking(TimestampMixin, db.Model):
 
         sess.add(new_work_day)
         sess.flush()
-        clock_in = BookingClockEvent(
+        clock = BookingWorkSession(
             working_day_id=new_work_day.id,
-            event_type=BookingClockEventTypeEnum.CLOCK_IN
+            clock_in=current_day,
+            booking_id=self.booking_id
         )
-        sess.add(clock_in)
+        sess.add(clock)
         sess.flush()
+        self.current_work_session_id = clock.id
 
     def add_clock_event(self, sess, clock_in=True):
         current_day = dt.now(datetime.timezone.utc)
@@ -249,19 +273,32 @@ class Booking(TimestampMixin, db.Model):
         if not working_day:
             working_day = BookingWorkDay(
                 name=BookingWorkDayEnum[dow.upper()],
-                date=current_day.date()
+                date=current_day.date(),
+                booking_id=self.booking_id
             )
             if self.contract_type:
                 working_day.contract_id = self.booking_contract.id
+            sess.add(working_day)
             sess.flush()
-        # add clock-in
-        clock_in = BookingClockEvent(
-            working_day_id=working_day.id
-        )
-        if clock_in:
-            clock_in.event_type = BookingClockEventTypeEnum.CLOCK_IN
-        else:
-            clock_in.event_type = BookingClockEventTypeEnum.CLOCK_OUT
 
-        sess.add(clock_in)
+        # add clock-in
+        if clock_in:
+            clock = BookingWorkSession(
+                working_day_id=working_day.id,
+                booking_id=self.booking_id,
+                clock_in=current_day
+            )
+            sess.add(clock)
+            sess.flush()
+            self.current_work_session_id = clock.id
+        else:
+            self.current_work_session(sess).clock_out = current_day
+
         sess.flush()
+
+    def current_work_session(self, sess):
+        return sess.scalar(
+            select(BookingWorkSession).where(
+                BookingWorkSession.id == self.current_work_session_id
+            )
+        )

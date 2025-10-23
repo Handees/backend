@@ -4,7 +4,9 @@ from .bookings_schema import (
     BookingSchema,
     BookingSettlementSchema,
     BookingStartSchema,
-    CancelBookingSchema
+    CancelBookingSchema,
+    BookingWorkSessionSchema,
+    BookingWorkDaySchema
 )
 from .payment import (
     CardAuthSchema,
