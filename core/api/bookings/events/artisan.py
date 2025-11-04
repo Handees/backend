@@ -413,11 +413,11 @@ def handle_location_arrival(uid, data):
     room = data['booking_id']
     bk = Booking.query.get(data['booking_id'])
 
-    if bk.status != BookingStatusEnum.PENDING:
+    if bk.status != BookingStatusEnum.ARTISAN_MATCHED:
         emit(
             'error',
             error_response(
-                "Invalid action: Cannot carry out",
+                "Invalid action: Cannot carry out"
                 " action on booking at this stage",
                 uid
             )
@@ -601,21 +601,29 @@ def customer_approval(uid, data):
     except Exception as e:
         logger.error(messages.SCHEMA_ERROR)
         logger.error(e)
+        resp = error_response(e.messages, uid)
         emit(
             'error',
-            error_response(e.messages, uid)
+            resp
         )
-        return
+        return {
+            'status': 'error',
+            'message': messages.SCHEMA_ERROR
+        }
 
     room = data['booking_id']
     matched_artisan = redis_4.hget('booking_id_to_artisan', room)
     current_artisan = Artisan.get_by_user_id(uid)
     if matched_artisan != current_artisan.user_id:
+        res = error_response(messages.ARTISAN_NOT_MATCHED_TO_BOOKING, uid)
         emit(
             'error',
-            error_response(messages.ARTISAN_NOT_MATCHED_TO_BOOKING, uid)
+            res
         )
-        return
+        return {
+            'status': 'error',
+            'message': messages.ARTISAN_NOT_MATCHED_TO_BOOKING
+        }
 
     # inform customer
     payload = {
@@ -626,6 +634,11 @@ def customer_approval(uid, data):
         )
     }
     send_event('approve_booking_details', payload, '/customer')
+
+    return {
+        'status': 'ok',
+        'message': 'Sent approval request successfully!'
+    }
 
 
 @socketio.on('message', namespace='/chat')
