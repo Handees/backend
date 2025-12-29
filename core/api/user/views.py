@@ -123,6 +123,21 @@ def view_cards(current_user):
         many=True
     )
 
+
+@user.post('/app_token')
+@login_required
+def add_app_token(current_user):
+    payload = request.get_json(force=True)
+    if 'app_token' not in payload:
+        return error_response(
+            400,
+            'Missing required field "app_token"'
+        )
+    with db.session() as sess:
+        current_user.mobile_app_registration_token = payload['app_token']
+        sess.commit()
+    return gen_response(200, 'Added token successfully!')
+
 # @user.get('/<uid>')
 # def check_uid(uid):
 #     """ checks if uid exists """

@@ -116,6 +116,7 @@ class User(TimestampMixin, db.Model):
     address = db.Column(db.String(500))
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     profile_picture = db.Column(db.String())
+    mobile_app_registration_token = db.Column(db.String())
     artisan_profile = db.relationship(
         'Artisan',
         backref='user_profile',

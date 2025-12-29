@@ -16,6 +16,11 @@ logging.basicConfig(level=logging.DEBUG)
 redis_pass = os.getenv('REDIS_PASS')
 redis_port = os.getenv('REDIS_PORT', 6378)
 
+IMPORTANT_NOTIFICATIONS = [
+    'approve_booking_details',
+    'job_completed',
+]
+
 
 def exp_backoff_task(retries, retry_backoff):
     def deco(fn):
