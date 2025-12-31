@@ -7,6 +7,7 @@ from flask import (
     session
 )
 from loguru import logger
+from firebase_admin import messaging
 from flask_socketio import (
     emit,
     join_room,
@@ -15,7 +16,7 @@ from flask_socketio import (
 from dotenv import load_dotenv
 
 from utils import (
-    LOG_FORMAT, _level
+    LOG_FORMAT, _level, send_notification
 )
 from models import (
     Artisan,
@@ -244,6 +245,14 @@ def update_location(uid, data):
             data,
             to=room,
             namespace='/artisan'
+        )
+        notification_payload = {
+            k: json.dumps(v) for k, v in data.items()
+        }
+        fcm_token = redis_4.hget("user_to_fcm_token", uid)
+        send_notification(
+            notification_payload,
+            fcm_token
         )
 
     psub.subscribe(**{geo_fence_key: handle_updates})

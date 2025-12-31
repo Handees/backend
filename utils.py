@@ -10,6 +10,7 @@ import subprocess
 from loguru import logger
 from flask import jsonify
 from google.cloud import storage
+from firebase_admin import messaging
 from google.oauth2 import service_account
 from werkzeug.http import HTTP_STATUS_CODES
 
@@ -321,19 +322,34 @@ def decode_file_id(encoded_id: str):
     return user_id_int, decoded_blob_type, decoded_hash_hex
 
 
+def send_notification(data, token, app=None):
+    print("FCM TOKEN IS::", token)
+    print("Input data", data)
+    push_notification = messaging.Message(
+        data=data,
+        token=token
+    )
+    response = messaging.send(
+        push_notification,
+        app=app
+    )
+    return response
+
+
 # --- Example Usage ---
-my_number = 1000000000
-encoded_number = base62_encode(my_number)
-print(f"Original Number: {my_number}")
-print(f"Base62 Encoded:  {encoded_number}")
+# my_number = 1000000000
+# encoded_number = base62_encode(my_number)
+# print(f"Original Number: {my_number}")
+# print(f"Base62 Encoded:  {encoded_number}")
 
 # res = generate_unique_file_id()
-x = generate_unique_file_id(
-    2,
-    "cat.png",
-    2
-)
-print(x)
+# x = generate_unique_file_id(
+#     2,
+#     "cat.png",
+#     2
+# )
+# print(x)
+
 
 # def load_env(client, environment, gpair):
 #     from google_crc32c import Checksum

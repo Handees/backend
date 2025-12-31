@@ -7,9 +7,9 @@ import firebase_admin
 from loguru import logger
 from dotenv import load_dotenv
 
+from utils import send_notification
 from add_extensions import redis_4
 from .booking_tasks import huey
-from firebase_admin import messaging
 from core.exc import ClientNotConnected
 
 load_dotenv()
@@ -20,7 +20,7 @@ redis_pass = os.getenv('REDIS_PASS')
 redis_port = os.getenv('REDIS_PORT', 6378)
 
 IMPORTANT_NOTIFICATIONS = [
-    'approve_booking_details',
+    'approve_booking_details', 'new_offer',
     'job_completed',
     'booking_offer_accepted',
     'offer_cancelled',
@@ -95,18 +95,11 @@ def send_event(event, data, namespace):
         to=user_sid,
         namespace=namespace
     )
+    print(f"SOCKET EMIT RESPONSE {resp}")
     if event in IMPORTANT_NOTIFICATIONS:
-        notification_payload = {k: json.dumps(v) for k, v in data['payload'].items()}
+        notification_payload = {
+            k: json.dumps(v) for k, v in data['payload'].items()
+        }
         fcm_token = redis_4.hget("user_to_fcm_token", data['recipient'])
-        print("FCM TOKEN IS::", fcm_token)
-        print("Input data", notification_payload)
-        # try:
-        push_notification = messaging.Message(
-            data=notification_payload,
-            token=fcm_token
-        )
-        response = messaging.send(
-            push_notification,
-            app=app_instance
-        )
-        logger.error(f"Sent push notification request, with resp: {response}")
+        res = send_notification(notification_payload, fcm_token, app_instance)
+        logger.error(f"Sent push notification request, with resp: {res}")

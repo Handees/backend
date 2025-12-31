@@ -32,7 +32,6 @@ deprecated
     # via redis
 dnspython
     # via eventlet
-eventlet
     # via -r requirements.in
 firebase-admin
     # via -r requirements.in
@@ -61,6 +60,7 @@ flask-sqlalchemy
     # via
     #   -r requirements.in
     #   flask-migrate
+gevent
 geoalchemy2
     # via -r requirements.in
 google-api-core[grpc]==2.11.0
