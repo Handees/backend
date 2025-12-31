@@ -1,5 +1,8 @@
 # flake8: noqa
 
+from gevent import monkey
+monkey.patch_all()
+
 import unittest
 from core import create_app
 from models.bookings import (

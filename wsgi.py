@@ -1,6 +1,6 @@
 # flake8: noqa
-import eventlet
-eventlet.monkey_patch()
+from gevent import monkey
+monkey.patch_all()
 
 from json import load
 from core import create_app, socketio, db

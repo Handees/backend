@@ -1,6 +1,6 @@
 # flake8: noqa F403
-import eventlet
-eventlet.monkey_patch() # https://stackoverflow.com/questions/63026435/maximum-recursion-depth-exceeded-on-sslcontext-eventlet-flask-flask-socketio
+from gevent import monkey
+monkey.patch_all() # https://stackoverflow.com/questions/63026435/maximum-recursion-depth-exceeded-on-sslcontext-eventlet-flask-flask-socketio
 
 from flask import Flask
 # from werkzeug.middleware.profiler import ProfilerMiddleware

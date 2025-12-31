@@ -1,4 +1,3 @@
-# from redis import StrictRedis
 import os
 from typing import Optional, Dict
 

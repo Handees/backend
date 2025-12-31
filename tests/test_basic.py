@@ -1,3 +1,8 @@
+# flake8: noqa
+
+from gevent import monkey
+monkey.patch_all()
+
 from flask import current_app
 from tests.base import BaseTestMixin
 

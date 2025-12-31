@@ -23,7 +23,7 @@ socketio: SocketIO = SocketIO(
         'https://www.piesocket.com',
         'http://127.0.0.1:5501'
     ],
-    async_mode='eventlet',
+    async_mode='gevent',
     message_queue=f"redis://:{redis_pass}@{os.getenv('REDIS_HOST')}:{redis_port}/7",
     logger=True,
     engineio_logger=True

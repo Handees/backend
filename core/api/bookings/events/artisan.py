@@ -2,7 +2,6 @@ import os
 import sys
 import json
 
-
 from flask import (
     request,
     session
@@ -20,7 +19,8 @@ from utils import (
 )
 from models import (
     Artisan,
-    Booking
+    Booking,
+    User
 )
 from .utils import (
     error_response,
@@ -107,6 +107,7 @@ def default_error_handler(e):
 @auth_param_required
 def on_connect(auth):
     uid = verify_token(auth['access_token'])
+    user: User = User.query.filter_by(user_id=uid).first()
     if not uid:
         raise ConnectionRefusedError
     session['uid'] = uid
@@ -119,6 +120,10 @@ def on_connect(auth):
     redis_4.hset(
         "sid_to_user",
         mapping={request.sid: uid}
+    )
+    redis_4.hset(
+        "user_to_fcm_token",
+        mapping={uid: user.mobile_app_registration_token}
     )
     logger.debug('new artisan {} client connection!'.format(request.sid))
 

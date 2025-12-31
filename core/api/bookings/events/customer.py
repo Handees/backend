@@ -5,6 +5,7 @@ from add_extensions import (
     redis_4,
     redis_7
 )
+from models import User
 from models.bookings import BookingStatusEnum
 from core.api.auth.auth_helper import (
     auth_param_required,
@@ -32,6 +33,7 @@ from flask import (
 @auth_param_required
 def connect(auth):
     uid = verify_token(auth['access_token'])
+    user: User = User.query.filter_by(user_id=uid).first()
     # coords = auth['initialCoordinates']
     # lon, lat = coords['lon'], coords['lat']
     if not uid:
@@ -48,6 +50,10 @@ def connect(auth):
     redis_4.hset(
         "sid_to_user",
         mapping={request.sid: uid}
+    )
+    redis_4.hset(
+        "user_to_fcm_token",
+        mapping={uid: user.mobile_app_registration_token}
     )
     # get ghash
     # redis_2.geoadd(
