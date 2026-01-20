@@ -322,12 +322,13 @@ def decode_file_id(encoded_id: str):
     return user_id_int, decoded_blob_type, decoded_hash_hex
 
 
-def send_notification(data, token, app=None):
+def send_notification(data, token, app=None, notification_object=None):
     print("FCM TOKEN IS::", token)
     print("Input data", data)
     push_notification = messaging.Message(
         data=data,
-        token=token
+        token=token,
+        notification=messaging.Notification(**notification_object)
     )
     response = messaging.send(
         push_notification,

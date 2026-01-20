@@ -211,6 +211,7 @@ class Booking(TimestampMixin, db.Model):
     )
     images = db.relationship('Blob', backref='booking')
     working_days = db.relationship('BookingWorkDay', backref='booking')
+    chat = db.relationship('Chat', uselist=False, backref='booking')
 
     def update_start_time(self):
         self.start_time = dt.utcnow()

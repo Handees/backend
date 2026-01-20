@@ -9,3 +9,4 @@ from .documents import Document, Document_category, Blob
 from .location import Landmark, City
 from .payments import Payment, CardAuth
 from .ratings import Rating
+from .chat import Chat, ChatMessage

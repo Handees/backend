@@ -19,15 +19,44 @@ logging.basicConfig(level=logging.DEBUG)
 redis_pass = os.getenv('REDIS_PASS')
 redis_port = os.getenv('REDIS_PORT', 6378)
 
-IMPORTANT_NOTIFICATIONS = [
-    'approve_booking_details', 'new_offer',
-    'job_completed',
-    'booking_offer_accepted',
-    'offer_cancelled',
-    'artisan_arrived', 'job_details_rejected',
-    'artisan_clocked_in', 'artisan_clock_out',
-    'job_started', 'approve_booking_details'
-]
+NOTIFICATONS_MAP = {
+    'approve_booking_details': {
+        'body': 'Kindly review service request details',
+        'title': 'Approve Service Request Details'
+    },
+    'job_completed': {
+        'body': "Artisan says their done with the work 😊",
+        'title': 'Job Completed'
+    },
+    'booking_offer_accepted': {
+        'body': "Hey you've been matched with an artisan near you!",
+        'title': 'Booking Request Accepted'
+    },
+    'offer_cancelled': {
+        'body': "Service request canceled💀",
+        'title': 'Offer Has Been Canceled'
+    },
+    'artisan_arrived': {
+        'body': "Good news! You have a visitor!🔥 Your artisan has arrived",
+        'title': 'Artisan Has Arrived'
+    },
+    'job_details_rejected': {
+        'body': "Customer rejected booking details💀 - contact them!",
+        'title': 'Service Request Detail Rejected'
+    },
+    'artisan_clocked_in': {
+        'body': 'Artisan clocked in for a work session',
+        'title': 'Artisan Clocked In'
+    },
+    'artisan_clocked_out': {
+        'body': 'Artisan clocked out from a work session',
+        'title': 'Artisan Clocked Out'
+    },
+    'job_started': {
+        'body': 'Service rendering has officialy begun✅',
+        'title': 'Artisan Started Working'
+    }
+}
 
 
 def exp_backoff_task(retries, retry_backoff):
@@ -96,10 +125,15 @@ def send_event(event, data, namespace):
         namespace=namespace
     )
     print(f"SOCKET EMIT RESPONSE {resp}")
-    if event in IMPORTANT_NOTIFICATIONS:
+    if event in NOTIFICATONS_MAP:
         notification_payload = {
             k: json.dumps(v) for k, v in data['payload'].items()
         }
         fcm_token = redis_4.hget("user_to_fcm_token", data['recipient'])
-        res = send_notification(notification_payload, fcm_token, app_instance)
+        res = send_notification(
+            notification_payload,
+            fcm_token,
+            app_instance,
+            NOTIFICATONS_MAP[event]
+        )
         logger.error(f"Sent push notification request, with resp: {res}")

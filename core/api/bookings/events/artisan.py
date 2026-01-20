@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import uuid
 
 from flask import (
     request,
@@ -19,9 +20,8 @@ from utils import (
     LOG_FORMAT, _level, send_notification
 )
 from models import (
-    Artisan,
-    Booking,
-    User
+    Artisan, Booking, User,
+    ChatMessage, Chat
 )
 from .utils import (
     error_response,
@@ -80,9 +80,12 @@ matrix_client = DistanceAPIClient(
 
 
 @socketio.on('connect', namespace='/chat')
-@auth_param_required
-def enter_chat_namespace(data):
-    emit('message', 'welcome to chat')
+@valid_auth_required
+def enter_chat_namespace(uid):
+    redis_4.hset(
+        "user_to_chat_sid",
+        mapping={uid: request.sid}
+    )
 
 
 @socketio.on('join_chat', namespace='/chat')
@@ -252,7 +255,11 @@ def update_location(uid, data):
         fcm_token = redis_4.hget("user_to_fcm_token", uid)
         send_notification(
             notification_payload,
-            fcm_token
+            fcm_token,
+            notification_object={
+                'body': 'A client near you needs your service',
+                'title': 'New Service Request Alert! 🚨'
+            }
         )
 
     psub.subscribe(**{geo_fence_key: handle_updates})
@@ -656,13 +663,28 @@ def customer_approval(uid, data):
 
 
 @socketio.on('message', namespace='/chat')
-@parse_event_data
 @valid_auth_required
+@parse_event_data
 def send_chat_msg(uid, data):
     """sends message to chat room"""
-    msg = data['msg']
-    room = data['booking_id']
-    socketio.send(msg, to=room, namespace='/chat')
+    # check if chat exists in db if not create one
+    with db.session() as sess:
+        bk_id = data['booking_id']
+        new_msg = ChatMessage(**data['chat_object'])
+        sid = redis_4.hget('user_to_chat_sid', uid)
+        chat_id = redis_4.hget('booking_id_to_chat_id', bk_id)
+        if not chat_id:
+            new_chat = Chat(booking_id=bk_id)
+            sess.add(new_chat)
+            chat_id = uuid.uuid4().hex
+            new_chat.id = chat_id
+            # set in cache
+            redis_4.hset('booking_id_to_chat_id', bk_id, chat_id)
+        sess.add(new_msg)
+        sess.commit()
+        room = data['booking_id']
+        msg = json.dumps(data['chat_object'])
+        socketio.send(msg, to=room, skip_sid=sid, namespace='/chat')
 
 
 @socketio.on('clock_in', namespace='/artisan')

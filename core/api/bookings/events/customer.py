@@ -1,11 +1,14 @@
-from core import socketio
+import json
+import uuid
+
+from core import socketio, db
 from add_extensions import (
     redis_,
     redis_2,
     redis_4,
     redis_7
 )
-from models import User
+from models import User, Chat, ChatMessage
 from models.bookings import BookingStatusEnum
 from core.api.auth.auth_helper import (
     auth_param_required,
@@ -73,9 +76,12 @@ def connect(auth):
 
 
 @socketio.on('connect', namespace='/chat')
-@auth_param_required
-def enter_chat_namespace(data):
-    emit('message', 'welcome to chat')
+@valid_auth_required
+def enter_chat_namespace(uid):
+    redis_4.hset(
+        "user_to_chat_sid",
+        mapping={uid: request.sid}
+    )
 
 
 @socketio.on('disconnect', namespace='/customer')
@@ -164,12 +170,28 @@ def cancel_offer(uid, data):
 
 
 @socketio.on('message', namespace='/chat')
+@valid_auth_required
 @parse_event_data
-def send_chat_msg(data):
+def send_chat_msg(uid, data):
     """sends message to chat room"""
-    msg = data['msg']
-    room = data['booking_id']
-    socketio.send(msg, to=room, namespace='/chat')
+    # check if chat exists in db if not create one
+    with db.session() as sess:
+        bk_id = data['booking_id']
+        new_msg = ChatMessage(**data['chat_object'])
+        sid = redis_4.hget('user_to_chat_sid', uid)
+        chat_id = redis_4.hget('booking_id_to_chat_id', bk_id)
+        if not chat_id:
+            new_chat = Chat(booking_id=bk_id)
+            sess.add(new_chat)
+            chat_id = uuid.uuid4().hex
+            new_chat.id = chat_id
+            # set in cache
+            redis_4.hset('booking_id_to_chat_id', bk_id, chat_id)
+        sess.add(new_msg)
+        sess.commit()
+        room = data['booking_id']
+        msg = json.dumps(data['chat_object'])
+        socketio.send(msg, to=room, skip_sid=sid, namespace='/chat')
 
 
 @socketio.on('test', namespace='/customer')
