@@ -221,8 +221,8 @@ def update_location(uid, data):
             }
             send_event('artisan_location_update', payload, '/customer')
         else:
-            # stale record - remove!
-            redis_7.delete(bk_id)
+            # remove stale entry
+            redis_4.hdel('artisan_to_booking_id', uid)
     # reduce geohash length to 6 characters
     # subscribe user to a topic named
     # after this truncated geohash
@@ -280,6 +280,7 @@ def accept_offer(uid, data):
         # read and remove from queue
         bk_info = parse_str_data(redis_.get(room))
         redis_.delete(room)
+        redis_7.set(room, uid)
 
         # assign artisan to booking
         try:
@@ -670,6 +671,7 @@ def send_chat_msg(uid, data):
     # check if chat exists in db if not create one
     with db.session() as sess:
         bk_id = data['booking_id']
+        print(bk_id)
         new_msg = ChatMessage(**data['chat_object'])
         sid = redis_4.hget('user_to_chat_sid', uid)
         chat_id = redis_4.hget('booking_id_to_chat_id', bk_id)
