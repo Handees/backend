@@ -1,7 +1,8 @@
 import os
 import json
-import pprint
 import zlib
+import pprint
+import base64
 import datetime
 import requests
 import mimetypes
@@ -27,6 +28,7 @@ def is_serializable(obj):
 
 def load_data(user_obj, many=False):
     from schemas.bookings_schema import BookingSchema
+
     if user_obj:
         data = BookingSchema(many=many)
 
@@ -34,13 +36,11 @@ def load_data(user_obj, many=False):
 
 
 def error_response(status_code, message=None, data=None):
-    payload = {
-        'error': HTTP_STATUS_CODES.get(status_code, 'Unknown error')
-    }
+    payload = {"error": HTTP_STATUS_CODES.get(status_code, "Unknown error")}
     if message:
-        payload['message'] = message
+        payload["message"] = message
     if data:
-        payload['data'] = data
+        payload["data"] = data
     response = jsonify(payload)
     response.status_code = status_code
     return response
@@ -58,26 +58,18 @@ def parse_error(error, data, **kwargs):
     return msg
 
 
-def gen_response(
-    status_code,
-    data=None,
-    message=None,
-    many=False,
-    schema=None
-):
-    """ generic helper to generate server response """
-    payload = {
-        'msg': message
-    }
+def gen_response(status_code, data=None, message=None, many=False, schema=None):
+    """generic helper to generate server response"""
+    payload = {"msg": message}
     if data is not None:
         if schema:
             if many:
-                payload['data'] = schema(many=True).dump(data)
+                payload["data"] = schema(many=True).dump(data)
             else:
-                payload['data'] = schema().dump(data)
+                payload["data"] = schema().dump(data)
         else:
             if is_serializable(data):
-                payload['data'] = data
+                payload["data"] = data
     resp = jsonify(payload)
     resp.status_code = status_code
 
@@ -89,18 +81,17 @@ def gen_response(
 def get_class_by_tablename(tablename):
     # https://stackoverflow.com/questions/11668355/sqlalchemy-get-model-from-table-name-this-may-imply-appending-some-function-to
     """Return class reference mapped to table.
-        :param tablename: String with name of table.
-        :return: Class reference or None.
+    :param tablename: String with name of table.
+    :return: Class reference or None.
     """
     for c in db.Model.registry._class_registry.values():
-        if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
+        if hasattr(c, "__tablename__") and c.__tablename__ == tablename:
             return c
 
 
 # consts
 LOG_FORMAT = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | filename={name} function={function} line={line} msg={message} level={level: <8}"  # noqa
-_level = "INFO" if os.getenv('APP_ENV').lower() in ['development', 'local'] \
-    else "ERROR"
+_level = "INFO" if os.getenv("APP_ENV").lower() in ["development", "local"] else "ERROR"
 
 
 def setLogger():
@@ -109,26 +100,23 @@ def setLogger():
 
     logger.remove()
 
-    logger.add(
-        sys.stderr,
-        colorize=True,
-        format=LOG_FORMAT,
-        level=_level
-    )
+    logger.add(sys.stderr, colorize=True, format=LOG_FORMAT, level=_level)
 
 
 def fetch_instance_tag():
     # https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service?tabs=linux
-    """ fetches vm metadata including its tag """
-    metadata_url = "http://169.254.169.254/metadata/instance?api-version=2021-02-01&format=json"
+    """fetches vm metadata including its tag"""
+    metadata_url = (
+        "http://169.254.169.254/metadata/instance?api-version=2021-02-01&format=json"
+    )
 
-    headers = {'Metadata': 'true'}
+    headers = {"Metadata": "true"}
 
     # Send the GET request to retrieve the instance metadata
     response = requests.get(metadata_url, headers=headers, proxies={})
 
     # Retrieve the tags from the response
-    tags = response.json()['compute']['tags']
+    tags = response.json()["compute"]["tags"]
 
     # Print the tags
     return tags
@@ -137,7 +125,7 @@ def fetch_instance_tag():
 def load_env(gpair):
     access_token = None
 
-    if os.getenv('P_ENV').lower() == 'local':
+    if os.getenv("P_ENV").lower() == "local":
         cmd = "gcloud auth print-access-token"
         keys = []
         res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -147,20 +135,21 @@ def load_env(gpair):
     else:
         try:
             req = requests.get(
-                url=os.getenv('AUTH_URL'),
-                headers={
-                    "Metadata-Flavor": "Google"
-                }
+                url=os.getenv("AUTH_URL"), headers={"Metadata-Flavor": "Google"}
             )
             if req.status_code != 200:
-                raise Exception("Omo! Error request to fetch access token came back with (well not 200 😐)")
-            access_token = req.json()['access_token']
+                raise Exception(
+                    "Omo! Error request to fetch access token came back with (well not 200 😐)"
+                )
+            access_token = req.json()["access_token"]
         except Exception as e:
             logger.error("Ewo oo 🤷‍♂️ error occurred while trying to fetch access token")
             raise e
 
     project_id = "handees"
-    url = "https://secretmanager.googleapis.com/v1/projects/{}/secrets".format(project_id)
+    url = "https://secretmanager.googleapis.com/v1/projects/{}/secrets".format(
+        project_id
+    )
 
     if access_token:
         headers = {
@@ -168,19 +157,16 @@ def load_env(gpair):
             "Content-Type": "application/json",
         }
         print(headers)
-        req = requests.get(
-            url,
-            headers=headers
-        )
+        req = requests.get(url, headers=headers)
         pprint.pp(req.json())
         if req.status_code == 200:
             pprint.pp(req.json())
             keys = [
                 requests.get(
                     f"{url}/{obj['name'].split('/')[-1]}/versions/dev:access",
-                    headers=headers
+                    headers=headers,
                 ).json()
-                for obj in req.json()['secrets']
+                for obj in req.json()["secrets"]
             ]
             keys = [next(gpair(obj)) for obj in keys]
             pprint.pprint(keys)
@@ -192,30 +178,23 @@ def load_env(gpair):
     return keys
 
 
-def generate_presigned_url(
-    bucket_name,
-    object_name,
-    action="upload",
-    eta=15
-):
-    cred = service_account.Credentials.from_service_account_file(
-        os.getenv('F_KEY')
-    )
+def generate_presigned_url(bucket_name, object_name, action="upload", eta=15):
+    cred = service_account.Credentials.from_service_account_file(os.getenv("F_KEY"))
     storage_client = storage.Client(credentials=cred)
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(object_name)
 
-    _method = "GET" if action == 'download' else 'PUT'
+    _method = "GET" if action == "download" else "PUT"
     kwargs = {
-        'version': 'v4',
-        'expiration': datetime.timedelta(minutes=eta),
-        'method': _method
+        "version": "v4",
+        "expiration": datetime.timedelta(minutes=eta),
+        "method": _method,
     }
     content_type, _ = mimetypes.guess_type(object_name)
     if not content_type:
-        content_type = 'application/octet-stream'
+        content_type = "application/octet-stream"
     if _method == "PUT":
-        kwargs['content_type'] = content_type
+        kwargs["content_type"] = content_type
 
     url = blob.generate_signed_url(**kwargs)
 
@@ -249,11 +228,7 @@ def base62_encode(n: int) -> str:
     return encoded
 
 
-def generate_unique_file_id(
-    user_id: int,
-    filename: str,
-    blob_type: int
-) -> str:
+def generate_unique_file_id(user_id: int, filename: str, blob_type: int) -> str:
     """
     Generates a unique, fixed-length Base62 identifier for a file.
 
@@ -273,7 +248,7 @@ def generate_unique_file_id(
     user_id_int = user_id
 
     # 2. Hash the filename using CRC32 to get a fixed-size integer (32 bits)
-    filename_hash = zlib.crc32(filename.encode('utf-8'))
+    filename_hash = zlib.crc32(filename.encode("utf-8"))
     blob_type_int = blob_type
 
     # 4. Combine all integers into a single, large integer for encoding
@@ -305,20 +280,20 @@ def decode_file_id(encoded_id: str):
     # Use bitmasking and shifting to extract the original integers
     # The mask for the blob type is 2^8 - 1 = 255
     blob_type_int = decoded_num & 0xFF  # Extract the last 8 bits
-    
+
     # The hash and UUID are shifted down
     hash_and_user_id = decoded_num >> 8
-    
+
     # The mask for the hash is 2^32 - 1
     filename_hash_int = hash_and_user_id & ((1 << 32) - 1)
     user_id_int = hash_and_user_id >> 32
-    
+
     # Convert extracted integers back to their original types
     decoded_blob_type = REVERSE_BLOB_TYPE_MAP.get(blob_type_int)
-    
+
     # The hash itself is not reversible, but we can return its hex string
     decoded_hash_hex = hex(filename_hash_int)[2:].zfill(8)
-    
+
     return user_id_int, decoded_blob_type, decoded_hash_hex
 
 
@@ -328,13 +303,18 @@ def send_notification(data, token, app=None, notification_object=None):
     push_notification = messaging.Message(
         data=data,
         token=token,
-        notification=messaging.Notification(**notification_object)
+        notification=messaging.Notification(**notification_object),
     )
-    response = messaging.send(
-        push_notification,
-        app=app
-    )
+    response = messaging.send(push_notification, app=app)
     return response
+
+
+def decode_id(val):
+    res = val
+    if isinstance(val, str):
+        dbytes = base64.b64decode(val)
+        res = int.from_bytes(dbytes, "big")
+    return int(res)
 
 
 # --- Example Usage ---

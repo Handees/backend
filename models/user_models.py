@@ -117,13 +117,18 @@ class User(TimestampMixin, db.Model):
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     profile_picture = db.Column(db.String())
     mobile_app_registration_token = db.Column(db.String())
+    no_of_bookings = db.Column(db.Integer, server_default=text('0'))
+    no_of_ratings = db.Column(db.Integer, server_default=text('0'))
+    ratings_weighted_sum = db.Column(db.Integer, server_default=text('0'))
+
+    # relationships
     artisan_profile = db.relationship(
         'Artisan',
         backref='user_profile',
         uselist=False
     )
     rating = db.Column(db.Float, nullable=False, default=0.0)
-    reviews = db.relationship('Rating', backref='user')
+    reviews = db.relationship('Reviews', backref='user')
     bookings = db.relationship('Booking', backref='user', lazy='dynamic')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     cards = db.relationship('CardAuth', backref='user')
@@ -160,6 +165,18 @@ class User(TimestampMixin, db.Model):
             ).filter_by(email=email).first()
         return cls.query.filter_by(email=email).first()
 
+    @property
+    def average_rating_score(self):
+        if not self.no_of_ratings:
+            return 0
+        return self.ratings_weighted_sum / self.no_of_ratings
+
+    def get_star_rating(self, m=5, c=3.75):
+        r = self.average_rating_score
+        v = self.no_of_ratings
+        rating = ((v/(v+m))*r) + ((m/(v+m))*c)
+        return rating
+
 
 # @event.listens_for(User, 'before_update')
 # def before_update_listener(mapper, connection, target):
@@ -192,10 +209,13 @@ class Artisan(TimestampMixin, db.Model):
         nullable=False,
         default=KYCEnum.UNINITIALIZED
     )
+    no_of_bookings = db.Column(db.Integer, server_default=text('0'))
+    no_of_ratings = db.Column(db.Integer, server_default=text('0'))
+    ratings_weighted_sum = db.Column(db.Integer, server_default=text('0'))
 
     # relationships and f_keys
     rating = db.Column(db.Float, nullable=False, default=0.0)
-    reviews = db.relationship('Rating', backref='artisan')
+    reviews = db.relationship('Reviews', backref='artisan')
     bank_accounts = db.relationship('WithdrawalAccounts', backref='artisan')
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     job_category_id = db.Column(
@@ -209,6 +229,19 @@ class Artisan(TimestampMixin, db.Model):
     @property
     def bookings(self):
         return self.booking
+
+    @property
+    def average_rating_score(self):
+        if not self.no_of_ratings:
+            return 0
+        return self.ratings_weighted_sum / self.no_of_ratings
+
+    def get_star_rating(self, c=3.75):
+        m = 5.0
+        r = self.average_rating_score
+        v = self.no_of_ratings
+        rating = ((v/(v+m))*r) + ((m/(v+m))*c)
+        return rating
 
     def update_completed_job_count(self):
         """ increase the no of job completed by unit value """

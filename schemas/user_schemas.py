@@ -12,6 +12,7 @@ from .base import (
     BaseSchema
 )
 from core import ma, db
+from add_extensions import redis_
 from marshmallow import fields
 from .payment import FrontEndCardSchema
 from utils import generate_presigned_url
@@ -30,8 +31,9 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
             'role',
             'role_id',
             'updated_at',
-            'bookings',
-            'payments'
+            'bookings', 'payments',
+            'ratings_weighted_sum', 'no_of_ratings',
+            'reviews'
         )
         load_instance = True
 
@@ -48,6 +50,7 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         serialize='get_profile_url',
         deserialize='set_profile_url'
     )
+    rating = fields.Method(serialize='get_user_rating')
 
     def get_profile_url(self, obj):
         url = obj.profile_picture
@@ -76,6 +79,13 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         db.session.flush()
         url = f"https://storage.googleapis.com/{BUCKET_NAME}/{img_id}"
         return url
+
+    def get_user_rating(self, obj):
+        # get system mean
+        c = redis_.get('Platform_User_C')
+        if c:
+            return obj.get_star_rating(c=c)
+        return obj.get_star_rating()
 
     # load_instance = True
     # transient = True

@@ -8,5 +8,5 @@ from .bookings import Booking, BookingCategory, BookingCategory
 from .documents import Document, Document_category, Blob
 from .location import Landmark, City
 from .payments import Payment, CardAuth
-from .ratings import Rating
+from .reviews import Reviews
 from .chat import Chat, ChatMessage

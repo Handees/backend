@@ -1,3 +1,5 @@
+import base64
+
 from flask import request
 from sqlalchemy import desc, select
 from sqlalchemy.exc import IntegrityError
@@ -6,11 +8,13 @@ import sys
 
 from . import user
 from core import db
+from utils import decode_id
 from models.user_models import (
     Permission,
     User
 )
 from models.payments import CardAuth
+from models.reviews import Reviews
 from utils import (
     gen_response,
     error_response,
@@ -282,3 +286,21 @@ def delete_card(current_user, card_sig):
             sess.rollback()
             return error_response(500, message=str(e))
         return gen_response(200, message="Delete card operation successful")
+
+
+@user.get('/reviews')
+@login_required
+def fetch_reviews(current_user):
+    with db.session() as sess:
+        cursor = request.args.get('after_id', '')
+        per_page = request.args.get('per_page', 10)
+        if cursor:
+            cursor = decode_id(cursor)
+            reviews = Reviews.get_all_by_user(
+                current_user, sess, cursor, per_page
+            )
+        else:
+            reviews = Reviews.get_all_by_user(
+                current_user, sess, per_page=per_page
+            )
+        return gen_response(200, reviews)
