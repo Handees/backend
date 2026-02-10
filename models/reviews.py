@@ -36,17 +36,18 @@ class Reviews(TimestampMixin, BaseModelPR, db.Model):
     def get_all_by_user(cls, entity, sess, cursor=1, per_page=10):
         EntityClass = entity.__class__
         attr = inspect(EntityClass).primary_key[0]
+        cursor_cond = cls.id > cursor if cursor > 1 else cls.id >= cursor
         paged_subq = (
             select(
-                cls.weight, cls.comment
+                cls.weight, cls.comment, cls.id
             )
             .where(
                 getattr(cls, attr.key) == getattr(entity, attr.key),
-                cls.id > cursor
+                cursor_cond
             )
             .order_by(cls.id)
             .limit(per_page)
-            .subquery()
+            .cte("paged_cte")
         )
         subq = (
             select(
@@ -85,5 +86,13 @@ class Reviews(TimestampMixin, BaseModelPR, db.Model):
                 weights_count_subq.c.weight == subq.c.weight,
                 isouter=True
             )
+            .scalar_subquery()
         )
-        return sess.scalar(stmt)
+        next_cursor_col = select(func.max(paged_subq.c.id)).scalar_subquery()
+        result = sess.execute(select(stmt, next_cursor_col)).first()
+
+        if result:
+            data, last_id = result
+            return {"reviews": data or {}, "cursor": last_id}
+
+        return {"reviews": {}, "cursor": None}

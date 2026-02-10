@@ -9,6 +9,7 @@ from models.user_models import (
     Artisan,
     Role
 )
+from models.reviews import Reviews
 from models.bookings import BookingCategory
 from models.payments import (
     WithdrawalAccounts, Wallet,
@@ -28,7 +29,8 @@ from schemas import (
 from utils import (
     gen_response,
     error_response,
-    setLogger
+    setLogger,
+    decode_id
 )
 from ..messages import (
     ARTISAN_CREATED,
@@ -309,3 +311,23 @@ def withdraw(current_user):
                 f"Weird! - User with id {current_user.user_id}"
                 " has no wallet"
             )
+
+
+@artisan.get('/reviews')
+@login_required
+@role_required('artisan')
+def fetch_reviews(current_user):
+    with db.session() as sess:
+        artisan = current_user.artisan_profile
+        cursor = request.args.get('after_id', '')
+        per_page = request.args.get('per_page', 10)
+        if cursor:
+            cursor = decode_id(cursor)
+            reviews = Reviews.get_all_by_user(
+                artisan, sess, cursor, per_page
+            )
+        else:
+            reviews = Reviews.get_all_by_user(
+                artisan, sess, per_page=per_page
+            )
+        return gen_response(200, reviews)

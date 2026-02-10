@@ -171,11 +171,12 @@ class User(TimestampMixin, db.Model):
             return 0
         return self.ratings_weighted_sum / self.no_of_ratings
 
-    def get_star_rating(self, m=5, c=3.75):
+    def get_star_rating(self, c=3.75):
+        m = 5.0
         r = self.average_rating_score
         v = self.no_of_ratings
         rating = ((v/(v+m))*r) + ((m/(v+m))*c)
-        return rating
+        return round(rating, 2)
 
 
 # @event.listens_for(User, 'before_update')
@@ -241,7 +242,7 @@ class Artisan(TimestampMixin, db.Model):
         r = self.average_rating_score
         v = self.no_of_ratings
         rating = ((v/(v+m))*r) + ((m/(v+m))*c)
-        return rating
+        return round(rating, 2)
 
     def update_completed_job_count(self):
         """ increase the no of job completed by unit value """

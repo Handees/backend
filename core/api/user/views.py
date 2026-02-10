@@ -1,5 +1,3 @@
-import base64
-
 from flask import request
 from sqlalchemy import desc, select
 from sqlalchemy.exc import IntegrityError
@@ -296,6 +294,7 @@ def fetch_reviews(current_user):
         per_page = request.args.get('per_page', 10)
         if cursor:
             cursor = decode_id(cursor)
+            print(cursor)
             reviews = Reviews.get_all_by_user(
                 current_user, sess, cursor, per_page
             )

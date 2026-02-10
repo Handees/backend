@@ -3,6 +3,7 @@ from models.user_models import (
     Kyc
 )
 from core import ma
+from add_extensions import redis_
 from models.bookings import BookingCategory
 from .base import (
     BaseSQLAlchemyAutoSchema,
@@ -33,10 +34,10 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         )
 
         exclude = (
-            'booking',
+            'booking', 'ratings_weighted_sum',
         )
 
-        # additional field
+    # additional fields
     created_at = ma.String(dump_only=True, data_key="became_artisan_on")
     user_profile = fields.Nested("UserSchema", only=(
         'telephone', 'rating', 'reviews',
@@ -51,6 +52,8 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         ),
         many=True
     )
+    rating = fields.Method(serialize='get_artisan_rating')
+    reviews = fields.Nested('ReviewSchema', only=('weight', 'comment',))
 
     @pre_load
     def preformat_data(self, data, *args, **kwargs):
@@ -60,6 +63,13 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
 
     def show_category(self, obj):
         return obj.booking_category.name
+
+    def get_artisan_rating(self, obj):
+        # get system mean
+        c = redis_.get('Platform_Artisan_C')
+        if c:
+            return obj.get_star_rating(c=c)
+        return obj.get_star_rating()
 
 
 class AddArtisanSchema(BaseSchema):

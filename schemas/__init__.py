@@ -38,3 +38,4 @@ from .events import (
     AvailableArtisanLocationSchema
 )
 from .generic import ImageFileSchema, BlobSchema
+from .reviews import Reviews
