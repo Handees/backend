@@ -319,8 +319,12 @@ def withdraw(current_user):
 def fetch_reviews(current_user):
     with db.session() as sess:
         artisan = current_user.artisan_profile
-        cursor = request.args.get('after_id', '')
-        per_page = request.args.get('per_page', 10)
+        try:
+            cursor = request.args.get('after_id', '', type=str)
+            per_page = request.args.get('per_page', 10, type=int)
+        except ValueError:
+            return error_response(400, message='Invalid query param specified')
+
         if cursor:
             cursor = decode_id(cursor)
             reviews = Reviews.get_all_by_user(

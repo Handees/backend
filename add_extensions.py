@@ -1,7 +1,7 @@
 import os
 from typing import Optional, Dict
 
-from walrus import *  # noqa: F403
+from walrus import Walrus  # noqa: F403
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from passlib.context import CryptContext
@@ -48,7 +48,7 @@ class RedCache:
     # DATA_STORE = 1
     # CATEGORY_GEO_STORE = 2
 
-    def __init__(self, db=1):
+    def __init__(self, db=1) -> Walrus:
         self.client = Walrus(  # noqa: F405
             os.getenv('REDIS_HOST', '127.0.0.1'),
             os.getenv('REDIS_PORT', 6378),

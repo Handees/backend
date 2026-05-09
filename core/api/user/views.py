@@ -290,8 +290,11 @@ def delete_card(current_user, card_sig):
 @login_required
 def fetch_reviews(current_user):
     with db.session() as sess:
-        cursor = request.args.get('after_id', '')
-        per_page = request.args.get('per_page', 10)
+        try:
+            cursor = request.args.get('after_id', '', type=str)
+            per_page = request.args.get('per_page', 10, type=int)
+        except ValueError:
+            return error_response(400, message='Invalid query param specified')
         if cursor:
             cursor = decode_id(cursor)
             print(cursor)

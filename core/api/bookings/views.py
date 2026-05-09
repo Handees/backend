@@ -1,4 +1,6 @@
+import json
 import uuid
+import datetime
 
 from sqlalchemy import select, and_
 from flask import request, render_template
@@ -27,7 +29,7 @@ from utils import (
     setLogger
 )
 from tasks.booking_tasks import pbq
-from add_extensions import redis_4
+from add_extensions import redis_4, redis_
 from . import messages as messages
 from schemas.bookings_schema import UploadImagesSchema
 
@@ -94,13 +96,20 @@ def create_booking(current_user):
             mapping={new_order.booking_id: current_user.user_id}
         )
         data['user'] = UserSchema().dump(current_user)
+        data['search_wait_time'] = current_user.calculate_dynamic_request_ttl()
         init_task = pbq(data)
+        redis_.set(
+            data["booking_id"],
+            json.dumps(data),
+            ex=data['search_wait_time']
+        )
 
         payload = {
             'task_id': init_task.id,
             'booking': BookingSchema(
                 only=('booking_id', 'images')
-            ).dump(new_order)
+            ).dump(new_order),
+            'search_ttl': data['search_wait_time']
         }
 
         return gen_response(

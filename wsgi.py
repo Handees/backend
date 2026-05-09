@@ -2,7 +2,9 @@
 from gevent import monkey
 monkey.patch_all()
 
-from json import load
+import json
+import threading
+from add_extensions import redis_2, redis_4
 from core import create_app, socketio, db
 from dotenv import load_dotenv
 from models import *
@@ -11,6 +13,7 @@ from utils import (
     load_env,
     fetch_instance_tag
 )
+from loguru import logger
 from google.cloud import secretmanager
 from google import auth
 import click
@@ -22,7 +25,8 @@ import firebase_admin
 
 
 load_dotenv()
-
+logger.remove()
+logger.add(sys.stderr, enqueue=False)
 
 ENV = os.getenv('APP_ENV', 'DEV')
 app = create_app(ENV.lower() if ENV else 'default')
@@ -153,10 +157,78 @@ def load_config_variables():
             raise e
     else:
         raise Exception("Something went wrong while trying to fetch secrets")
+
+
+def redis_dispatch_listener(socketio_instance):
+    """
+    Listens for 'dispatch' messages from the Background Worker
+    and forwards them to specific SocketIO rooms.
+    """
+    from utils import send_notification
+    from schemas import NewBookingRequestSchema
+    from core.api.bookings.utils import parse_str_data
+
+    pubsub = redis_2.pubsub()
+    pubsub.subscribe('socket_server_dispatch')
+    
+    print("Redis Dispatch Listener Started...")
+    
+    for message in pubsub.listen():
+        if message['type'] == 'message':
+            try:
+                payload = parse_str_data(message.pop('data'))
+                schema = NewBookingRequestSchema()
+                bk_data = payload.pop('data')
+                customer = bk_data.pop('user')
+                lat, lon = bk_data.pop('lat'), bk_data.pop('lon')
+                sid = redis_4.hget(
+                    'user_to_sid',
+                    payload['target_id']
+                )
+                data = schema.load(
+                    {
+                        **bk_data,
+                        'userDetails': customer,
+                        'coordinates': {
+                            'lat': lat,
+                            'lon': lon
+                        }
+                    }
+                )
+                socketio.emit(
+                    'new_offer',
+                    data,
+                    to=sid,
+                    namespace='/artisan'
+                )
+                notification_payload = {
+                    k: json.dumps(v) for k, v in data.items()
+                }
+                fcm_token = redis_4.hget("user_to_fcm_token", payload['target_id'])
+                send_notification(
+                    notification_payload,
+                    fcm_token,
+                    notification_object={
+                        'body': 'A client near you needs your service',
+                        'title': 'New Service Request Alert! 🚨'
+                    }
+                )
+            except Exception as e:
+                logger.exception(e)
+                print(f"Dispatch Error: {e}")
+
 if __name__ == "__main__":
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
+        print("--> Starting Redis Dispatch Listener (Background)...")
+        threading.Thread(
+            target=redis_dispatch_listener,
+            args=(socketio,)
+        ).start()
+
     socketio.run(
         app,
         host="0.0.0.0",
         port=5000,
-        debug=True
+        debug=True,
+        use_reloader=True
     )

@@ -2,6 +2,7 @@ from sqlalchemy import update, inspect, Index, select, func, cast, String
 
 from core import db
 from .base import BaseModelPR, TimestampMixin
+from .user_models import User
 
 
 class Reviews(TimestampMixin, BaseModelPR, db.Model):
@@ -14,6 +15,7 @@ class Reviews(TimestampMixin, BaseModelPR, db.Model):
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
     artisan_id = db.Column(db.String, db.ForeignKey('artisan.artisan_id'))
     booking_id = db.Column(db.String, db.ForeignKey('booking.booking_id'))
+    commenter_id = db.Column(db.String, db.ForeignKey('user.user_id'))
 
     def update_sum_on_entity(self):
         with db.session() as sess:
@@ -33,26 +35,49 @@ class Reviews(TimestampMixin, BaseModelPR, db.Model):
             sess.commit()
 
     @classmethod
-    def get_all_by_user(cls, entity, sess, cursor=1, per_page=10):
+    def get_all_by_user(cls, entity, sess, cursor=0, per_page=10):
         EntityClass = entity.__class__
         attr = inspect(EntityClass).primary_key[0]
-        cursor_cond = cls.id > cursor if cursor > 1 else cls.id >= cursor
-        paged_subq = (
+        print("INcoming cursor", cursor)
+        # cursor_cond = cls.id > cursor if cursor > 1 else cls.id >= cursor
+        # cursor math
+        num_partitions = 5  # corresponds to weight classes ( 1-5 )
+        items_per_group = per_page // num_partitions
+        start_rn = (cursor // num_partitions) + 1
+        end_rn = start_rn + items_per_group - 1
+
+        numbered_reviews = (
             select(
-                cls.weight, cls.comment, cls.id
+                cls.weight, cls.comment, cls.id,
+                User.first_name, User.last_name, cls.created_at,
+                func.row_number().over(
+                    partition_by=cls.weight,
+                    order_by=cls.id.desc()  # Order newest to oldest within the weight group
+                ).label('rn')
             )
+            .join(User, cls.commenter_id == User.user_id, isouter=True)
+            .where(getattr(cls, attr.key) == getattr(entity, attr.key))
+            .cte("numbered_reviews")
+        )
+
+        paged_subq = (
+            select(numbered_reviews)
             .where(
-                getattr(cls, attr.key) == getattr(entity, attr.key),
-                cursor_cond
+                numbered_reviews.c.rn >= start_rn,
+                numbered_reviews.c.rn <= end_rn
             )
-            .order_by(cls.id)
-            .limit(per_page)
             .cte("paged_cte")
         )
         subq = (
             select(
                 paged_subq.c.weight,
-                func.jsonb_agg(paged_subq.c.comment).label("comments")
+                func.jsonb_agg(
+                    func.jsonb_build_object(
+                        'comment', paged_subq.c.comment,
+                        'name', func.concat_ws(' ', paged_subq.c.first_name, paged_subq.c.last_name),
+                        'created_at', cast(paged_subq.c.created_at, String)
+                    )
+                ).label("comments")
             )
             .group_by(paged_subq.c.weight)
             .subquery()
@@ -88,11 +113,20 @@ class Reviews(TimestampMixin, BaseModelPR, db.Model):
             )
             .scalar_subquery()
         )
-        next_cursor_col = select(func.max(paged_subq.c.id)).scalar_subquery()
-        result = sess.execute(select(stmt, next_cursor_col)).first()
+        result = sess.execute(select(stmt)).scalar()
 
         if result:
-            data, last_id = result
-            return {"reviews": data or {}, "cursor": last_id}
+            # Check if any group actually returned comments in this batch
+            has_comments_in_this_page = any(
+                len(group_data.get('comments', [])) > 0
+                for group_data in result.values()
+            )
+            if has_comments_in_this_page:
+                next_cursor = cursor + per_page
+                print(next_cursor, "out cursor")
+            else:
+                next_cursor = None   # Tell the UI to stop paginating
+
+            return {"reviews": result, "cursor": next_cursor}
 
         return {"reviews": {}, "cursor": None}

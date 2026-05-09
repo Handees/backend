@@ -1,13 +1,25 @@
 import pandas as pd
 import random
-import uuid
 from datetime import datetime
 
 # 1. Load Data
 bookings_df = pd.read_csv("Handees_bookings.csv")
 valid_bookings = bookings_df.dropna(subset=["booking_id", "customer_id", "artisan_id"])
 
-# 2. Rich Comment Libraries
+# 2. Map Artisan ID to their underlying User ID
+# Assuming you have a CSV or database export of your artisans table to map artisan_id -> user_id
+try:
+    artisans_df = pd.read_csv("Handees_artisan.csv") 
+    # Create a dictionary mapping: { 'artisan_id': 'user_id' }
+    artisan_to_user_map = pd.Series(artisans_df.user_id.values, index=artisans_df.artisan_id).to_dict()
+    print(artisan_to_user_map)
+except FileNotFoundError:
+    print("Warning: Handees_artisans.csv not found. Make sure you have a way to map artisan_id to user_id.")
+    # Fallback: if artisan_id and user_id share the exact same UUID in your schema, 
+    # you could technically bypass the map, but a lookup map is the safest relational approach.
+    artisan_to_user_map = {}
+
+# 3. Rich Comment Libraries
 comments_artisan = {
     5: [
         "Excellent craftsmanship! He fixed the piping issue in less than an hour.",
@@ -66,7 +78,7 @@ comments_customer = {
     1: [
         "Do not work for this person. Very hostile environment.",
         "Refused to pay after I completed the job.",
-    ],
+    ]
 }
 
 sql_statements = []
@@ -76,40 +88,52 @@ idx = 1
 
 for _, row in valid_bookings.iterrows():
     booking_id = row["booking_id"]
-    customer_id = row["customer_id"]
+    customer_id = row["customer_id"] # This is the customer's user_id
     artisan_id = row["artisan_id"]
     created_at = row.get("created_at", datetime.now())
 
-    # --- 1. Review FOR Artisan ---
-    # We explicitly set user_id to NULL
-    w_art = int(row["artisan_rating"]) if pd.notna(row.get("artisan_rating")) else 5
+    # --- 1. Review FOR Artisan (Written by Customer) ---
+    # Target: artisan_id | Commenter: customer_id (Valid User ID)
+    w_art = int(row["artisan_rating"]) if pd.notna(row.get("artisan_rating")) else random.randint(0, 5)
     if w_art not in comments_artisan:
         w_art = 5
     c_art = random.choice(comments_artisan[w_art]).replace("'", "''")
 
     sql_1 = (
-        f"INSERT INTO reviews (id, weight, comment, user_id, artisan_id, booking_id, created_at, updated_at) "
-        f"VALUES ({idx}, {w_art}, '{c_art}', NULL, '{artisan_id}', '{booking_id}', '{created_at}', '{created_at}');"
+        f"INSERT INTO reviews (id, weight, comment, user_id, artisan_id, commenter_id, booking_id, created_at, updated_at) "
+        f"VALUES ({idx}, {w_art}, '{c_art}', NULL, '{artisan_id}', '{customer_id}', '{booking_id}', '{created_at}', '{created_at}');"
     )
     sql_statements.append(sql_1)
     idx += 1
 
-    # --- 2. Review FOR Customer ---
-    # We explicitly set artisan_id to NULL
-    w_cust = int(row["customer_rating"]) if pd.notna(row.get("customer_rating")) else 5
-    if w_cust not in comments_customer:
-        w_cust = 5
-    c_cust = random.choice(comments_customer[w_cust]).replace("'", "''")
+    # --- 2. Review FOR Customer (Written by Artisan) ---
+    # Target: user_id (the customer) | Commenter: The Artisan's underlying User ID
+    
+    # Look up the artisan's user_id from our mapping dictionary
+    # (If your artisan_id and user_id are identical in your schema, you can just use artisan_id here instead)
+    artisan_user_id = artisan_to_user_map.get(artisan_id, None)
+    
+    # If we couldn't find a mapping but your schema uses the same UUID for both tables, fallback to:
+    # artisan_user_id = artisan_id 
 
-    sql_2 = (
-        f"INSERT INTO reviews (id, weight, comment, user_id, artisan_id, booking_id, created_at, updated_at) "
-        f"VALUES ({idx}, {w_cust}, '{c_cust}', '{customer_id}', NULL, '{booking_id}', '{created_at}', '{created_at}');"
-    )
-    sql_statements.append(sql_2)
-    idx += 1
+    if artisan_user_id:
+        w_cust = int(row["customer_rating"]) if pd.notna(row.get("customer_rating")) else random.randint(0, 5)
+        if w_cust not in comments_customer:
+            w_cust = 5
+        c_cust = random.choice(comments_customer[w_cust]).replace("'", "''")
+        if artisan_user_id == customer_id:
+            choices = [x for x in artisan_to_user_map.values() if x.lower() != artisan_user_id.lower()]
+            print(artisan_user_id, choices)
+            artisan_user_id = random.choice(choices)
+        sql_2 = (
+            f"INSERT INTO reviews (id, weight, comment, user_id, artisan_id, commenter_id, booking_id, created_at, updated_at) "
+            f"VALUES ({idx}, {w_cust}, '{c_cust}', '{customer_id}', NULL, '{artisan_user_id}', '{booking_id}', '{created_at}', '{created_at}');"
+        )
+        sql_statements.append(sql_2)
+        idx += 1
 
 # Save
 with open("seed_reviews.sql", "w") as f:
     f.write("\n".join(sql_statements))
 
-print("Done. Check seed_reviews_fixed.sql")
+print("Done. Check seed_reviews.sql")

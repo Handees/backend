@@ -1,10 +1,13 @@
 from datetime import datetime
 
-from sqlalchemy import text
+from sqlalchemy.orm import column_property
+from sqlalchemy import select, func, text
 from flask import current_app
 from loguru import logger
 
 from core import db
+from models.bookings import Booking, BookingStatusEnum
+from models.payments import Payment
 from .base import (
     TimestampMixin,
     BaseModelPR,
@@ -127,8 +130,7 @@ class User(TimestampMixin, db.Model):
         backref='user_profile',
         uselist=False
     )
-    rating = db.Column(db.Float, nullable=False, default=0.0)
-    reviews = db.relationship('Reviews', backref='user')
+    reviews = db.relationship('Reviews', backref='user', foreign_keys='Reviews.user_id')
     bookings = db.relationship('Booking', backref='user', lazy='dynamic')
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     cards = db.relationship('CardAuth', backref='user')
@@ -178,6 +180,17 @@ class User(TimestampMixin, db.Model):
         rating = ((v/(v+m))*r) + ((m/(v+m))*c)
         return round(rating, 2)
 
+    def calculate_dynamic_request_ttl(self, c=3.75):
+        """
+            Calculates how long a booking request stays alive in Redis
+            based on the customer's star rating.
+        """
+        rating = self.get_star_rating(c)
+        BASE_SECONDS = 60
+        BONUS_PER_STAR = 40
+        ttl = BASE_SECONDS + (rating * BONUS_PER_STAR)
+        return int(ttl)
+
 
 # @event.listens_for(User, 'before_update')
 # def before_update_listener(mapper, connection, target):
@@ -202,7 +215,7 @@ class Artisan(TimestampMixin, db.Model):
     artisan_id = db.Column(db.String(200), primary_key=True)
     is_verified = db.Column(db.Boolean, default=False)
     job_title = db.Column(db.String(100))
-    jobs_completed = db.Column(db.Integer, default=0)
+    jobs_completed = db.Column(db.Integer, default=0, server_default=text('0'))
     sign_up_date = db.Column(db.Date, default=datetime.utcnow())
     hourly_rate = db.Column(db.Float)
     kyc_status = db.Column(
@@ -210,12 +223,10 @@ class Artisan(TimestampMixin, db.Model):
         nullable=False,
         default=KYCEnum.UNINITIALIZED
     )
-    no_of_bookings = db.Column(db.Integer, server_default=text('0'))
     no_of_ratings = db.Column(db.Integer, server_default=text('0'))
     ratings_weighted_sum = db.Column(db.Integer, server_default=text('0'))
 
     # relationships and f_keys
-    rating = db.Column(db.Float, nullable=False, default=0.0)
     reviews = db.relationship('Reviews', backref='artisan')
     bank_accounts = db.relationship('WithdrawalAccounts', backref='artisan')
     user_id = db.Column(db.String, db.ForeignKey('user.user_id'))
@@ -226,6 +237,27 @@ class Artisan(TimestampMixin, db.Model):
     booking = db.relationship('Booking', backref='artisan')
     kyc_attempts = db.relationship('Kyc', backref='artisan')
     wallet = db.relationship('Wallet', backref='artisan', uselist=False)
+
+    # add-ons
+    jobs_assigned = column_property(
+        select(func.count(Booking.booking_id))
+        .where(Booking.artisan_id == artisan_id)
+        .correlate_except(Booking)
+        .scalar_subquery()
+    )
+    total_earnings = column_property(
+        select(
+            func.coalesce(func.sum(Payment.total_amount), 0)
+        )
+        .select_from(Booking)
+        .join(Payment, Booking.payment_id == Payment.payment_id)
+        .where(
+            Booking.artisan_id == artisan_id,
+            Booking.status == BookingStatusEnum.COMPLETED
+        )
+        .correlate_except(Booking, Payment)
+        .scalar_subquery()
+    )
 
     @property
     def bookings(self):
@@ -254,6 +286,17 @@ class Artisan(TimestampMixin, db.Model):
     @classmethod
     def get_by_user_id(cls, user_id):
         return cls.query.filter_by(user_id=user_id).first()
+
+    @property
+    def activity(self):
+        return {
+            'completed': self.jobs_completed,
+            'incomplete': self.jobs_assigned - self.jobs_completed,
+            'completed_percentage': round(
+                (self.jobs_completed / self.jobs_assigned),
+                2
+            ) * 100.0
+        }
 
 
 class Kyc(TimestampMixin, db.Model):
