@@ -1,6 +1,7 @@
 import os
 from uuid import uuid4
 from datetime import datetime
+from sqlalchemy import select, and_
 
 from sqlalchemy import UniqueConstraint
 
@@ -41,15 +42,7 @@ class Document_category(TimestampMixin, BaseModelPR, db.Model):
 
 
 class Blob(TimestampMixin, db.Model):
-    __table_args__ = (
-        UniqueConstraint(
-            'user_id',
-            'blob_type',
-            'filename',
-            name='uix_user_blob_type_filename'
-        ),
-    )
-    blob_id = db.Column(db.String, primary_key=True)
+    blob_id = db.Column(db.String, primary_key=True, default=lambda: uuid4().hex)
     filename = db.Column(db.String, nullable=False, index=True)
     content_type = db.Column(db.String, nullable=False, index=True)
     url = db.Column(db.String)
@@ -65,29 +58,46 @@ class Blob(TimestampMixin, db.Model):
         db.ForeignKey('booking.booking_id'),
         index=True
     )
-    img_id = db.Column(db.String, nullable=False, unique=True)
-
-    def set_url_id(self, uid):
-        self.img_id = utils.generate_unique_file_id(
-            user_id=uid,
-            filename=self.filename,
-            blob_type=int(self.blob_type.value)
-        )
 
     @property
     def upload_url(self):
         from utils import generate_presigned_url
+        storage_path = f"uploads/{self.user_id}/{self.blob_id}"
         return generate_presigned_url(
             bucket_name=os.getenv('BUCKET_NAME'),
-            object_name=self.filename,
-            action='upload'
+            object_name=storage_path,
+            action='upload',
+            content_type=self.content_type,
+            filename=self.filename
         )
 
     @property
     def download_url(self):
         from utils import generate_presigned_url
+        storage_path = f"uploads/{self.user_id}/{self.blob_id}"
         return generate_presigned_url(
             bucket_name=os.getenv('BUCKET_NAME'),
-            object_name=self.filename,
-            action='download'
+            object_name=storage_path,
+            action='download',
+            content_type=self.content_type,
+            filename=self.filename
         )
+
+    @classmethod
+    def get_by_id(cls, id, session=None):
+        if session:
+            stmt = select(cls).where(
+                cls.blob_id == id
+            )
+            return session.scalar(stmt)
+    
+    @classmethod
+    def get_user_profile_blob(cls, user_id, session=None):
+        if session:
+            stmt = select(cls).where(
+                and_(
+                    cls.user_id == user_id,
+                    cls.blob_type == BlobTypes.USER_PROFILE
+                )
+            )
+            return session.scalar(stmt)

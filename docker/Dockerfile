@@ -5,7 +5,8 @@ ARG DATABASE_CERT_PATH
 ARG DATABASE_CERT_DIR_PATH
 
 # Create a group and user
-RUN groupadd -r handeesofficial && useradd -r -g handeesofficial handeesofficial
+RUN groupadd -r handeesofficial && useradd -r -m -g handeesofficial handeesofficial
+RUN chown -R handeesofficial:handeesofficial /home/handeesofficial
 
 WORKDIR /home/handeesofficial/backend
 

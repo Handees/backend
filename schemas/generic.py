@@ -15,8 +15,7 @@ class UnitUploadImageFileSchema(ma.Schema):
 
 
 class UnitDownloadImageFileSchema(ma.Schema):
-    filename = fields.Str(required=True)
-    blob_type = fields.Enum(BlobTypes, required=True)
+    blob_id = fields.Str(required=True)
 
 
 class ImageFileSchema(ma.Schema):

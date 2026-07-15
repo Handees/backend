@@ -1,76 +1,17 @@
 steps:
-# stop server(s)
-- name: 'gcr.io/cloud-builders/gcloud'
-  args:
-  - 'compute'
-  - 'ssh'
-  - 'handeesofficial@handees-dev'
-  - '--tunnel-through-iap'
-  - '--project=handees'
-  - '--zone=us-central1-a'
-  - '--'
-  - 'sudo killall -9 supervisord || true'
-- name: 'gcr.io/cloud-builders/gcloud'
-  args:
-  - 'compute'
-  - 'ssh'
-  - 'handeesofficial@handees-dev'
-  - '--tunnel-through-iap'
-  - '--project=handees'
-  - '--zone=us-central1-a'
-  - '--'
-  - 'sudo killall -9 gunicorn || true'
-- name: 'gcr.io/cloud-builders/gcloud'
-  args:
-  - 'compute'
-  - 'ssh'
-  - 'handeesofficial@handees-dev'
-  - '--tunnel-through-iap'
-  - '--project=handees'
-  - '--zone=us-central1-a'
-  - '--'
-  - 'sudo killall -9 huey_consumer.py || true'
-# copy changes to VM
-# https://hodo.dev/posts/post-14-cloud-build-iap/
-- name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: /bin/sh
-  args:
-  - '-c'
-  - |
-    gcloud compute scp --recurse --zone us-central1-a * \
-      'handeesofficial@handees-dev:/home/handeesofficial/backend' \
-      --tunnel-through-iap
-# install dependencies
-- name: 'gcr.io/cloud-builders/gcloud'
-  args:
-    - 'compute'
-    - 'ssh'
-    - 'handeesofficial@handees-dev'
-    - '--tunnel-through-iap'
-    - '--project=handees'
-    - '--zone=us-central1-a'
-    - '--'
-    - 'echo "APP_ENV=dev" > /tmp/APP_ENV.env'
-- name: 'gcr.io/cloud-builders/gcloud'
-  args:
-  - 'compute'
-  - 'ssh'
-  - 'handeesofficial@handees-dev'
-  - '--tunnel-through-iap'
-  - '--project=handees'
-  - '--zone=us-central1-a'
-  - '--'
-  - 'bash'
-  - '/home/handeesofficial/backend/scripts/install_dependencies.sh'
-# start server
-- name: 'gcr.io/cloud-builders/gcloud'
-  args:
-    - 'compute'
-    - 'ssh'
-    - 'handeesofficial@handees-dev'
-    - '--tunnel-through-iap'
-    - '--project=handees'
-    - '--zone=us-central1-a'
-    - '--'
-    - 'bash'
-    - '/home/handeesofficial/backend/scripts/start_server.sh'
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'DATABASE_CERT_PATH=${_DB_CERT_PATH}'
+      - '--build-arg'
+      - 'DATABASE_CERT_DIR_PATH=${_DB_CERT_DIR_PATH}'
+      - '--build-arg'
+      - 'COCKROACH_DB_CERT_URL=${_COCKROACH_DB_CERT_URL}'
+      - '-t'
+      - 'africa-south1-docker.pkg.dev/$PROJECT_ID/handees-dev/handees-backend:1.1'
+      - '-f'
+      - 'docker/Dockerfile'
+      - '.'
+images:
+  - 'africa-south1-docker.pkg.dev/$PROJECT_ID/handees-dev/handees-backend:1.1'

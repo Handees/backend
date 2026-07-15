@@ -97,12 +97,12 @@ def create_booking(current_user):
         )
         data['user'] = UserSchema().dump(current_user)
         data['search_wait_time'] = current_user.calculate_dynamic_request_ttl()
-        init_task = pbq(data)
         redis_.set(
             data["booking_id"],
             json.dumps(data),
             ex=data['search_wait_time']
         )
+        init_task = pbq(data)
 
         payload = {
             'task_id': init_task.id,

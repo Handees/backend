@@ -15,29 +15,26 @@ from core.exc import BookingHasContract
 
 # from core.extensions import db
 from config import BaseConfig
+from utils import send_notification
 from models.user_models import Artisan
 from models.bookings import Booking, BookingContract, BookingStatusEnum, SettlementEnum
 from tasks.exc import InvalidBookingTransaction
 from models.payments import Payment
+from schemas import NewBookingRequestSchema
 from schemas.bookings_schema import BookingSchema
-from utils import setLogger
 from config import config_options
 
 
 import uuid
 import logging
+import firebase_admin
 from loguru import logger
 from huey import Huey
 from flask import url_for
 
-
-logging.basicConfig(level=logging.DEBUG)
-
 # huey instance
 huey: Huey = HueyTemplate(config=BaseConfig.HUEY_CONFIG).huey
 logging.getLogger("huey").setLevel(logging.DEBUG)
-
-setLogger()
 
 # TODO: subclass decorator to include app context
 
@@ -45,10 +42,14 @@ setLogger()
 @huey.task()
 @huey.lock_task("lock_broadcast_task")
 def pbq(booking_details, attempt_level=1):
+    print("WERE PROCESSING BOOKING REQUESGT!! FOH SURE!~!")
     from tasks.events import send_event
     # check if a match has been found
     is_available = redis_.exists(booking_details['booking_id'])
+    print("BOOKIN AVAILABLE!!?", is_available, type(is_available))
     if not is_available:
+        logger.info("THIS BOOKING IS NOT AVAILABLE TO bE PROCESSEDS")
+        print("THIS BOOKING IS NOT AVAILABLE TO bE PROCESSEDS")
         # do nothing
         return
     lat, lon = booking_details["lat"], booking_details["lon"]
@@ -64,9 +65,12 @@ def pbq(booking_details, attempt_level=1):
     candidates = redis_5.georadius(
         category, lon, lat, radius_km, unit="km", withdist=True
     )
+    print(candidates, "CANDIDATES FOUND")
     if not candidates:
         # Retry with wider net if nobody found
         if attempt_level < 2:
+            print("First attempt found no artisans in 4.8 rating and 1km range..trying larger scope")
+            logger.info("First attempt found no artisans in 4.8 rating and 1km range..trying larger scope")
             pbq.schedule((booking_details, attempt_level + 1), delay=5)
         else:
             # inform customer that no artisan is available to handle request
@@ -81,24 +85,52 @@ def pbq(booking_details, attempt_level=1):
 
     artisan_ids = [c[0] for c in candidates]
     ratings = redis_6.hmget("artisan_ratings", artisan_ids)
-
+    print("RATINGSSS!!!", ratings, attempt_level)
     targeted_artisans = []
+    app_instance = firebase_admin.get_app(name="firebase_admin_huey")
 
     for i, artisan_id in enumerate(artisan_ids):
         r_val = float(ratings[i]) if ratings[i] else 0.0
         # filter based on current min-rating
         if r_val >= min_rating:
             targeted_artisans.append(artisan_id)
-
+    print("TARGETED ARTISANS!!!", targeted_artisans, attempt_level)
     # 3. Dispatch (Unicast)
     if targeted_artisans:
         for artisan_id in targeted_artisans:
-            msg = {
-                "target_id": artisan_id,
-                "data": booking_details,
-            }
+            schema = NewBookingRequestSchema()
+            customer = booking_details.pop('user')
+            lat, lon = booking_details.pop('lat'), booking_details.pop('lon')
+            new_offer = schema.load({
+                **booking_details,
+                'userDetails': customer,
+                'coordinates': {
+                    'lat': lat,
+                    'lon': lon
+                }
+            })
             # Publish to the Bridge
-            redis_2.publish("socket_server_dispatch", json.dumps(msg))
+            send_event(
+                'new_offer',
+                {
+                    'payload': new_offer,
+                    'recipient': artisan_id
+                },
+                '/artisan'
+            )
+            notification_payload = {
+                k: json.dumps(v) for k, v in new_offer.items()
+            }
+            fcm_token = redis_4.hget("user_to_fcm_token", artisan_id)
+            send_notification(
+                notification_payload,
+                fcm_token,
+                app=app_instance,
+                notification_object={
+                    'body': 'A client near you needs your service',
+                    'title': 'New Service Request Alert! 🚨'
+                }
+            )
     else:
         # No one met the rating criteria? Escalate immediately or after delay.
         if attempt_level < 2:

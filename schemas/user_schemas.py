@@ -19,8 +19,9 @@ from utils import generate_presigned_url
 
 
 class UserSchema(BaseSQLAlchemyAutoSchema):
-    def __init__(self, *args, uid=None, **kwargs):
+    def __init__(self, *args, uid=None, session=None, **kwargs):
         self.uid = uid
+        self.session = session
         super().__init__(*args, **kwargs)
 
     class Meta:
@@ -51,17 +52,13 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         deserialize='set_profile_url'
     )
     rating = fields.Method(serialize='get_user_rating')
+    active_bookings = fields.Method(serialize='get_active_bookings')
 
     def get_profile_url(self, obj):
-        url = obj.profile_picture
-        if url:
-            img_id = obj.profile_picture.split('/')[-1]
-            return generate_presigned_url(
-                bucket_name=os.getenv('BUCKET_NAME'),
-                object_name=img_id,
-                action='download'
-            )
-        return url
+        blob_id = obj.profile_picture.split('/')[-1]
+        print(blob_id)
+        profile_picture_blob = Blob.get_by_id(blob_id, session=db.session())
+        return profile_picture_blob.download_url
 
     def set_profile_url(self, value):
         BUCKET_NAME = os.getenv('BUCKET_NAME')
@@ -72,12 +69,12 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
             blob_type=BlobTypes[value['blob_type']],
             content_type=value['content_type']
         )
-        new_blob.blob_id = uuid.uuid4().hex
-        new_blob.set_url_id(self.uid[1])
-        img_id = new_blob.img_id
         db.session.add(new_blob)
         db.session.flush()
-        url = f"https://storage.googleapis.com/{BUCKET_NAME}/{img_id}"
+        url = f"https://storage.googleapis.com/{BUCKET_NAME}/{new_blob.blob_id}"
+        # save presigned url to schema instance for use in response to api
+        self.upload_url = new_blob.upload_url
+        print("URL GENERATED!!", self.upload_url, new_blob.upload_url)
         return url
 
     def get_user_rating(self, obj):
@@ -86,6 +83,10 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         if c:
             return obj.get_star_rating(c=c)
         return obj.get_star_rating()
+
+    def get_active_bookings(self, obj):
+        uid = obj.user_id
+        return User.fetch_active_bookings(uid, session=self.session)
 
     # load_instance = True
     # transient = True

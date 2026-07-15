@@ -1,12 +1,12 @@
 from datetime import datetime
 
 from sqlalchemy.orm import column_property
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func, text, and_
 from flask import current_app
 from loguru import logger
 
 from core import db
-from models.bookings import Booking, BookingStatusEnum
+from models.bookings import Booking, BookingStatusEnum, BookingCategory
 from models.payments import Payment
 from .base import (
     TimestampMixin,
@@ -166,6 +166,14 @@ class User(TimestampMixin, db.Model):
                 session=session
             ).filter_by(email=email).first()
         return cls.query.filter_by(email=email).first()
+    
+    @classmethod
+    def get_by_id(cls, uid, session=None):
+        if session:
+            return cls.query.with_session(
+                session=session
+            ).filter_by(user_id=uid).first()
+        return cls.query.filter_by(user_id=uid).first()
 
     @property
     def average_rating_score(self):
@@ -190,6 +198,44 @@ class User(TimestampMixin, db.Model):
         BONUS_PER_STAR = 40
         ttl = BASE_SECONDS + (rating * BONUS_PER_STAR)
         return int(ttl)
+
+    @classmethod
+    def fetch_active_bookings(cls, user_id, session):
+        subq = (
+            select(
+                Booking.booking_id, Booking.status, cls.first_name,
+                cls.last_name, cls.profile_picture,
+                Booking.settlement_type, Artisan.artisan_id,
+                BookingCategory.name
+            )
+            .join(Artisan, Booking.artisan_id == Artisan.artisan_id)
+            .join(cls, Artisan.user_id == cls.user_id)
+            .join(BookingCategory, BookingCategory.id == Booking.category_id)
+            .where(
+                and_(
+                    Booking.status == BookingStatusEnum.IN_PROGRESS,
+                    Booking.customer_id == user_id
+                )
+            )
+        ).subquery()
+        stmt = (
+            select(
+                func.json_agg(
+                    func.json_build_object(
+                        'matched_artisan', func.jsonb_build_object(
+                            'name', func.concat_ws(' ', subq.c.first_name, subq.c.last_name),
+                            'settlement_type', subq.c.settlement_type,
+                            'id', subq.c.artisan_id,
+                            'profile_picture', subq.c.profile_picture
+                        ),
+                        'id', subq.c.booking_id, 'status', subq.c.status,
+                        'category', subq.c.name
+                    )
+                )
+            )
+        ).select_from(subq)
+        return session.execute(stmt).scalar()
+
 
 
 # @event.listens_for(User, 'before_update')

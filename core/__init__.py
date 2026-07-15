@@ -59,6 +59,8 @@ def configure_logging(app: Flask):
     # logging.getLogger("urllib3").setLevel('INFO')
     # logging.getLogger("cachecontrol").setLevel('INFO')
     logging.getLogger("socketio").setLevel('DEBUG')
+    logging.getLogger('engineio').setLevel(logging.DEBUG)
+    logging.getLogger("redis.connection").setLevel(logging.INFO)
     # logging.getLogger("engineio").setLevel('WARNING')
     # logging.getLogger("engineio.server").setLevel('WARNING')
     # logging.getLogger("google.auth").setLevel('WARNING')

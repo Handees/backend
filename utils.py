@@ -15,8 +15,6 @@ from firebase_admin import messaging
 from google.oauth2 import service_account
 from werkzeug.http import HTTP_STATUS_CODES
 
-from core import db
-
 
 def is_serializable(obj):
     try:
@@ -84,6 +82,7 @@ def get_class_by_tablename(tablename):
     :param tablename: String with name of table.
     :return: Class reference or None.
     """
+    from core import db
     for c in db.Model.registry._class_registry.values():
         if hasattr(c, "__tablename__") and c.__tablename__ == tablename:
             return c
@@ -91,7 +90,10 @@ def get_class_by_tablename(tablename):
 
 # consts
 LOG_FORMAT = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | filename={name} function={function} line={line} msg={message} level={level: <8}"  # noqa
-_level = "INFO" if os.getenv("APP_ENV").lower() in ["development", "local"] else "ERROR"
+# utils.py
+_app_env = os.getenv("APP_ENV", "DEV").lower()
+print(_app_env)
+_level = "DEBUG" if _app_env in ["development", "local", "dev"] else "ERROR"
 
 
 def setLogger():
@@ -99,9 +101,11 @@ def setLogger():
     from loguru import logger
 
     logger.remove()
-
+    
+    # This unified format gives you everything: the green timestamps, the file lines, and the message
+    LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+    
     logger.add(sys.stderr, colorize=True, format=LOG_FORMAT, level=_level)
-
 
 def fetch_instance_tag():
     # https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service?tabs=linux
@@ -178,7 +182,7 @@ def load_env(gpair):
     return keys
 
 
-def generate_presigned_url(bucket_name, object_name, action="upload", eta=15):
+def generate_presigned_url(bucket_name, object_name, action="upload", eta=15, content_type='', filename=''):
     cred = service_account.Credentials.from_service_account_file(os.getenv("F_KEY"))
     storage_client = storage.Client(credentials=cred)
     bucket = storage_client.bucket(bucket_name)
@@ -190,11 +194,17 @@ def generate_presigned_url(bucket_name, object_name, action="upload", eta=15):
         "expiration": datetime.timedelta(minutes=eta),
         "method": _method,
     }
-    content_type, _ = mimetypes.guess_type(object_name)
-    if not content_type:
-        content_type = "application/octet-stream"
+    ctype = ''
+
+    if content_type:
+        ctype = content_type
+    elif filename:
+        ctype, _ = mimetypes.guess_type(filename)
+
+    if not ctype:
+        ctype = "application/octet-stream"
     if _method == "PUT":
-        kwargs["content_type"] = content_type
+        kwargs["content_type"] = ctype
 
     url = blob.generate_signed_url(**kwargs)
 

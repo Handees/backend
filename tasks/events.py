@@ -6,6 +6,7 @@ import functools
 import firebase_admin
 from loguru import logger
 from dotenv import load_dotenv
+from flask_socketio import SocketIO
 
 from utils import send_notification
 from add_extensions import redis_4
@@ -18,6 +19,18 @@ load_dotenv()
 logging.basicConfig(level=logging.DEBUG)
 redis_pass = os.getenv('REDIS_PASS')
 redis_port = os.getenv('REDIS_PORT', 6378)
+
+mq = f"redis://:{redis_pass}@{os.getenv('REDIS_HOST')}:{redis_port}/7"
+sock = SocketIO(
+    cors_allowed_origins=[
+        'http://127.0.0.1:5020', 'http://127.0.0.1:5501',
+        'https://www.piesocket.com'
+    ],
+    message_queue=mq,
+    async_mode='gevent',
+    logger=True,
+    engineio_logger=True
+)
 
 NOTIFICATONS_MAP = {
     'approve_booking_details': {
@@ -85,7 +98,6 @@ def exp_backoff_task(retries, retry_backoff):
 @exp_backoff_task(retries=3, retry_backoff=1.5)
 def send_event(event, data, namespace):
     logger.info(f"ATTEMPTING TO SEND EVENT: {event}")
-    from flask_socketio import SocketIO
     from . import F_KEY_PATH
 
     print(F_KEY_PATH, "Firebase KEY")
@@ -107,17 +119,6 @@ def send_event(event, data, namespace):
         raise ClientNotConnected("Client no longer connected")
 
     app_instance = firebase_admin.get_app(name="firebase_admin_huey")
-    mq = f"redis://:{redis_pass}@{os.getenv('REDIS_HOST')}:{redis_port}/7"
-    sock = SocketIO(
-        cors_allowed_origins=[
-            'http://127.0.0.1:5020', 'http://127.0.0.1:5501',
-            'https://www.piesocket.com'
-        ],
-        message_queue=mq,
-        async_mode='gevent',
-        logger=True,
-        engineio_logger=True
-    )
     resp = sock.emit(
         event,
         data['payload'],

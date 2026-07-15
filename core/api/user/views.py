@@ -16,8 +16,7 @@ from models.reviews import Reviews
 from utils import (
     gen_response,
     error_response,
-    LOG_FORMAT,
-    _level
+    setLogger
 )
 from schemas.user_schemas import (
     AddNewUserSchema,
@@ -36,13 +35,8 @@ from core.api.auth.auth_helper import (
     permission_required
 )
 
-
-logger.add(
-    sys.stderr,
-    colorize=True,
-    level=_level,
-    format=LOG_FORMAT
-)
+logger.remove()
+setLogger()
 
 
 @user.post('/')
@@ -82,7 +76,7 @@ def create_new_user():
 @user.patch('/')
 @login_required
 def edit_user(current_user):
-    data = request.get_json(force=True)
+    payload = request.get_json(force=True)
     schema = UserSchema(
         uid=(
             current_user.user_id,
@@ -93,22 +87,37 @@ def edit_user(current_user):
     with db.session() as sess:
         try:
             user_data = schema.load(
-                data,
+                payload,
                 instance=current_user,
                 session=sess,
                 partial=True
             )
             sess.commit()
-            return gen_response(
-                200,
-                data=schema.dump(user_data)
-            )
         except Exception as e:
             logger.exception(e)
             sess.rollback()
             return error_response(
                 400,
                 message=str(e)
+            )
+        else:
+            logger.debug('profile_picture' in payload)
+            logger.debug(payload)
+            resp = schema.dump(current_user)
+            print('profile_picture' in payload, payload)
+            # if profile picture changed, return upload presigned url
+            if 'profile_picture' in payload:
+                logger.debug('PROFILE PHOto WAS UPDATED!!!!')
+                print("YES PROFILE PHOTO WAS UPDATED")
+                resp = {
+                    **resp,
+                    'upload_url': schema.upload_url
+                }
+                print(resp)
+            return gen_response(
+                200,
+                data=resp,
+                message=USER_PROFILE_UPDATED
             )
 
 
@@ -161,11 +170,12 @@ def add_app_token(current_user):
 @login_required
 def fetch_user(current_user):
     """ checks if uid exists """
-    schema = UserSchema()
-    return gen_response(
-        200,
-        data=schema.dump(current_user)
-    )
+    with db.session() as sess:
+        schema = UserSchema(session=sess)
+        return gen_response(
+            200,
+            data=schema.dump(current_user)
+        )
 
 
 @user.get('/bookings')
@@ -200,30 +210,43 @@ def fetch_bookings_for_user(current_user):
     )
 
 
-@user.patch('/')
-@login_required
-def update_user_profile(current_user):
-    payload = request.get_json(force=True)
-    schema = UserSchema(load_instance=True)
-    try:
-        schema.load(
-            payload,
-            instance=current_user,
-            partial=True
-        )
-        db.session.commit()
-    except Exception as e:
-        logger.error(e)
-        return error_response(
-            500,
-            message="Unexpected Error occurred whilst updating user profile💀"
-        )
-    else:
-        return gen_response(
-            200,
-            data=schema.dump(current_user),
-            message=USER_PROFILE_UPDATED
-        )
+# @user.patch('/')
+# @login_required
+# def update_user_profile(current_user):
+#     payload = request.get_json(force=True)
+#     schema = UserSchema(load_instance=True)
+#     try:
+#         schema.load(
+#             payload,
+#             instance=current_user,
+#             partial=True
+#         )
+#         db.session.commit()
+#     except Exception as e:
+#         logger.error(e)
+#         return error_response(
+#             500,
+#             message="Unexpected Error occurred whilst updating user profile💀"
+#         )
+#     else:
+#         logger.debug('profile_picture' in payload)
+#         logger.debug(payload)
+#         resp = schema.dump(current_user)
+#         print('profile_picture' in payload, payload)
+#         # if profile picture changed, return upload presigned url
+#         if 'profile_picture' in payload:
+#             logger.debug('PROFILE PHOto WAS UPDATED!!!!')
+#             print("YES PROFILE PHOTO WAS UPDATED")
+#             resp = {
+#                 **resp,
+#                 'upload_url': schema.upload_url
+#             }
+#             print(resp)
+#         return gen_response(
+#             200,
+#             data=resp,
+#             message=USER_PROFILE_UPDATED
+#         )
 
 
 @user.get('/cards')

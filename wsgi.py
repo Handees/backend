@@ -10,8 +10,7 @@ from dotenv import load_dotenv
 from models import *
 from utils import (
     get_class_by_tablename,
-    load_env,
-    fetch_instance_tag
+    load_env
 )
 from loguru import logger
 from google.cloud import secretmanager
@@ -25,8 +24,6 @@ import firebase_admin
 
 
 load_dotenv()
-logger.remove()
-logger.add(sys.stderr, enqueue=False)
 
 ENV = os.getenv('APP_ENV', 'DEV')
 app = create_app(ENV.lower() if ENV else 'default')
@@ -49,6 +46,8 @@ if app.config['FLASK_COVERAGE']:
     # COV.
     COV.start()
 
+print(os.environ.get("DATABASE_URL"))
+print(app.config)
 
 # flask shell
 @app.shell_context_processor
@@ -218,13 +217,6 @@ def redis_dispatch_listener(socketio_instance):
                 print(f"Dispatch Error: {e}")
 
 if __name__ == "__main__":
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
-        print("--> Starting Redis Dispatch Listener (Background)...")
-        threading.Thread(
-            target=redis_dispatch_listener,
-            args=(socketio,)
-        ).start()
-
     socketio.run(
         app,
         host="0.0.0.0",

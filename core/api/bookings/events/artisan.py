@@ -121,6 +121,10 @@ def on_connect(auth):
         "user_to_sid",
         mapping={uid: request.sid}
     )
+    # delete stale connection mapping
+    old_sid = redis_4.hget("user_to_sid", uid)
+    if old_sid:
+        redis_4.hdel("sid_to_user", old_sid)
     redis_4.hset(
         "sid_to_user",
         mapping={request.sid: uid}
@@ -133,19 +137,22 @@ def on_connect(auth):
 
 
 @socketio.on('disconnect', namespace='/artisan')
-def on_disconnect(arg):
-    print(f"==== {arg} ====")
-    if redis_4.exists(request.sid):
-        redis_4.delete(request.sid)
-    sid_all = redis_4.hgetall("sid_to_user")
-    uid_all = redis_4.hgetall("user_to_sid")
-    if request.sid in sid_all:
-        del uid_all[sid_all[request.sid]]
-        del sid_all[request.sid]
-    if sid_all:
-        redis_4.hset("sid_to_user", mapping=sid_all)
-    if uid_all:
-        redis_4.hset("user_to_sid", mapping=uid_all)
+def on_disconnect():
+    dropping_sid = request.sid
+    print(f"==== Disconnecting: {dropping_sid} ====")
+    if redis_4.exists(dropping_sid):
+        redis_4.delete(dropping_sid)
+    # 1. Look up the user associated with this dropping socket
+    uid = redis_4.hget("sid_to_user", dropping_sid)
+    if uid:
+        # 2. Always delete the specific dropping SID from the reverse lookup
+        redis_4.hdel("sid_to_user", dropping_sid)
+        current_active_sid = redis_4.hget("user_to_sid", uid)
+        if current_active_sid == dropping_sid:
+            redis_4.hdel("user_to_sid", uid)
+            logger.debug(f"User {uid} mapping fully removed.")
+        else:
+            logger.debug(f"Stale socket {dropping_sid} cleaned. User {uid} remains active on {current_active_sid}.")
 
 
 @socketio.on('location_update', namespace='/artisan')

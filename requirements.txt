@@ -61,6 +61,7 @@ flask-sqlalchemy
     #   -r requirements.in
     #   flask-migrate
 gevent
+gevent-websocket
 geoalchemy2
     # via -r requirements.in
 google-api-core[grpc]==2.11.0

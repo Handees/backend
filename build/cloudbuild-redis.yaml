@@ -1,0 +1,13 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'REDIS_PASSWORD=${_REDIS_PASSWORD}'
+      - '-t'
+      - 'africa-south1-docker.pkg.dev/$PROJECT_ID/handees-dev/handees-redis:7.2'
+      - '-f'
+      - 'docker/Dockerfile-redis'
+      - '.'
+images:
+  - 'africa-south1-docker.pkg.dev/$PROJECT_ID/handees-dev/handees-redis:7.2'

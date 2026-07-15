@@ -21,6 +21,5 @@ F_KEY_PATH = os.path.join(
     os.path.abspath(os.getcwd()),
     os.getenv('F_KEY')
 )
-print(F_KEY_PATH)
 cred = firebase_admin.credentials.Certificate(F_KEY_PATH)
 firebase_admin.initialize_app(cred, name="firebase_admin_huey")

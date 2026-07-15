@@ -39,13 +39,11 @@ def request_upload_urls(current_user):
             }
         images_schema = BlobSchema(many=True)
         images = images_schema.load(to_be_uploaded)
-        for img in images:
-            img.blob_id = uuid.uuid4().hex
         sess.add_all(images)
         sess.commit()
 
         resp = BlobSchema(
-            only=('filename', 'url'),
+            only=('filename', 'blob_id', 'url'),
             many=True
         ).dump(images)
         return gen_response(
@@ -60,41 +58,27 @@ def request_download_urls(current_user):
     with db.session() as sess:
         data = request.get_json(force=True)
         try:
-            imgs = ImageFileSchema(
-                action='download'
-            ).load(data)
+            imgs = ImageFileSchema(action='download').load(data)
         except Exception as e:
-            return error_response(
-                status_code=400,
-                message=str(e)
-            )
+            return error_response(status_code=400, message=str(e))
+            
         to_be_downloaded = []
         for img in imgs['images']:
-            query = select(Blob).where(
-                and_(
-                    Blob.blob_type == img['blob_type'],
-                    Blob.user_id == current_user.user_id,
-                    Blob.filename == img['filename']
-                )
-            )
-            blob = sess.scalars(query).first()
-            if not blob:
+            # Fetch the exact blob using the primary key
+            blob = sess.get(Blob, img['blob_id'])
+            
+            # Security check: ensure the current user actually owns this blob
+            if not blob or blob.user_id != current_user.user_id:
                 return error_response(
                     404,
-                    f"""
-                        Blob with filename {img['filename']} 
-                        and matching blob type {img['blob_type']}
-                        not found. It likely hasn't been uploaded.
-                    """
+                    f"File not found or access denied."
                 )
             to_be_downloaded.append(blob)
 
         resp = BlobSchema(
-            only=('filename', 'url'),
+            only=('blob_id', 'filename', 'url'),
             action='download',
             many=True
         ).dump(to_be_downloaded)
-        return gen_response(
-            200,
-            data=resp
-        )
+        
+        return gen_response(200, data=resp)

@@ -1,4 +1,6 @@
 import os
+import sys
+import redis
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -16,6 +18,17 @@ ma = Marshmallow()
 
 redis_pass = os.getenv('REDIS_PASS')
 redis_port = os.getenv('REDIS_PORT', 6378)
+
+
+# Force a raw connection test
+try:
+    print("Testing raw Redis connection from Cloud Run...", file=sys.stderr)
+    redis_url = f"redis://:{redis_pass}@{os.getenv('REDIS_HOST')}:{redis_port}"
+    test_client = redis.from_url(redis_url, socket_connect_timeout=3)
+    test_client.ping()
+    print("SUCCESS: Cloud Run can see Redis!", file=sys.stderr)
+except Exception as e:
+    print(f"FATAL REDIS ERROR: {str(e)}", file=sys.stderr)
 
 socketio: SocketIO = SocketIO(
     cors_allowed_origins=[
