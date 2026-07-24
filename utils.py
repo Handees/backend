@@ -1,5 +1,6 @@
 import os
 import json
+from urllib import response
 import zlib
 import pprint
 import base64
@@ -7,13 +8,25 @@ import datetime
 import requests
 import mimetypes
 import subprocess
+import hashlib
 
 from loguru import logger
-from flask import jsonify
+from flask import jsonify, request
 from google.cloud import storage
 from firebase_admin import messaging
 from google.oauth2 import service_account
 from werkzeug.http import HTTP_STATUS_CODES
+from user_agents import parse
+
+from models.signin_attempt import SignInAttempt
+from models.user_models import User
+from core import db
+from add_extensions import (
+    redis_,
+    redis_2,
+    redis_4,
+    redis_7
+)
 
 
 def is_serializable(obj):
@@ -325,6 +338,45 @@ def decode_id(val):
         dbytes = base64.b64decode(val)
         res = int.from_bytes(dbytes, "big")
     return int(res)
+
+
+def generate_device_hash():
+    raw_string = f"{device_os}:{ip_address}"
+
+    # Generate a hash using SHA256
+    hash_object = hashlib.sha256(raw_string.encode())
+    device_hash = hash_object.hexdigest()
+
+    redis_key = f"device_hash:{device_hash}"
+     
+    user_agent = parse(request.headers.get("User-Agent"))
+
+    device_os = user_agent.os.family
+
+    ip_address = request.headers.get(
+                    "X-Forwarded-For",
+                    request.remote_addr
+                )  
+    
+    response = requests.get(f"http://ip-api.com/json/{ip_address}")
+    data = response.json()
+    estimated_location = (
+        f"{data['city']}, "    
+        f"{data['regionName']}, "
+        f"{data['country']}"
+    )  
+
+    if redis_.exists(redis_key):
+        logger.debug(f"Device hash {device_hash}is Known.")
+    else:
+        # send notification to user about new device login
+        logger.debug(f"Device hash {device_hash} is Unknown. Storing in Redis.")  
+        
+        
+
+
+
+
 
 
 # --- Example Usage ---

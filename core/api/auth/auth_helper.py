@@ -5,6 +5,7 @@ from models.user_models import (
 )
 from core import socketio
 from core.api.bookings import messages
+from utils import generate_device_hash
 
 from functools import wraps
 from flask import (
@@ -185,6 +186,7 @@ def login_required(f):
         try:
             token = request.headers['access-token']
             uid = verify_token(token)
+            generate_device_hash()
             print(uid)
             logger.debug("user with data: {} still has access".format(uid))
             user = User.query.filter_by(user_id=uid).first()
