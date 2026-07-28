@@ -8,6 +8,9 @@ import requests
 import mimetypes
 import subprocess
 
+from math import ceil
+from flask import request
+from sqlalchemy import select, func
 from loguru import logger
 from flask import jsonify
 from google.cloud import storage
@@ -386,3 +389,54 @@ def decode_id(val):
 # response = requests.post(url, data=payload, headers=headers)
 
 # print(response.text)
+
+
+def paginate(query, page=1, per_page=10, sort_key=None, session=None):
+    """
+    Paginate a SQLAlchemy query.
+
+    :param query: The query to paginate.
+    :param page: The page number to retrieve.
+    :param per_page: The number of items per page.
+    :return: A paginated query object.
+    """
+    if session:
+        total = session.scalar(select(func.count()).select_from(query.subquery()))
+    else:
+        total = query.count()
+
+    page = max(1, request.args.get("page", page, type=int))
+    per_page = max(1, request.args.get("per_page", per_page, type=int))
+
+    pages = ceil(total / per_page) if total else 1
+
+    if sort_key:
+        paginated_query = query.order_by(
+            sort_key
+        ).limit(per_page).offset((page - 1) * per_page)
+    else:
+        paginated_query = query.limit(per_page).offset((page - 1) * per_page)
+    return PaginatedQuery(paginated_query, page, per_page, total, pages)
+
+
+class PaginatedQuery:
+    """
+    A paginated SQLAlchemy query object.
+    """
+
+    def __init__(self, query, page, per_page, total, pages):
+        self.query = query
+        self.page = page
+        self.per_page = per_page
+        self.total = total
+        self.pages = pages
+
+    @property
+    def items(self):
+        """
+        Get the data for the current page.
+        """
+        return self.query.all()
+
+    def scalars(self, session):
+        return session.scalars(self.query)
