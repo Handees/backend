@@ -54,6 +54,7 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     )
     reviews = fields.Nested('ReviewSchema', only=('weight', 'comment',))
     metrics = fields.Method(serialize='get_metrics')
+    rating = fields.Method(serialize='get_artisan_rating', dump_only=True)
 
     @pre_load
     def preformat_data(self, data, *args, **kwargs):

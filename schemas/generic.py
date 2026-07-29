@@ -52,12 +52,3 @@ class BlobSchema(BaseSQLAlchemyAutoSchema):
             return obj.upload_url
         return obj.download_url
 
-    @pre_load
-    def add_img_id(self, obj, *args, **kwargs):
-        if self.uid:
-            obj['img_id'] = generate_unique_file_id(
-                user_id=self.uid,
-                filename=obj['filename'],
-                blob_type=int(BlobTypes[obj['blob_type'].name].value)
-            )
-        return obj

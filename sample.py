@@ -217,7 +217,7 @@ def upload_file_with_presigned_url(presigned_url: str, file_path: str):
     # and match it when uploading.
     content_type, _ = mimetypes.guess_type(file_path)
     file_size = os.path.getsize(file_path)
-    print("file size is::", file_size)
+    print("file size is::", file_size, content_type)
     if content_type is None:
         content_type = 'application/octet-stream'
 
@@ -252,10 +252,10 @@ def upload_file_with_presigned_url(presigned_url: str, file_path: str):
 
 
 if __name__ == "__main__":
-    test_presigned_url = "https://storage.googleapis.com/handees_service_request_images_dev/cat.png?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40handees-dev.iam.gserviceaccount.com%2F20250708%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20250708T005612Z&X-Goog-Expires=900&X-Goog-SignedHeaders=content-type%3Bhost&X-Goog-Signature=44eb06c9dba5738fab7051745607992b80bbb13ca3a88dce37170f97427e9f1cb732417e84d6e79526b6d98b3d417d568410753f04436f128adf4acafaac19e1e21bb3d915cd308de5dcc24c4df30b52d4ca2fcab624d8617de79b5cb2e45e9050d3765e44d3616ce83efe6e839a79caead86e9276ba67bc83fd84c586056ece38f24b60bfb92ac7ff9dcecae0ba683a312ba60440dc91d7a4d378570e1c73613c6174f5545056b2c64ed2f6fe456cc8f6f3fcc1162689c085e5827448366c40fa07d811de318b73b1e39001b5ab41f60fd1d6478bee2c9691c6fa99e736c91a539035f76588db9cbebff5d5c10ff4091a82f6c0b3f75b16d4b4e8e058df3fdc"
+    test_presigned_url = "https://storage.googleapis.com/handees_service_request_images_dev/uploads/YVFr9oGC9CPpwBriJ3QbIW1PcO23/cd7c9b6ffe384feeb097b1af5dfbd73b?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40handees-dev.iam.gserviceaccount.com%2F20260728%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260728T151122Z&X-Goog-Expires=900&X-Goog-SignedHeaders=content-type%3Bhost&X-Goog-Signature=65a9fe8e9e41418d60be431db1212c4d78e1d7efe417fb71c90cbe4238a69aa0142f7316fd8ba1fb37ae4cf0a1b9a20bb19729978d691233aab80d89fa7a1c60808754f91a26d1ac5da38343b97808471e0b698538cc57e1a30d9abbe39966dac6521e75d3b43182b4363682208ddbc2ec68159f64b56cfa03fb28bdf19a60c4948b3830243f743bd12661ed5ecefa19bd9ad85b5bf5998277cec5b56731e71f668ce0ef2b47716da36607e654dce143f1d8788cdb342a34b2f8a8a36b38eb38b86a6f3a09dc361c3e24354d4b327bd225d4cee8259639ee06df0b1e05efc968337c16e71fa4bf9db9a920822dc4d8f982bc1f7fa995e7f68528dabed5c35e2f"
 
     # 2. Replace with the path to a local file you want to upload
-    test_file_path = "cat.png"
+    test_file_path = "frame.png"
 
     # Create a dummy file for testing if it doesn't exist
     if not os.path.exists(test_file_path):

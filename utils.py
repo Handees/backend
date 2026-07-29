@@ -14,6 +14,7 @@ from google.cloud import storage
 from firebase_admin import messaging
 from google.oauth2 import service_account
 from werkzeug.http import HTTP_STATUS_CODES
+from firebase_admin._messaging_utils import UnregisteredError
 
 
 def is_serializable(obj):
@@ -310,12 +311,17 @@ def decode_file_id(encoded_id: str):
 def send_notification(data, token, app=None, notification_object=None):
     print("FCM TOKEN IS::", token)
     print("Input data", data)
-    push_notification = messaging.Message(
-        data=data,
-        token=token,
-        notification=messaging.Notification(**notification_object),
-    )
-    response = messaging.send(push_notification, app=app)
+    try:
+        push_notification = messaging.Message(
+            data=data,
+            token=token,
+            notification=messaging.Notification(**notification_object),
+        )
+        response = messaging.send(push_notification, app=app)
+    except UnregisteredError:
+        logger.warning(f"FCM token stale/unregistered, skipping and removing")
+        # TODO: mark this token invalid in your DB so you stop sending to it
+        return
     return response
 
 

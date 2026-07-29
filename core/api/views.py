@@ -61,12 +61,12 @@ def request_download_urls(current_user):
             imgs = ImageFileSchema(action='download').load(data)
         except Exception as e:
             return error_response(status_code=400, message=str(e))
-            
+
         to_be_downloaded = []
         for img in imgs['images']:
             # Fetch the exact blob using the primary key
             blob = sess.get(Blob, img['blob_id'])
-            
+
             # Security check: ensure the current user actually owns this blob
             if not blob or blob.user_id != current_user.user_id:
                 return error_response(
