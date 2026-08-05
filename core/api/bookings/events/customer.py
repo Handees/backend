@@ -85,7 +85,7 @@ def enter_chat_namespace(uid):
 
 
 @socketio.on('disconnect', namespace='/customer')
-def disconnect():
+def disconnect(reason=None):
     if redis_4.exists(request.sid):
         redis_4.delete(request.sid)
     sid_all = redis_4.hgetall("sid_to_user")

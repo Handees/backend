@@ -1,6 +1,5 @@
 import os
 import json
-from urllib import response
 import zlib
 import pprint
 import base64
@@ -8,25 +7,17 @@ import datetime
 import requests
 import mimetypes
 import subprocess
-import hashlib
 
+from math import ceil
+from flask import request
+from sqlalchemy import select, func
 from loguru import logger
-from flask import jsonify, request
+from flask import jsonify
 from google.cloud import storage
 from firebase_admin import messaging
 from google.oauth2 import service_account
 from werkzeug.http import HTTP_STATUS_CODES
-from user_agents import parse
-
-from models.signin_attempt import SignInAttempt
-from models.user_models import User
-from core import db
-from add_extensions import (
-    redis_,
-    redis_2,
-    redis_4,
-    redis_7
-)
+from firebase_admin._messaging_utils import UnregisteredError
 
 
 def is_serializable(obj):
@@ -323,12 +314,17 @@ def decode_file_id(encoded_id: str):
 def send_notification(data, token, app=None, notification_object=None):
     print("FCM TOKEN IS::", token)
     print("Input data", data)
-    push_notification = messaging.Message(
-        data=data,
-        token=token,
-        notification=messaging.Notification(**notification_object),
-    )
-    response = messaging.send(push_notification, app=app)
+    try:
+        push_notification = messaging.Message(
+            data=data,
+            token=token,
+            notification=messaging.Notification(**notification_object),
+        )
+        response = messaging.send(push_notification, app=app)
+    except UnregisteredError:
+        logger.warning(f"FCM token stale/unregistered, skipping and removing")
+        # TODO: mark this token invalid in your DB so you stop sending to it
+        return
     return response
 
 
@@ -338,45 +334,6 @@ def decode_id(val):
         dbytes = base64.b64decode(val)
         res = int.from_bytes(dbytes, "big")
     return int(res)
-
-
-def generate_device_hash():
-    raw_string = f"{device_os}:{ip_address}"
-
-    # Generate a hash using SHA256
-    hash_object = hashlib.sha256(raw_string.encode())
-    device_hash = hash_object.hexdigest()
-
-    redis_key = f"device_hash:{device_hash}"
-     
-    user_agent = parse(request.headers.get("User-Agent"))
-
-    device_os = user_agent.os.family
-
-    ip_address = request.headers.get(
-                    "X-Forwarded-For",
-                    request.remote_addr
-                )  
-    
-    response = requests.get(f"http://ip-api.com/json/{ip_address}")
-    data = response.json()
-    estimated_location = (
-        f"{data['city']}, "    
-        f"{data['regionName']}, "
-        f"{data['country']}"
-    )  
-
-    if redis_.exists(redis_key):
-        logger.debug(f"Device hash {device_hash}is Known.")
-    else:
-        # send notification to user about new device login
-        logger.debug(f"Device hash {device_hash} is Unknown. Storing in Redis.")  
-        
-        
-
-
-
-
 
 
 # --- Example Usage ---
@@ -438,3 +395,54 @@ def generate_device_hash():
 # response = requests.post(url, data=payload, headers=headers)
 
 # print(response.text)
+
+
+def paginate(query, page=1, per_page=10, sort_key=None, session=None):
+    """
+    Paginate a SQLAlchemy query.
+
+    :param query: The query to paginate.
+    :param page: The page number to retrieve.
+    :param per_page: The number of items per page.
+    :return: A paginated query object.
+    """
+    if session:
+        total = session.scalar(select(func.count()).select_from(query.subquery()))
+    else:
+        total = query.count()
+
+    page = max(1, request.args.get("page", page, type=int))
+    per_page = max(1, request.args.get("per_page", per_page, type=int))
+
+    pages = ceil(total / per_page) if total else 1
+
+    if sort_key:
+        paginated_query = query.order_by(
+            sort_key
+        ).limit(per_page).offset((page - 1) * per_page)
+    else:
+        paginated_query = query.limit(per_page).offset((page - 1) * per_page)
+    return PaginatedQuery(paginated_query, page, per_page, total, pages)
+
+
+class PaginatedQuery:
+    """
+    A paginated SQLAlchemy query object.
+    """
+
+    def __init__(self, query, page, per_page, total, pages):
+        self.query = query
+        self.page = page
+        self.per_page = per_page
+        self.total = total
+        self.pages = pages
+
+    @property
+    def items(self):
+        """
+        Get the data for the current page.
+        """
+        return self.query.all()
+
+    def scalars(self, session):
+        return session.scalars(self.query)

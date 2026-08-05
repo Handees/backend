@@ -137,7 +137,7 @@ def on_connect(auth):
 
 
 @socketio.on('disconnect', namespace='/artisan')
-def on_disconnect():
+def on_disconnect(reason=None):
     dropping_sid = request.sid
     print(f"==== Disconnecting: {dropping_sid} ====")
     if redis_4.exists(dropping_sid):
@@ -159,7 +159,7 @@ def on_disconnect():
 @parse_event_data
 @valid_auth_required
 def update_location(uid, data):
-    print("EXECUTING ... for {}".format(uid))
+    print("EXECUTING ... for {}".format(uid), flush=True)
     # add coords to redis
     redis_5.geoadd(
         name=data['job_category'],
@@ -293,7 +293,7 @@ def accept_offer(uid, data):
     room = data['booking_id']
     data['uid'] = uid
     lock_key = f"lock:booking:{room}"
-    with redis_.lock(lock_key, blocking_timeout=1):
+    with redis_.lock(lock_key, ttl=5000):
         if redis_.exists(room):
             # read and remove from queue
             bk_info = parse_str_data(redis_.get(room))
@@ -317,7 +317,6 @@ def accept_offer(uid, data):
                 only=(
                     'created_at',
                     'user_profile',
-                    'rating',
                     'job_category',
                     'jobs_completed',
                     'hourly_rate'
@@ -490,7 +489,7 @@ def handle_location_arrival(uid, data):
         )
 
     payload = {
-        'payload': messages.ARTISAN_ARRIVES,
+        'payload': {'message': messages.ARTISAN_ARRIVES},
         'recipient': redis_4.hget(
             'booking_id_to_uid',
             data['booking_id']

@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from loguru import logger
 import sys
 
+from devices import save_device_data
 from . import user
 from core import db
 from utils import decode_id
@@ -16,7 +17,8 @@ from models.reviews import Reviews
 from utils import (
     gen_response,
     error_response,
-    setLogger
+    setLogger,
+    paginate
 )
 from schemas.user_schemas import (
     AddNewUserSchema,
@@ -34,6 +36,7 @@ from core.api.auth.auth_helper import (
     login_required,
     permission_required
 )
+
 
 logger.remove()
 setLogger()
@@ -57,6 +60,7 @@ def create_new_user():
     try:
         db.session.add(new_user)
         db.session.commit()
+        save_device_data(new_user)
         return gen_response(
             201,
             data=schema.dump(new_user),
@@ -183,9 +187,15 @@ def fetch_user(current_user):
 @permission_required(Permission.service_request)
 def fetch_bookings_for_user(current_user):
     """ fetch all bookings made by a user """
-    bookings = current_user.bookings.order_by(
+    query = current_user.bookings.order_by(
         desc(Booking.created_at)
-    ).all()
+    )
+
+    pagination = paginate(
+        query=query,
+        page=request.args.get("page", 1, type=int),
+        per_page=request.args.get("per_page", 10, type=int),
+    )
 
     msg = 'fetched top recent bookings successfully'
     schema = BookingSchema(
@@ -205,8 +215,15 @@ def fetch_bookings_for_user(current_user):
 
     return gen_response(
         200,
-        data=schema.dump(bookings),
-        message=msg
+        data={
+                "bookings": schema.dump(pagination.items),
+                "page": pagination.page,
+                "per_page": pagination.per_page,
+                "total": pagination.total,
+                "pages": pagination.pages
+            },
+        message=msg,
+ 
     )
 
 

@@ -9,9 +9,9 @@ steps:
       - '--build-arg'
       - 'COCKROACH_DB_CERT_URL=${_COCKROACH_DB_CERT_URL}'
       - '-t'
-      - 'africa-south1-docker.pkg.dev/$PROJECT_ID/handees-dev/handees-backend:1.1'
+      - 'africa-south1-docker.pkg.dev/$PROJECT_ID/handees-dev/handees-backend:1.2'
       - '-f'
       - 'docker/Dockerfile'
       - '.'
 images:
-  - 'africa-south1-docker.pkg.dev/$PROJECT_ID/handees-dev/handees-backend:1.1'
+  - 'africa-south1-docker.pkg.dev/$PROJECT_ID/handees-dev/handees-backend:1.2'

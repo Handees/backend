@@ -203,10 +203,10 @@ class User(TimestampMixin, db.Model):
     def fetch_active_bookings(cls, user_id, session):
         subq = (
             select(
-                Booking.booking_id, Booking.status, cls.first_name,
-                cls.last_name, cls.profile_picture,
+                Booking.booking_id, Booking.status, Booking.created_at,
+                cls.first_name, cls.last_name, cls.profile_picture,
                 Booking.settlement_type, Artisan.artisan_id,
-                BookingCategory.name
+                BookingCategory.name, cls.telephone
             )
             .join(Artisan, Booking.artisan_id == Artisan.artisan_id)
             .join(cls, Artisan.user_id == cls.user_id)
@@ -226,10 +226,12 @@ class User(TimestampMixin, db.Model):
                             'name', func.concat_ws(' ', subq.c.first_name, subq.c.last_name),
                             'settlement_type', subq.c.settlement_type,
                             'id', subq.c.artisan_id,
-                            'profile_picture', subq.c.profile_picture
+                            'profile_picture', subq.c.profile_picture,
+                            'phone_number', subq.c.telephone
                         ),
                         'id', subq.c.booking_id, 'status', subq.c.status,
-                        'category', subq.c.name
+                        'category', subq.c.name,
+                        'created_at', subq.c.created_at
                     )
                 )
             )

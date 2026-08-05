@@ -1,1 +1,1 @@
-docker rm handees-backend && docker run -p 5000:5000 --name handees-backend handees-backend:1.1
+docker stop handees-backend && docker rm handees-backend && docker run -p 5000:5000 --name handees-backend handees-backend:1.1

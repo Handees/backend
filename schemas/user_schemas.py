@@ -54,11 +54,13 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
     rating = fields.Method(serialize='get_user_rating')
     active_bookings = fields.Method(serialize='get_active_bookings')
 
-    def get_profile_url(self, obj):
-        blob_id = obj.profile_picture.split('/')[-1]
-        print(blob_id)
+    def _get_profile_url(self, blob_id):
         profile_picture_blob = Blob.get_by_id(blob_id, session=db.session())
         return profile_picture_blob.download_url
+
+    def get_profile_url(self, obj):
+        blob_id = obj.profile_picture.split('/')[-1]
+        return self._get_profile_url(blob_id)
 
     def set_profile_url(self, value):
         BUCKET_NAME = os.getenv('BUCKET_NAME')
@@ -74,7 +76,6 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         url = f"https://storage.googleapis.com/{BUCKET_NAME}/{new_blob.blob_id}"
         # save presigned url to schema instance for use in response to api
         self.upload_url = new_blob.upload_url
-        print("URL GENERATED!!", self.upload_url, new_blob.upload_url)
         return url
 
     def get_user_rating(self, obj):
@@ -86,8 +87,13 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
 
     def get_active_bookings(self, obj):
         uid = obj.user_id
-        return User.fetch_active_bookings(uid, session=self.session)
-
+        active_bks = User.fetch_active_bookings(uid, session=self.session)
+        if not active_bks:
+            return []
+        for bk in active_bks:
+            blob_id = bk['matched_artisan']['profile_picture'].split('/')[-1]
+            bk['matched_artisan']['profile_picture'] = self._get_profile_url(blob_id)
+        return active_bks
     # load_instance = True
     # transient = True
 
