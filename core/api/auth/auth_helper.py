@@ -186,6 +186,7 @@ def login_required(f):
             token = request.headers['access-token']
             uid = verify_token(token)
             print(uid)
+            user = User.query.filter_by(user_id=uid).first()
             logger.debug("user with data: {} still has access".format(uid))
             user = User.query.filter_by(user_id=uid).first()
         except (Exception or Exception in excs or auth.ExpiredIdTokenError) as e:
