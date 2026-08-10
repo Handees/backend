@@ -230,8 +230,8 @@ def get_estimated_location():
 def send_emails(to_email, subject, body):
     try:
 
-        sender_email = "shyamgundetin@gmail.com"
-        sender_password = "qfdgagqxljuoascx"
+        sender_email = os.getenv("EMAIL_ADDRESS")
+        sender_password = os.getenv("EMAIL_PASSWORD")
 
         message = MIMEMultipart()
 
@@ -241,7 +241,7 @@ def send_emails(to_email, subject, body):
 
         message.attach(MIMEText(body, "plain"))
 
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        with smtplib.SMTP(os.getenv("smtp.gmail.com"), 587) as server:
             server.starttls()
             server.login(sender_email, sender_password)
             server.send_message(message)
