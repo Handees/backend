@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from loguru import logger
 import sys
 
-from devices import save_device_data
+
 from . import user
 from core import db
 from utils import decode_id
@@ -36,7 +36,7 @@ from core.api.auth.auth_helper import (
     login_required,
     permission_required
 )
-
+from devices import save_device_hash, check_device_hash
 
 logger.remove()
 setLogger()
@@ -60,7 +60,7 @@ def create_new_user():
     try:
         db.session.add(new_user)
         db.session.commit()
-        save_device_data(new_user)
+        save_device_hash(new_user)
         return gen_response(
             201,
             data=schema.dump(new_user),
@@ -174,6 +174,8 @@ def add_app_token(current_user):
 @login_required
 def fetch_user(current_user):
     """ checks if uid exists """
+    user = User.query.filter_by(user_id=current_user.user_id).first()
+    check_device_hash(user)
     with db.session() as sess:
         schema = UserSchema(session=sess)
         return gen_response(

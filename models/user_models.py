@@ -5,6 +5,7 @@ from sqlalchemy import select, func, text, and_
 from flask import current_app
 from loguru import logger
 
+from models.signin_attempt import SignInAttempts
 from core import db
 from models.bookings import Booking, BookingStatusEnum, BookingCategory
 from models.payments import Payment
@@ -135,6 +136,24 @@ class User(TimestampMixin, db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     cards = db.relationship('CardAuth', backref='user')
     payments = db.relationship('Payment', backref='user')
+    device_hash = db.Column(db.String(100))
+    
+    signin_attempts = db.relationship(
+        "SignInAttempts",
+        back_populates="user",
+        foreign_keys="SignInAttempts.user_id"
+    )
+
+    last_seen_id = db.Column(
+        db.Integer,
+        db.ForeignKey("signin_attempts.id"),
+        nullable=True
+    )
+
+    last_seen = db.relationship(
+        "SignInAttempts",
+        foreign_keys=[last_seen_id]
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

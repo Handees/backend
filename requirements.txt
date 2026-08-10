@@ -240,3 +240,5 @@ zipp
     #   importlib-resources
 sqlalchemy-cockroachdb
 passlib[argon2]
+user-agents
+geoip2

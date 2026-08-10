@@ -1,3 +1,5 @@
+from ctypes.wintypes import INT
+
 from core import db
 from .base import TimestampMixin
 
@@ -17,11 +19,7 @@ class SignInAttempts(TimestampMixin, db.Model):
         back_populates="signin_attempts",
         foreign_keys=[user_id]
     )
-
-    ip_address = db.Column(db.String(45))
-    device_uuid = db.Column(db.String(128))
-    device_model = db.Column(db.String(128))
+    device_mac = db.Column(db.String(128))
+    device_name = db.Column(db.String(128))
     device_os = db.Column(db.String(50))
     estimated_location = db.Column(db.JSON)
-
-   

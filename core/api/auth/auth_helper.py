@@ -5,7 +5,6 @@ from models.user_models import (
 )
 from core import socketio
 from core.api.bookings import messages
-from devices import check_device_hash
 
 from functools import wraps
 from flask import (
@@ -188,7 +187,6 @@ def login_required(f):
             uid = verify_token(token)
             print(uid)
             user = User.query.filter_by(user_id=uid).first()
-            check_device_hash(user)
             logger.debug("user with data: {} still has access".format(uid))
             user = User.query.filter_by(user_id=uid).first()
         except (Exception or Exception in excs or auth.ExpiredIdTokenError) as e:
