@@ -103,6 +103,13 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
             # Total number of reviews
             count = sum(review_grouped.values())
 
+            # Convert counts to percentages
+            if count > 0:
+                review_grouped = {
+                    rating: round((rating_count / count) * 100)
+                    for rating, rating_count in review_grouped.items()
+                }
+
             return {
                 'rating': self.get_artisan_rating(obj),
                 'activity': obj.activity,
