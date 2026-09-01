@@ -36,9 +36,9 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         )
 
         exclude = (
-            'booking', 'ratings_weighted_sum',
+            'booking', 'ratings_weighted_sum','kyc_attempts','wallet',
         )
-
+    # sign_up_date = ma.String()
     # additional fields
     created_at = ma.String(dump_only=True, data_key="became_artisan_on")
     user_profile = fields.Nested("UserSchema", only=(
@@ -77,15 +77,6 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     def get_metrics(self, obj):
         with db.session() as sess:
 
-            # Total number of reviews
-            count = sess.query(
-                func.count(Reviews.id)
-            ).filter(
-                Reviews.artisan_id == obj.artisan_id,
-                Reviews.weight.between(1, 5)
-            ).scalar()
-
-            # Number of reviews for each rating
             rating_counts = sess.query(
                 Reviews.weight,
                 func.count(Reviews.id)
@@ -105,21 +96,22 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
                 'r5': 0
             }
 
-            # Calculate percentage
+            # Put actual review counts into r1-r5
             for rating, rating_count in rating_counts:
-                review_grouped[rating] = round(
-                    (rating_count / count) * 100
-                ) if count else 0
+                review_grouped[f'r{rating}'] = rating_count
 
-        return {
-            'rating': self.get_artisan_rating(obj),
-            'activity': obj.activity,
-            'earnings': obj.total_earnings,
-            'review_matrics':{
-                'count': count,
-                'review_grouped': review_grouped
+            # Total number of reviews
+            count = sum(review_grouped.values())
+
+            return {
+                'rating': self.get_artisan_rating(obj),
+                'activity': obj.activity,
+                'earnings': obj.total_earnings,
+                'review_matrics': {
+                    'count': count,
+                    'review_grouped': review_grouped
+                }
             }
-        }
 
 
 class AddArtisanSchema(BaseSchema):
