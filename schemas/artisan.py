@@ -1,8 +1,9 @@
+from models import Reviews
 from models.user_models import (
     Artisan,
     Kyc
 )
-from core import ma
+from core import ma, db
 from add_extensions import redis_
 from models.bookings import BookingCategory
 from .base import (
@@ -18,6 +19,7 @@ from marshmallow import (
     post_dump,
     INCLUDE
 )
+from sqlalchemy import func
 
 
 class ArtisanSchema(BaseSQLAlchemyAutoSchema):
@@ -71,12 +73,52 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         if c:
             return obj.get_star_rating(c=c)
         return obj.get_star_rating()
-
+    
     def get_metrics(self, obj):
+        with db.session() as sess:
+
+            # Total number of reviews
+            count = sess.query(
+                func.count(Reviews.id)
+            ).filter(
+                Reviews.artisan_id == obj.artisan_id,
+                Reviews.weight.between(1, 5)
+            ).scalar()
+
+            # Number of reviews for each rating
+            rating_counts = sess.query(
+                Reviews.weight,
+                func.count(Reviews.id)
+            ).filter(
+                Reviews.artisan_id == obj.artisan_id,
+                Reviews.weight.between(1, 5)
+            ).group_by(
+                Reviews.weight
+            ).all()
+
+            # Default 1-5 to 0
+            review_grouped = {
+                'r1': 0,
+                'r2': 0,
+                'r3': 0,
+                'r4': 0,
+                'r5': 0
+            }
+
+            # Calculate percentage
+            for rating, rating_count in rating_counts:
+                review_grouped[rating] = round(
+                    (rating_count / count) * 100
+                ) if count else 0
+
         return {
             'rating': self.get_artisan_rating(obj),
             'activity': obj.activity,
-            'earnings': obj.total_earnings
+            'earnings': obj.total_earnings,
+            'review_matrics':{
+                'count': count,
+                'review_grouped': review_grouped
+            }
         }
 
 
