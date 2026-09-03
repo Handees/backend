@@ -1,3 +1,4 @@
+from models import Reviews
 from models.user_models import (
     Artisan,
     Kyc
@@ -35,7 +36,7 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         exclude = (
             'ratings_weighted_sum', 'bookings', 'current_booking_id'
         )
-
+    # sign_up_date = ma.String()
     # additional fields
     created_at = ma.String(dump_only=True, data_key="became_artisan_on")
     user_profile = fields.Nested("UserSchema", only=(
@@ -83,13 +84,52 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
         if c:
             return obj.get_star_rating(c=c)
         return obj.get_star_rating()
-
+    
     def get_metrics(self, obj):
-        return {
-            'rating': self.get_artisan_rating(obj),
-            'activity': obj.activity,
-            'earnings': obj.total_earnings
-        }
+        with db.session() as sess:
+
+            rating_counts = sess.query(
+                Reviews.weight,
+                func.count(Reviews.id)
+            ).filter(
+                Reviews.artisan_id == obj.artisan_id,
+                Reviews.weight.between(1, 5)
+            ).group_by(
+                Reviews.weight
+            ).all()
+
+            # Default 1-5 to 0
+            review_grouped = {
+                'r1': 0,
+                'r2': 0,
+                'r3': 0,
+                'r4': 0,
+                'r5': 0
+            }
+
+            # Put actual review counts into r1-r5
+            for rating, rating_count in rating_counts:
+                review_grouped[f'r{rating}'] = rating_count
+
+            # Total number of reviews
+            count = sum(review_grouped.values())
+
+            # Convert counts to percentages
+            if count > 0:
+                review_grouped = {
+                    rating: round((rating_count / count) * 100)
+                    for rating, rating_count in review_grouped.items()
+                }
+
+            return {
+                'rating': self.get_artisan_rating(obj),
+                'activity': obj.activity,
+                'earnings': obj.total_earnings,
+                'review_matrics': {
+                    'count': count,
+                    'review_grouped': review_grouped
+                }
+            }
 
     def _get_profile_url(self, blob_id):
         profile_picture_blob = Blob.get_by_id(blob_id, session=db.session())
