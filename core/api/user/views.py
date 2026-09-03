@@ -30,7 +30,7 @@ from .messages import (
     USER_DATA_EXISTS,
     USER_PROFILE_UPDATED
 )
-from models.bookings import Booking
+from models.bookings import Booking, BookingStatusEnum
 from core.api.auth.auth_helper import (
     login_required,
     permission_required
@@ -184,44 +184,59 @@ def fetch_user(current_user):
 @permission_required(Permission.service_request)
 def fetch_bookings_for_user(current_user):
     """ fetch all bookings made by a user """
-    query = current_user.bookings.order_by(
-        desc(Booking.created_at)
-    )
+    with db.session() as sess:
+        try:
+            status = request.args.get('status', '', type=str)
+            matched = request.args.get('matched', 0, type=int)
+            stmt = Booking.fetch_user_bookings(current_user.user_id)
 
-    pagination = paginate(
-        query=query,
-        page=request.args.get("page", 1, type=int),
-        per_page=request.args.get("per_page", 10, type=int),
-    )
+            if status:
+                status = status.upper().split(',')
+                status = [BookingStatusEnum[x.strip()] for x in status]
+                stmt = stmt.where(Booking.status in status)
+            if matched:
+                stmt = stmt.where(Booking.artisan_id != None)
 
-    msg = 'fetched top recent bookings successfully'
-    schema = BookingSchema(
-        only=(
-            'booking_id',
-            'created_at',
-            'booking_category',
-            'status',
-            'artisan',
-            'artisan.user_profile.profile_picture',
-            'artisan.user_profile.first_name',
-            'artisan.user_profile.last_name',
-            'artisan.artisan_id'
-        ),
-        many=True
-    )
+            bookings = stmt.order_by(desc(Booking.created_at))
+            pagination = paginate(
+                query=bookings,
+                page=request.args.get("page", 1, type=int),
+                per_page=request.args.get("per_page", 10, type=int),
+                session=sess
+            )
 
-    return gen_response(
-        200,
-        data={
-                "bookings": schema.dump(pagination.items),
-                "page": pagination.page,
-                "per_page": pagination.per_page,
-                "total": pagination.total,
-                "pages": pagination.pages
-            },
-        message=msg,
- 
-    )
+            msg = 'fetched top recent bookings successfully'
+            schema = BookingSchema(
+                only=(
+                    'booking_id',
+                    'created_at',
+                    'booking_category',
+                    'status',
+                    'artisan',
+                    'artisan.user_profile.profile_picture',
+                    'artisan.user_profile.first_name',
+                    'artisan.user_profile.last_name',
+                    'artisan.artisan_id',
+                    'lat', 'lon'
+                ),
+                many=True
+            )
+            return gen_response(
+                200,
+                data={
+                        "bookings": schema.dump(pagination.scalars(sess)),
+                        "page": pagination.page,
+                        "per_page": pagination.per_page,
+                        "total": pagination.total,
+                        "pages": pagination.pages
+                    },
+                message=msg,
+            )
+        except ValueError as e:
+            logger.error(e)
+            return error_response(
+                400, message=str(e)
+            )
 
 
 # @user.patch('/')

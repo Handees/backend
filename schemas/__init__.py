@@ -6,6 +6,7 @@ from .bookings_schema import (
     BookingStartSchema,
     CancelBookingSchema,
     BookingWorkSessionSchema,
+    BookingContractSchema,
     BookingWorkDaySchema
 )
 from .payment import (

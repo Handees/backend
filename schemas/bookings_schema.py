@@ -1,5 +1,7 @@
+from sqlalchemy import func
 from marshmallow import fields
 from geoalchemy2.types import Geometry as GeometryType
+from geoalchemy2.elements import WKTElement
 from marshmallow_sqlalchemy import ModelConverter
 
 from .base import BaseSQLAlchemyAutoSchema
@@ -12,15 +14,28 @@ from models.bookings import (
     BookingContractDurationEnum,
     BookingPaymentMethod,
     BookingWorkSession,
+    BookingContract,
+    BookingCategory,
     BookingWorkDay
 )
 from marshmallow import (
     pre_load,
-    post_load
+    post_load,
+    pre_dump
 )
 from core.exc import DataValidationError
 from schemas.schema_utils import v_float
 from schemas.generic import BlobSchema
+
+
+class BookingContractSchema(BaseSQLAlchemyAutoSchema):
+    class Meta:
+        model = BookingContract
+
+
+class BookingCategorySchema(BaseSQLAlchemyAutoSchema):
+    class Meta:
+        model = BookingCategory
 
 
 class UploadImagesSchema(ma.Schema):
@@ -59,21 +74,20 @@ class BookingSchema(BaseSQLAlchemyAutoSchema):
         load_instance = True
 
     job_category = fields.Str(required=True, load_only=True)
-    booking_category = fields.Method(serialize='show_category')
-    lat = fields.Float(required=True, load_only=True, validate=v_float)
-    lon = fields.Float(required=True, load_only=True, validate=v_float)
+    lat = fields.Float(required=True, validate=v_float)
+    lon = fields.Float(required=True, validate=v_float)
     payment_method = fields.Enum(BookingPaymentMethod)
     images = fields.Method(serialize='show_upload_url')
     artisan = fields.Nested('ArtisanSchema')
+    user = fields.Nested('UserSchema', only=('first_name', 'last_name'))
+    booking_contract = fields.Nested(BookingContractSchema)
+    booking_category = fields.Nested(BookingCategorySchema)
 
     def show_upload_url(self, obj):
         return BlobSchema(
             many=True,
             only=('url', 'filename', 'content_type')
         ).dump(obj.images)
-
-    def show_category(self, obj):
-        return obj.booking_category.name
 
     @pre_load
     def format(self, data, *args, **kwargs):

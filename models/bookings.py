@@ -1,7 +1,8 @@
 import os
 
 import datetime
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
+from sqlalchemy.orm import column_property
 from dotenv import load_dotenv
 from geoalchemy2 import Geometry
 from datetime import datetime as dt
@@ -209,9 +210,13 @@ class Booking(TimestampMixin, db.Model):
         db.Integer,
         db.ForeignKey('booking_work_session.id')
     )
+    customer_address = db.Column(db.String)
     images = db.relationship('Blob', backref='booking')
     working_days = db.relationship('BookingWorkDay', backref='booking')
     chat = db.relationship('Chat', uselist=False, backref='booking')
+
+    lat = column_property(func.ST_Y(location))
+    lon = column_property(func.ST_X(location))
 
     def update_start_time(self):
         self.start_time = dt.utcnow()
@@ -302,4 +307,10 @@ class Booking(TimestampMixin, db.Model):
             select(BookingWorkSession).where(
                 BookingWorkSession.id == self.current_work_session_id
             )
+        )
+
+    @classmethod
+    def fetch_user_bookings(cls, user_id):
+        return select(cls).where(
+            cls.customer_id == user_id
         )

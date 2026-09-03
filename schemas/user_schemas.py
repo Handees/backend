@@ -59,7 +59,10 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         return profile_picture_blob.download_url
 
     def get_profile_url(self, obj):
-        blob_id = obj.profile_picture.split('/')[-1]
+        image_url = obj.profile_picture
+        if not image_url:
+            return ''
+        blob_id = image_url.split('/')[-1]
         return self._get_profile_url(blob_id)
 
     def set_profile_url(self, value):
@@ -91,9 +94,12 @@ class UserSchema(BaseSQLAlchemyAutoSchema):
         if not active_bks:
             return []
         for bk in active_bks:
-            blob_id = bk['matched_artisan']['profile_picture'].split('/')[-1]
-            bk['matched_artisan']['profile_picture'] = self._get_profile_url(blob_id)
+            image_url = bk.get('matched_artisan', {}).get('profile_picture', '')
+            if image_url:
+                blob_id = image_url.split('/')[-1]
+                bk['matched_artisan']['profile_picture'] = self._get_profile_url(blob_id)
         return active_bks
+
     # load_instance = True
     # transient = True
 

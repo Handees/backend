@@ -2,9 +2,9 @@ from models.user_models import (
     Artisan,
     Kyc
 )
-from core import ma
+from core import ma, db
 from add_extensions import redis_
-from models.bookings import BookingCategory
+from models.documents import Blob
 from .base import (
     BaseSQLAlchemyAutoSchema,
     BaseSchema
@@ -18,7 +18,7 @@ from marshmallow import (
     post_dump,
     INCLUDE
 )
-
+from sqlalchemy import func
 
 class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     class Meta:
@@ -32,9 +32,8 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
             'user_id',
             'artisan_id'
         )
-
         exclude = (
-            'booking', 'ratings_weighted_sum',
+            'ratings_weighted_sum', 'bookings', 'current_booking_id'
         )
 
     # additional fields
@@ -55,6 +54,19 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
     reviews = fields.Nested('ReviewSchema', only=('weight', 'comment',))
     metrics = fields.Method(serialize='get_metrics')
     rating = fields.Method(serialize='get_artisan_rating', dump_only=True)
+    current_booking = fields.Nested(
+        'BookingSchema',
+        only=(
+            'booking_id', 'job_category', 'user.first_name',
+            'user.last_name', 'description',
+            'clock_in_flag', 'lat', 'lon', 'customer_address',
+            'settlement_type', 'payment_method', 'contract_type',
+            'booking_contract.duration', 'booking_contract.duration_unit',
+            'booking_category.name', 'customer_id'
+        )
+    )
+    customer_profile_picture = fields.Str(dump_only=True)
+
 
     @pre_load
     def preformat_data(self, data, *args, **kwargs):
@@ -78,6 +90,48 @@ class ArtisanSchema(BaseSQLAlchemyAutoSchema):
             'activity': obj.activity,
             'earnings': obj.total_earnings
         }
+
+    def _get_profile_url(self, blob_id):
+        profile_picture_blob = Blob.get_by_id(blob_id, session=db.session())
+        return profile_picture_blob.download_url
+    
+    def get_profile_url(self, user_obj):
+        image_url = user_obj.profile_picture
+        if not image_url:
+            return ''
+        blob_id = image_url.split('/')[-1]
+        return self._get_profile_url(blob_id)
+
+    @pre_dump
+    def add_active_bk_details(self, artisan_obj, *args, **kwargs):
+        current_booking = artisan_obj.current_booking
+        if current_booking:
+            user_profile = current_booking.user
+            customer_photo = self.get_profile_url(user_profile)
+            setattr(artisan_obj, 'customer_profile_picture', customer_photo)
+            print(user_profile, customer_photo, artisan_obj)
+        return artisan_obj
+
+    @post_dump
+    def add_customer_photo_on_active_bk(self, obj, *args, **kwargs):
+        print(obj)
+        if obj['current_booking']:
+            cb = obj['current_booking']
+            cb['customer'] = cb['user']
+            del cb['user']
+            # cb['customer_profile_picture'] = \
+            #     obj['customer_profile_picture']
+            print(obj)
+            del obj['booking_category']
+            cb['booking_category'] = \
+                cb['booking_category']['name']
+            cb['customer']['address'] = cb['customer_address']
+            cb['customer']['profile_picture'] = obj['customer_profile_picture']
+            cb['customer']['id'] = cb['customer_id']
+            del obj['customer_profile_picture']
+            del cb['customer_address']
+            del cb['customer_id']
+        return obj
 
 
 class AddArtisanSchema(BaseSchema):

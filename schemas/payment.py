@@ -12,7 +12,7 @@ from models.payments import (
 )
 from core import ma
 
-from marshmallow import pre_load
+from marshmallow import pre_load, fields
 
 
 class PaymentSchema(BaseSQLAlchemyAutoSchema):
@@ -97,6 +97,10 @@ class WalletSchema(BaseSQLAlchemyAutoSchema):
     class Meta:
         model = Wallet
         exclude = ('pin', )
+    balance = fields.Method(serialize='get_balance', dump_only=True)
+
+    def get_balance(self, obj):
+        return obj.balance//100
 
 
 class WalletWithdrawalSchema(BaseSQLAlchemyAutoSchema):

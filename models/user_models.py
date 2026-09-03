@@ -282,9 +282,18 @@ class Artisan(TimestampMixin, db.Model):
         db.Integer,
         db.ForeignKey('bookingcategory.id')
     )
-    booking = db.relationship('Booking', backref='artisan')
+    bookings = db.relationship(
+        'Booking', backref='artisan', foreign_keys='Booking.artisan_id'
+    )
     kyc_attempts = db.relationship('Kyc', backref='artisan')
     wallet = db.relationship('Wallet', backref='artisan', uselist=False)
+    current_booking_id = db.Column(db.String, db.ForeignKey('booking.booking_id'))
+    current_booking = db.relationship(
+        'Booking',
+        foreign_keys=[current_booking_id],
+        post_update=True  # CRITICAL: Tells SQLAlchemy to handle the cyclic insert/update safely
+    )
+
 
     # add-ons
     jobs_assigned = column_property(
@@ -306,10 +315,6 @@ class Artisan(TimestampMixin, db.Model):
         .correlate_except(Booking, Payment)
         .scalar_subquery()
     )
-
-    @property
-    def bookings(self):
-        return self.booking
 
     @property
     def average_rating_score(self):
@@ -346,6 +351,8 @@ class Artisan(TimestampMixin, db.Model):
             ) * 100.0
         }
 
+    # def get_active_booking(self):
+    #     pass
 
 class Kyc(TimestampMixin, db.Model):
     kyc_id = db.Column(db.String(200), primary_key=True)

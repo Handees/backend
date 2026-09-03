@@ -120,11 +120,13 @@ def create_booking(current_user):
 @login_required
 @permission_required(Permission.service_request)
 def view_bookings(current_user):
-    with db.session():
-        bookings = Booking.query.filter_by(
-            customer_id=current_user.user_id
-        ).all()
-
+    with db.session() as sess:
+        status = request.args.get('status', [], type=list)
+        matched = request.args.get('matched', 0, type=int)
+        bookings = Booking.fetch_user_bookings(
+            current_user.user_id,
+            sess
+        )
         return gen_response(
             200,
             bookings,
