@@ -5,6 +5,7 @@ from loguru import logger
 import sys
 
 from . import user
+from core.api.auth.auth_helper import invalidate_user_tokens
 from core import db
 from utils import decode_id
 from models.user_models import (
@@ -172,6 +173,7 @@ def add_app_token(current_user):
 def fetch_user(current_user):
     """ checks if uid exists """
     with db.session() as sess:
+        
         schema = UserSchema(session=sess)
         return gen_response(
             200,
@@ -358,3 +360,15 @@ def fetch_reviews(current_user):
                 current_user, sess, per_page=per_page
             )
         return gen_response(200, reviews)
+
+
+@user.post('/logout')
+@login_required
+def logout(current_user):
+
+    invalidate_user_tokens(current_user.user_id)
+
+    return {
+        'status': 'success',
+        'msg': 'User logged out'
+    }, 200
