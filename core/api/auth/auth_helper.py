@@ -132,7 +132,7 @@ def verify_token(token):
     #     logger.error(e)
     #     return None
     try:
-        payload = auth.verify_id_token(token)
+        payload = auth.verify_id_token(token, check_revoked=True)
     except ValueError as err:
         raise Exception(
             "Unable to verify token"
@@ -151,7 +151,7 @@ def verify_token(token):
             times = times.strip().split("<")
             time_ = int(times[1].split('.')[0].strip()) - int(times[0].strip())
             time.sleep(time_)
-            return auth.verify_id_token(token)['user_id']
+            return auth.verify_id_token(token, check_revoked=True)['user_id']
         raise Exception(
             err.default_message
         ) from err
@@ -244,3 +244,20 @@ def valid_auth_required(f):
         else:
             disconnect()
     return wrapped
+
+
+def invalidate_user_tokens(user_id):
+    try:
+        auth.revoke_refresh_tokens(user_id)
+
+        logger.info(
+            f"Refresh tokens revoked for user: {user_id}"
+        )
+
+        return True
+
+    except Exception as err:
+        logger.error(
+            f"Failed to revoke tokens for user {user_id}: {err}"
+        )
+        return False
