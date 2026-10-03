@@ -20,7 +20,7 @@ from models.user_models import Artisan
 from models.bookings import Booking, BookingContract, BookingStatusEnum, SettlementEnum
 from tasks.exc import InvalidBookingTransaction
 from models.payments import Payment
-from schemas import NewBookingRequestSchema
+from schemas import NewBookingRequestSchema, ArtisanSchema
 from schemas.bookings_schema import BookingSchema
 from config import config_options
 
@@ -169,6 +169,7 @@ def assign_artisan_to_booking(data):
 
             booking.artisan = artisan
             booking.status = BookingStatusEnum.ARTISAN_MATCHED
+            artisan.current_booking_id = booking.booking_id
             redis_4.hset(
                 "booking_id_to_artisan", mapping={booking.booking_id: artisan.user_id}
             )
@@ -230,7 +231,9 @@ def confirm_job_details(data):
     """called when a job is started"""
     from tasks.events import send_event
     from core.api.bookings import messages
+    from schemas.artisan import db_session_ctx
     from uuid import uuid4
+    from models.bookings import BookingContract # Import the model
 
     _huey = HueyTemplate()
     app = _huey.get_flask_app(config_options["development"])
@@ -239,7 +242,7 @@ def confirm_job_details(data):
     with app.app_context():
         # find booking
         bk: Booking = Booking.query.with_session(db.session()).get(data["booking_id"])
-        is_contract: bool = data["is_contract"]
+        is_contract: bool = data.get("is_contract", False)
         settlement: dict = data["settlement"]
 
         if bk.details_confirmed:
@@ -250,18 +253,20 @@ def confirm_job_details(data):
             send_event("job_details_already_confirmed", payload, "/customer")
             return
 
+        # --- UPDATED CONTRACT LOGIC ---
         if is_contract:
-            # set contract
-            if not bk.booking_contract:
-                bkc = BookingContract()
-                bk.booking_contract = bkc
-            else:
-                raise BookingHasContract(
-                    f"This booking {bk} already has a booking-contract associated with it"
-                )
-            db.session.add(bkc)
-
-        # associate payment with booking
+            duration = data.get("duration")
+            duration_unit = data.get("duration_unit")
+            
+            if not duration or not duration_unit:
+                raise ValueError("duration and duration_unit are required for contract bookings")
+                
+            BookingContract.setup_booking_contract(
+                sess=db.session(),
+                booking=bk,
+                duration=duration,
+                duration_unit=duration_unit
+            )
         _payment = Payment()
         _payment.payment_id = uuid4().hex
         if settlement["type"] == "NEGOTIATION":
@@ -279,16 +284,26 @@ def confirm_job_details(data):
 
         try:
             db.session.commit()
+            token = db_session_ctx.set(db.session())
+            try:
+                current_bk_dump = ArtisanSchema(
+                    only=('current_booking', 'customer_profile_picture',)
+                ).dump(bk.artisan)
+            finally:
+                db_session_ctx.reset(token)
+            payload = {
+                "payload": {
+                    "msg": messages.BOOKING_DETAILS_CONFIRMED,
+                    "data": current_bk_dump
+                },
+                "recipient": redis_4.hget("booking_id_to_artisan", data["booking_id"]),
+            }
+            send_event("job_details_confirmed", payload, "/artisan")
         except Exception as e:
             logger.exception(e)
             db.session.rollback()
         finally:
             db.session.close()
-        payload = {
-            "payload": {"msg": messages.BOOKING_DETAILS_CONFIRMED},
-            "recipient": redis_4.hget("booking_id_to_artisan", data["booking_id"]),
-        }
-        send_event("job_details_confirmed", payload, "/artisan")
 
 
 @huey.task()
@@ -363,6 +378,8 @@ def job_end(data):
                 }
                 initiate_charge(charge_obj)
 
+            # set artisan current booking to null
+            artisan.current_booking_id = None
             try:
                 db.session.commit()
             except Exception as e:

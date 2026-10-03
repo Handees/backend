@@ -1,12 +1,15 @@
 from datetime import datetime
 
 from sqlalchemy.orm import column_property
-from sqlalchemy import select, func, text, and_
+from sqlalchemy import select, func, text, and_, case
 from flask import current_app
 from loguru import logger
 
 from core import db
-from models.bookings import Booking, BookingStatusEnum, BookingCategory
+from models.bookings import (
+    Booking, BookingStatusEnum, BookingCategory,
+    BookingContract, 
+)
 from models.payments import Payment
 from .base import (
     TimestampMixin,
@@ -206,11 +209,13 @@ class User(TimestampMixin, db.Model):
                 Booking.booking_id, Booking.status, Booking.created_at,
                 cls.first_name, cls.last_name, cls.profile_picture,
                 Booking.settlement_type, Artisan.artisan_id,
-                BookingCategory.name, cls.telephone
+                BookingCategory.name, cls.telephone, BookingContract.duration,
+                BookingContract.duration_unit
             )
             .join(Artisan, Booking.artisan_id == Artisan.artisan_id)
             .join(cls, Artisan.user_id == cls.user_id)
             .join(BookingCategory, BookingCategory.id == Booking.category_id)
+            .outerjoin(BookingContract, BookingContract.booking_id == Booking.booking_id)
             .where(
                 and_(
                     Booking.status == BookingStatusEnum.IN_PROGRESS,
@@ -231,13 +236,15 @@ class User(TimestampMixin, db.Model):
                         ),
                         'id', subq.c.booking_id, 'status', subq.c.status,
                         'category', subq.c.name,
-                        'created_at', subq.c.created_at
+                        'created_at', subq.c.created_at,
+                        # optional
+                        'duration', subq.c.duration,
+                        'duration_unit', subq.c.duration_unit
                     )
                 )
             )
         ).select_from(subq)
         return session.execute(stmt).scalar()
-
 
 
 # @event.listens_for(User, 'before_update')
@@ -364,3 +371,21 @@ class Kyc(TimestampMixin, db.Model):
     passport_number = db.Column(db.String(10))
     image = db.Column(db.String)
     artisan_id = db.Column(db.ForeignKey('artisan.artisan_id'))
+
+
+from models.reviews import Reviews
+
+Artisan.rating_counts = column_property(
+    select(
+        func.json_build_object(
+            '1', func.count(case((Reviews.weight == 1, Reviews.id))),
+            '2', func.count(case((Reviews.weight == 2, Reviews.id))),
+            '3', func.count(case((Reviews.weight == 3, Reviews.id))),
+            '4', func.count(case((Reviews.weight == 4, Reviews.id))),
+            '5', func.count(case((Reviews.weight == 5, Reviews.id)))
+        )
+    )
+    .where(Reviews.artisan_id == Artisan.artisan_id)
+    .correlate_except(Reviews)
+    .scalar_subquery()
+)

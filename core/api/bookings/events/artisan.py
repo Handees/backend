@@ -28,7 +28,6 @@ from .utils import (
     update_nearby_count
 )
 from add_extensions import (
-    redis_2,
     redis_,
     redis_4,
     redis_5,
@@ -42,19 +41,13 @@ from core.exc import (
     InvalidBookingTransaction
 )
 from ..utils import parse_str_data
-from ..utils import DistanceAPIClient
+from ..utils import matrix_client
 from core.api.auth.auth_helper import (
     auth_param_required,
     valid_auth_required
 )
-from schemas import (
-    CoordsSchema,
-    BookingAcceptedSchema,
-    NewBookingRequestSchema,
-    AvailableArtisanLocationSchema
-)
-from tasks.events import send_event
-from models.bookings import categories
+from schemas import BookingAcceptedSchema
+from tasks.events import send_event, send_eta
 from schemas.artisan import ArtisanSchema
 from models.bookings import BookingStatusEnum
 from core.api.auth.auth_helper import verify_token
@@ -72,11 +65,6 @@ logger.add(
     level=_level
 )
 load_dotenv()
-
-# create client for distance matrix api
-matrix_client = DistanceAPIClient(
-    secret=os.getenv('DISTANCE_MATRIX_KEY')
-)
 
 
 @socketio.on('connect', namespace='/chat')
@@ -159,128 +147,19 @@ def on_disconnect(reason=None):
 @parse_event_data
 @valid_auth_required
 def update_location(uid, data):
-    print("EXECUTING ... for {}".format(uid), flush=True)
     # add coords to redis
     redis_5.geoadd(
         name=data['job_category'],
         values=(data['lon'], data['lat'], uid)
     )
-
     # add rating to cache
     redis_6.hset("artisan_ratings", uid, data.get('rating', 3.75))
-    # room = 'handees_artisan_'+uid
-    # join_room(room)
-    # # update artisan location on redis
-    # psub = redis_2.pubsub(ignore_subscribe_messages=True)
-    # psub.unsubscribe('*')
 
-    # redis_5.geoadd(
-    #     name=data['job_category'],
-    #     values=(data['lon'], data['lat'], uid)
-    # )
-    # g_hash = redis_5.geohash(
-    #     data['job_category'],
-    #     uid
-    # )
-    # g_hash = g_hash[0]
-    # # store the count in a g_hash
-    # geo_fence_key = g_hash[:5]
-    # print(geo_fence_key, "artisan loc ghash")
-
-    # category = data['job_category']
-    # cat_hash_key = f'{category}+{geo_fence_key}'
-    # prev_cat_hash_key = redis_6.get(uid)
-
-    # if not redis_6.hexists(cat_hash_key, uid):
-    #     # in the event that artisan moved away to new geo_fence
-    #     # clear previous entry in the previous geo_fence
-
-    #     if prev_cat_hash_key and prev_cat_hash_key != cat_hash_key:
-    #         prev = prev_cat_hash_key.split('+')[-1]
-    #         update_nearby_count(uid, category, decr=True, prev_hash=prev)
-
-    # if redis_.hexists('ghash_to_artisan_count', geo_fence_key):
-    #     if not prev_cat_hash_key:
-    #         curr = geo_fence_key
-    #         update_nearby_count(uid, category, curr_hash=curr)
-    #     elif prev_cat_hash_key and not redis_6.hexists(cat_hash_key, uid):
-    #         prev, curr = prev_cat_hash_key.split('+')[-1], geo_fence_key
-    #         update_nearby_count(uid, category, prev_hash=prev, curr_hash=curr)
-    # else:
-    #     _count_store = {}
-    #     for cat in categories:
-    #         if cat == category:
-    #             _count_store[cat] = 1
-    #         else:
-    #             _count_store[cat] = 0
-    #     redis_.hset(
-    #         'ghash_to_artisan_count',
-    #         geo_fence_key,
-    #         str(_count_store)
-    #     )
-
-    # redis_6.hset(cat_hash_key, uid, 1)
-    # redis_6.set(uid, cat_hash_key)
-    # # logger.info(f"The ARTISAN GEOHASH IS:: {g_hash}")
-
-    # # send update to user if artisan is engaged
-    # if redis_4.hexists('artisan_to_booking_id', uid):
-    #     bk_id = redis_4.hget('artisan_to_booking_id', uid)
-    #     print(bk_id)
-    #     if redis_7.exists(bk_id):
-    #         payload = {
-    #             'payload': data,
-    #             'recipient': redis_4.hget(
-    #                 'booking_id_to_uid',
-    #                 bk_id
-    #             )
-    #         }
-    #         send_event('artisan_location_update', payload, '/customer')
-    #     else:
-    #         # remove stale entry
-    #         redis_4.hdel('artisan_to_booking_id', uid)
-    # # reduce geohash length to 6 characters
-    # # subscribe user to a topic named
-    # # after this truncated geohash
-
-    # def handle_updates(msg):
-    #     data = parse_str_data(msg['data'])
-
-    #     schema = NewBookingRequestSchema()
-    #     customer = data.pop('user')
-    #     lat, lon = data.pop('lat'), data.pop('lon')
-    #     data = schema.load(
-    #         {
-    #             **data,
-    #             'userDetails': customer,
-    #             'coordinates': {
-    #                 'lat': lat,
-    #                 'lon': lon
-    #             }
-    #         }
-    #     )
-    #     socketio.emit(
-    #         'new_offer',
-    #         data,
-    #         to=room,
-    #         namespace='/artisan'
-    #     )
-    #     notification_payload = {
-    #         k: json.dumps(v) for k, v in data.items()
-    #     }
-    #     fcm_token = redis_4.hget("user_to_fcm_token", uid)
-    #     send_notification(
-    #         notification_payload,
-    #         fcm_token,
-    #         notification_object={
-    #             'body': 'A client near you needs your service',
-    #             'title': 'New Service Request Alert! 🚨'
-    #         }
-    #     )
-
-    # psub.subscribe(**{geo_fence_key: handle_updates})
-
-    # psub.run_in_thread(sleep_time=.01)
+    # trigger async job to send ETA to customer and artisan side
+    if redis_4.hexists("en_route", uid):
+        # at most one ETA job per artisan per N seconds
+        if redis_4.set(f"eta_throttle:{uid}", 1, nx=True, ex=20):
+            send_eta(uid)
 
 
 @socketio.on('accept_offer', namespace='/artisan')
@@ -296,9 +175,11 @@ def accept_offer(uid, data):
     with redis_.lock(lock_key, ttl=5000):
         if redis_.exists(room):
             # read and remove from queue
-            bk_info = parse_str_data(redis_.get(room))
-            redis_.delete(room)
+            raw_bk_json = redis_.get(room)
+            bk_info = parse_str_data(raw_bk_json)
             redis_7.set(room, uid)
+            redis_4.hset("active_bks", mapping={room: raw_bk_json})
+            redis_.delete(room)
 
             # assign artisan to booking
             try:
@@ -311,7 +192,6 @@ def accept_offer(uid, data):
                     '/artisan'
                 )
                 return
-
             # send updates to user
             artisan = ArtisanSchema(
                 only=(
@@ -325,6 +205,14 @@ def accept_offer(uid, data):
             ).dump(
                 Artisan.get_by_user_id(uid)
             )
+            # add artisan en-route
+            redis_4.hset("en_route", uid, json.dumps({
+                "booking_id": room,
+                "job_category": artisan['job_category'],
+                "dest_lat": bk_info['lat'],
+                "dest_lon": bk_info['lon'],
+                "customer_uid": bk_info['user']['user_id'],
+            }))
             lon, lat = redis_5.geopos(
                 artisan['job_category'],
                 uid
@@ -369,7 +257,7 @@ def accept_offer(uid, data):
                 )
             except Exception as e:
                 logger.error(e)
-                emit('offer_matched', data)
+                emit('error', data)
         else:
             payload = {
                 'payload': {'msg': messages.BOOKING_CANCELLED, 'data': {}},

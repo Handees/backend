@@ -23,6 +23,7 @@ from core.api.auth.auth_helper import (
     login_required
 )
 from core import db
+from core.exc import BookingLimitExceeded, InvalidBookingCategory, DataValidationError
 from utils import (
     error_response,
     gen_response,
@@ -49,30 +50,33 @@ def create_booking(current_user):
         schema = BookingSchema()
         try:
             new_order: Booking = schema.load(data)
+            new_order: Booking = Booking.create_booking(
+                sess, new_order,
+                data, current_user
+            )
             if images:
                 images = UploadImagesSchema().load(images)
-        except Exception as e:
-            logger.exception(e)
+        except (InvalidBookingCategory, BookingLimitExceeded) as e:
+            logger.error(e)
+            sess.rollback()
+            return error_response(
+                400,
+                message=str(e)
+            )
+        except DataValidationError as e:
+            logger.error(e)
             sess.rollback()
             return error_response(
                 400,
                 message=str(e),
                 data=schema.error_messages
             )
-
-        new_order.booking_id = uuid4().hex
-        new_order.status = BookingStatusEnum.PENDING
-        category = BookingCategory.get_by_name(data['job_category'])
-
-        if not category:
+        except Exception as e:
             sess.rollback()
-            return error_response(404, message=messages.dynamic_msg(
-                messages.CATEGORY_NOT_FOUND, data['job_category']
-            ))
-        new_order.booking_category = category
-        new_order.user = current_user
-        sess.add(new_order)
-        sess.flush()
+            return error_response(
+                500,
+                message=str(e)
+            )
 
         # add images
         if images:

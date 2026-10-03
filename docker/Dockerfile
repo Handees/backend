@@ -1,4 +1,4 @@
-FROM python:3.13-bullseye
+FROM python:3.11-slim-bookworm
 
 ARG COCKROACH_DB_CERT_URL
 ARG DATABASE_CERT_PATH
@@ -10,7 +10,10 @@ RUN chown -R handeesofficial:handeesofficial /home/handeesofficial
 
 WORKDIR /home/handeesofficial/backend
 
-RUN apt update && apt install nginx -y && apt install less -y && apt install vim -y
+RUN apt-get update -y && \
+    apt-get install -y --fix-missing nginx less vim curl git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 COPY nginx/server.conf /etc/nginx/sites-available
 RUN ln -s /etc/nginx/sites-available/server.conf /etc/nginx/sites-enabled/server.conf && rm /etc/nginx/sites-enabled/default
 

@@ -1,4 +1,5 @@
 import os
+import uuid
 
 import datetime
 from sqlalchemy import select, and_, func
@@ -13,6 +14,7 @@ from .base import (
     SerializableEnum
 )
 from core import db
+from core.exc import InvalidBookingCategory, BookingLimitExceeded, BookingHasContract
 # from typing import Optional
 
 load_dotenv()
@@ -126,6 +128,37 @@ class BookingContract(TimestampMixin, BaseModelPR, db.Model):
     def update_end_time(self):
         self.end_time = dt.utcnow()
 
+    @classmethod
+    def setup_booking_contract(cls, sess, booking, duration, duration_unit):
+        """
+        Helper to attach contract details to a booking after it has been matched/verified.
+        """
+        # Ensure the unit is a valid Enum
+        if isinstance(duration_unit, str):
+            try:
+                duration_unit = BookingContractDurationEnum[duration_unit.upper()]
+            except KeyError:
+                raise ValueError(f"Invalid duration unit: {duration_unit}")
+
+        if booking.booking_contract:
+            raise BookingHasContract(
+                f"This booking {booking.booking_id} already has a booking-contract associated with it"
+            )
+
+        # Flag the parent booking as a contract
+        booking.contract_type = True
+
+        new_contract = cls(
+            duration=duration,
+            duration_unit=duration_unit
+        )
+        booking.booking_contract = new_contract
+
+        sess.add(new_contract)
+        sess.flush()
+        
+        return new_contract
+
 
 class BookingCategory(BaseModelPR, db.Model):
     __tablename__ = 'bookingcategory'
@@ -175,6 +208,7 @@ class Booking(TimestampMixin, db.Model):
     start_time = db.Column(db.Date)
     end_time = db.Column(db.Date)
     location = db.Column(Geometry(geometry_type='POINT', srid='4326'))
+    request_location = db.Column(db.String())
     description = db.Column(db.Text())
     status = db.Column(db.Enum(BookingStatusEnum))
     payment_id = db.Column(db.String, db.ForeignKey('payment.payment_id'))
@@ -264,6 +298,44 @@ class Booking(TimestampMixin, db.Model):
         sess.add(clock)
         sess.flush()
         self.current_work_session_id = clock.id
+
+    @classmethod
+    def create_booking(cls, sess, new_order, data, user):
+        from models.user_models import User
+
+        MAX_ACTIVE_BOOKINGS = 3
+        customer_id = user.user_id
+        sess.execute(
+            select(User.user_id)
+            .where(User.user_id == customer_id)
+            .with_for_update()
+        )
+        active_count = sess.execute(
+            select(func.count()).select_from(Booking).where(
+                and_(
+                    Booking.customer_id == customer_id,
+                    Booking.status == BookingStatusEnum.IN_PROGRESS,
+                )
+            )
+        ).scalar()
+        if active_count >= MAX_ACTIVE_BOOKINGS:
+            error_msg = "Booking Limit Exceeded; Can't Have more than 3 active requests"
+            sess.rollback()
+            raise BookingLimitExceeded(error_msg)
+
+        new_order.booking_id = uuid.uuid4().hex
+        new_order.status = BookingStatusEnum.PENDING
+        category = BookingCategory.get_by_name(data['job_category'])
+        if not category:
+            sess.rollback()
+            error_msg = "category with name '{}' not found"
+            raise InvalidBookingCategory(error_msg.format(data['category']))
+
+        new_order.booking_category = category
+        new_order.user = user
+        sess.add(new_order)
+        sess.flush()
+        return new_order
 
     def add_clock_event(self, sess, clock_in=True):
         current_day = dt.now(datetime.timezone.utc)

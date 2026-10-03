@@ -19,3 +19,14 @@ class ClientNotConnected(Exception):
 
 class InvalidBookingTransaction(Exception):
     pass
+
+
+class InvalidBookingCategory(Exception):
+    pass
+
+
+class BookingLimitExceeded(Exception):
+    pass
+
+class BookingHasContract(Exception):
+    pass

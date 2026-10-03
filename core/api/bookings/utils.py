@@ -1,3 +1,4 @@
+import os
 import json
 import requests
 
@@ -65,6 +66,12 @@ def count_nearby_artisans():
 
 class DistanceAPIClient:
     BASE_URL = "https://api-v2.distancematrix.ai/maps/api"
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self, secret):
         self._key = secret
@@ -80,3 +87,9 @@ class DistanceAPIClient:
             raise Exception
         else:
             return req
+
+
+# create client for distance matrix api
+matrix_client = DistanceAPIClient(
+    secret=os.getenv('DISTANCE_MATRIX_KEY')
+)

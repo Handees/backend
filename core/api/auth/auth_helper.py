@@ -1,16 +1,11 @@
-from models.user_models import (
-    Permission,
-    Role,
-    User
-)
-from core import socketio
-from core.api.bookings import messages
+import os
+import json
+import functools
 
 from functools import wraps
 from flask import (
-    abort,
-    request,
-    make_response
+    abort, request,
+    make_response, session
 )
 from firebase_admin import auth
 from firebase_admin.auth import (
@@ -20,12 +15,17 @@ from firebase_admin.auth import (
     CertificateFetchError
 )
 from flask_socketio import disconnect
-from flask import session
 from loguru import logger
+
 from utils import setLogger
-import os
-import json
-import functools
+from models.user_models import (
+    Permission,
+    Role,
+    User
+)
+from core import socketio
+from core.api.bookings import messages
+
 
 setLogger()
 

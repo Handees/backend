@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from flask_socketio import SocketIO
 
 from utils import send_notification
-from add_extensions import redis_4
+from add_extensions import redis_4, redis_5
 from .booking_tasks import huey
 from core.exc import ClientNotConnected
 
@@ -17,58 +17,59 @@ load_dotenv()
 
 # config
 logging.basicConfig(level=logging.DEBUG)
-redis_pass = os.getenv('REDIS_PASS')
-redis_port = os.getenv('REDIS_PORT', 6378)
+redis_pass = os.getenv("REDIS_PASS")
+redis_port = os.getenv("REDIS_PORT", 6378)
 
 mq = f"redis://:{redis_pass}@{os.getenv('REDIS_HOST')}:{redis_port}/7"
 sock = SocketIO(
     cors_allowed_origins=[
-        'http://127.0.0.1:5020', 'http://127.0.0.1:5501',
-        'https://www.piesocket.com'
+        "http://127.0.0.1:5020",
+        "http://127.0.0.1:5501",
+        "https://www.piesocket.com",
     ],
     message_queue=mq,
-    async_mode='gevent',
+    async_mode="gevent",
     logger=True,
-    engineio_logger=True
+    engineio_logger=True,
 )
 
 NOTIFICATONS_MAP = {
-    'approve_booking_details': {
-        'body': 'Kindly review service request details',
-        'title': 'Approve Service Request Details'
+    "approve_booking_details": {
+        "body": "Kindly review service request details",
+        "title": "Approve Service Request Details",
     },
-    'job_completed': {
-        'body': "Artisan says their done with the work 😊",
-        'title': 'Job Completed'
+    "job_completed": {
+        "body": "Artisan says their done with the work 😊",
+        "title": "Job Completed",
     },
-    'booking_offer_accepted': {
-        'body': "Hey you've been matched with an artisan near you!",
-        'title': 'Booking Request Accepted'
+    "booking_offer_accepted": {
+        "body": "Hey you've been matched with an artisan near you!",
+        "title": "Booking Request Accepted",
     },
-    'offer_cancelled': {
-        'body': "Service request canceled💀",
-        'title': 'Offer Has Been Canceled'
+    "offer_cancelled": {
+        "body": "Service request canceled💀",
+        "title": "Offer Has Been Canceled",
     },
-    'artisan_arrived': {
-        'body': "Good news! You have a visitor!🔥 Your artisan has arrived",
-        'title': 'Artisan Has Arrived'
+    "artisan_arrived": {
+        "body": "Good news! You have a visitor!🔥 Your artisan has arrived",
+        "title": "Artisan Has Arrived",
     },
-    'job_details_rejected': {
-        'body': "Customer rejected booking details💀 - contact them!",
-        'title': 'Service Request Detail Rejected'
+    "job_details_rejected": {
+        "body": "Customer rejected booking details💀 - contact them!",
+        "title": "Service Request Detail Rejected",
     },
-    'artisan_clocked_in': {
-        'body': 'Artisan clocked in for a work session',
-        'title': 'Artisan Clocked In'
+    "artisan_clocked_in": {
+        "body": "Artisan clocked in for a work session",
+        "title": "Artisan Clocked In",
     },
-    'artisan_clocked_out': {
-        'body': 'Artisan clocked out from a work session',
-        'title': 'Artisan Clocked Out'
+    "artisan_clocked_out": {
+        "body": "Artisan clocked out from a work session",
+        "title": "Artisan Clocked Out",
     },
-    'job_started': {
-        'body': 'Service rendering has officialy begun✅',
-        'title': 'Artisan Started Working'
-    }
+    "job_started": {
+        "body": "Service rendering has officialy begun✅",
+        "title": "Artisan Started Working",
+    },
 }
 
 
@@ -81,7 +82,7 @@ def exp_backoff_task(retries, retry_backoff):
             # decorated task function. This enables us to modify its retry
             # delay, multiplying it by our backoff factor, in the event of
             # an exception.
-            task = kwargs.pop('task')
+            task = kwargs.pop("task")
             try:
                 return fn(*args, **kwargs)
             except ClientNotConnected as exc:
@@ -92,6 +93,7 @@ def exp_backoff_task(retries, retry_backoff):
         # our function, and in the event of an unhandled exception,
         # increases the retry delay by the given factor.
         return huey.task(retries=retries, retry_delay=2, context=True)(inner)
+
     return deco
 
 
@@ -103,38 +105,57 @@ def send_event(event, data, namespace):
     print(F_KEY_PATH, "Firebase KEY")
     # print(d)
 
-    if not data or not data['recipient']:
+    if not data or not data["recipient"]:
         logger.error("Cannot send event: No data received, or recipient missing")
         return
 
     # check if receiver is connected
-    if not redis_4.hexists("user_to_sid", data['recipient']):
+    if not redis_4.hexists("user_to_sid", data["recipient"]):
         logger.warning("client not connected: retrying...")
         raise ClientNotConnected("Client no longer connected")
 
-    user_sid = redis_4.hget("user_to_sid", data['recipient'])
+    user_sid = redis_4.hget("user_to_sid", data["recipient"])
 
     if not redis_4.exists(user_sid):
         logger.warning("client not connected: retrying...")
         raise ClientNotConnected("Client no longer connected")
 
     app_instance = firebase_admin.get_app(name="firebase_admin_huey")
-    resp = sock.emit(
-        event,
-        data['payload'],
-        to=user_sid,
-        namespace=namespace
-    )
+    resp = sock.emit(event, data["payload"], to=user_sid, namespace=namespace)
     print(f"SOCKET EMIT RESPONSE {resp}")
     if event in NOTIFICATONS_MAP:
-        notification_payload = {
-            k: json.dumps(v) for k, v in data['payload'].items()
-        }
-        fcm_token = redis_4.hget("user_to_fcm_token", data['recipient'])
+        notification_payload = {k: json.dumps(v) for k, v in data["payload"].items()}
+        fcm_token = redis_4.hget("user_to_fcm_token", data["recipient"])
         res = send_notification(
-            notification_payload,
-            fcm_token,
-            app_instance,
-            NOTIFICATONS_MAP[event]
+            notification_payload, fcm_token, app_instance, NOTIFICATONS_MAP[event]
         )
         logger.error(f"Sent push notification request, with resp: {res}")
+
+
+@huey.task()
+def send_eta(uid):
+    from core.api.bookings.utils import matrix_client
+    raw = redis_4.hget("en_route", uid)
+    if not raw:
+        return  # arrived or cancelled while queued
+    info = json.loads(raw)
+    lon, lat = redis_5.geopos(info["job_category"], uid)[0]
+
+    route = matrix_client.get_route_info(
+        source=f"{lat},{lon}",
+        destination=f"{info['dest_lat']},{info['dest_lon']}",
+    ).json()
+    logger.error(route)
+    seconds = route["rows"][0]["elements"][0]["duration"]["value"]
+
+    payload = {
+        "booking_id": info["booking_id"],
+        "time_remaining": seconds,
+        "coordinates": {"lat": lat, "lon": lon},
+    }
+    send_event(
+        "eta_update",
+        {"payload": payload, "recipient": info["customer_uid"]},
+        "/customer",
+    )
+    send_event("eta_update", {"payload": payload, "recipient": uid}, "/artisan")
